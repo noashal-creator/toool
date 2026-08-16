@@ -128,7 +128,7 @@ try {
   if (sessionStorage.getItem('toool.mixed')) document.documentElement.classList.add('has-mixed');
 } catch { /* ditto */ }
 
-function playStir() {
+function playStir(fillMs = FILL_MS) {
   markMixed();
 
   // The bowl's purple loading gauge is timed off MIX_MS so it always finishes
@@ -137,7 +137,7 @@ function playStir() {
   // remaining window is what the gauge spreads its fill across — a steady,
   // honest rate rather than jumping. Set on :root, not on .bowl — .bowl-fill is
   // .bowl's SIBLING, so a custom property set on .bowl would never inherit to it.
-  document.documentElement.style.setProperty('--fill-ms', FILL_MS + 'ms');
+  document.documentElement.style.setProperty('--fill-ms', fillMs + 'ms');
 
   // the bowl fills with a blend of the user's OWN two uploads — set here
   // rather than in the markup, since these are per-mix object URLs
@@ -431,3 +431,25 @@ function drawCover(ctx, image, alpha) {
 function say(message) {
   status.textContent = message;
 }
+
+/* ── recording mode hooks (recording.js) ──────────────────────────────────
+   A scripted, cursor-less demo drives the tool itself for a clean screen
+   capture. These expose the module-scoped pieces it needs — filling a slot
+   from a preset asset, starting the churn with a short fill, and the spoon
+   "lift" beat — without recording.js reaching into this file's internals or
+   the normal flow changing at all. Purely additive. */
+window.recFillSlot = (key, url) =>
+  fetch(url)
+    .then(r => r.blob())
+    .then(b => load(key, new File([b], key + '.jpg', { type: b.type || 'image/jpeg' })));
+window.recResetSlots = () => resetSlots();
+window.recStir = (fillMs) => { playStir(fillMs); };
+window.recLift = () => {
+  for (const el of [spoonRig, runBtn, bowl]) {
+    el.classList.remove('is-mixing', 'is-finishing');
+    el.classList.add('is-done');          // spoon lifts out; gauge holds at ready
+  }
+  stopGauge();
+  gaugeNum.textContent = '100%';
+  settleMix(MIX_SCALE_REST, SETTLE_MS);
+};

@@ -828,6 +828,15 @@
     const CAROUSEL_WAVE    = 2;      // wave crests travelling around the 8-pop ring at once
     let spin = 0, ambientRaf = 0;
 
+    /* Ticks in one open-and-close of the ring. It lives out here because BOTH
+       drivers have to agree on it: the vertical crank counts ticks up to it,
+       and the sideways reel maps a slide's scrub straight onto it. They did not
+       agree — the reel was cranking to 26 against an arc of 40 — so the ring
+       ran out of scroll a fifth of the way into its closing and never gathered
+       back up, and each of those 26 steps was a bigger jump than the arc was
+       drawn for, which is what made it read as coarse. */
+    const CONVERGE_P = 40;
+
     /* the ambient clock: advance the angle off wall-time and repaint. Runs only
        while a band is on screen (started/stopped in retime), and never under
        reduced motion. Wrapping from ~2*PI back to 0 is seamless because sin/cos
@@ -862,8 +871,16 @@
            — the jerk per step is what reads as harsh. More steps make each
            position change smaller, so the motion softens without giving up the
            stepping, which is the whole look. */
-        const P = 40;                       // ticks per open-and-close
+        const P = CONVERGE_P;               // ticks per open-and-close
+        /* t may arrive FRACTIONAL (the sideways scrub feeds it straight from
+           the slide's progress). The ring's geometry is taken from the exact
+           value, so it grows and gathers smoothly under your scroll; the frame
+           index and the per-frame wobble below still use the whole tick, so the
+           cut-outs keep changing in stop motion. Reading everything off the
+           rounded tick is what made the scrub read as coarse: the radius could
+           only move in the arc's 1/15 steps however finely you scrolled. */
         const p = (t % P + P) % P / P;
+        const tick = Math.round(t);
         const OPEN_AT = 0.38, CLOSE_AT = 0.62;
         const pull = p < OPEN_AT  ? p / OPEN_AT
                    : p < CLOSE_AT ? 1
@@ -890,6 +907,12 @@
            and rising and falling as they travel around it — slowly and on their
            own. pull scales both the orbit radius and the bob, so a gathered ring
            collapses to the centre and the motion simply isn't seen there. */
+        /* SIZE morph (no opacity, ever): as the ring opens (pull 0→~0.35) the
+           single big "answer" head SHRINKS away while the ring heads GROW in and
+           spread — so the big-head → small-heads change is a smooth burst
+           instead of the old hard cut at pull 0.22. Pure scale, nothing fades. */
+        const xf = Math.max(0, Math.min(1, pull / 0.35));
+        const RING_H = 40;   // bumped from 33.7 — the ring pops were a touch small
         const out = Array.from({ length: 8 }, (_, k) => {
           const a = k * (Math.PI * 2 / 8) + spin;
           /* While the ring turns, neighbours ride opposite each other — one up
@@ -903,7 +926,11 @@
           const bob = Math.sin(spin * CAROUSEL_CYCLES - k * (Math.PI * 2 / 8) * CAROUSEL_WAVE)
                       * SPIN_BOB * pull;
           return {
-            i: (k + Math.floor(t / 20)) % 5,   // P/2 — same count of stage changes per arc
+            /* fixed stage per pop — NO stop-motion frame-swap. The 8 pops show
+               the 5 transformation stages at once (a spectrum around the ring)
+               and just rotate/gather smoothly; swapping between the static PNGs
+               would either strobe (stop-motion) or need a fade (ruled out). */
+            i: k % 5,
             x: 50 + Math.cos(a) * 37 * pull,
             /* y 54 and a 15 radius, not 56/18: the lengthened sticks reach
                much further below each anchor point, and the old spread put the
@@ -911,8 +938,8 @@
                stick ends read as cut. This holds the same head size and lands
                the lowest tip at 89%. */
             y: 50.9 + Math.sin(a) * 15 * pull + bob,
-            h: 33.7,
-            r: S(k, 16) * 20 + S(t + k, 17) * 2,
+            h: RING_H * xf,                           // grow in from nothing as it opens (no fade)
+            r: S(k, 16) * 20,                          // fixed tilt per pop (the tick-based wobble strobed on a continuous tick)
             /* the one further down the ellipse is the one nearer the camera */
             z: Math.round(Math.sin(a) * 8) + 10
           };
@@ -923,9 +950,12 @@
            loop: the pile arrives at an answer. Alternating 1 and 5 lands it on
            the two ends of the transformation — the photographed face, then the
            finished pop — so consecutive gathers never repeat themselves. */
-        if (pull < 0.22) {
-          const loop = Math.floor(((t % (P * 2)) + P * 2) % (P * 2) / P);
-          out.push({ i: loop ? 4 : 0, x: 50, y: 49.9, h: 48.4, r: 0, z: 99 });
+        if (xf < 1) {
+          /* the big "answer" head starts at 52 and SHRINKS to nothing as the
+             ring grows in — a size burst, no fade — so it bursts INTO the ring
+             instead of cutting to it. Fixed stage (2 = the midpoint), no
+             stop-motion alternation. */
+          out.push({ i: 2, x: 50, y: 49.9, h: 52 * (1 - xf), r: 0, z: 99 });
         }
         return out;
       }
@@ -1072,14 +1102,15 @@
 
     function onScroll() {
       /* sideways mode: the reel owns pinning + scroll distance; crank the film
-         deterministically from the slide's horizontal progress. 0/26 = scattered
-         at the slide edges, 13 = fully gathered when it's centred (see MOVES.
-         converge: pull is 1→0→1 over P=26). Reverses cleanly on scroll-back. */
+         deterministically from the slide's scrub. The whole arc is mapped onto
+         it — 0 = one lollipop, the ring blooms open, stands turning, and
+         gathers back to one at CONVERGE_P — so scrolling the slide plays the
+         move end to end. Reverses cleanly on scroll-back. */
       if (window.reelMode?.active()) {
         const p = window.reelMode.progress(sections[0]);
         if (p == null) return;
-        const nt = Math.round(p * 26);
-        if (nt !== t) { t = nt; paint(); }
+        const nt = p * CONVERGE_P;          // exact, not rounded — see MOVES.converge
+        if (Math.abs(nt - t) > 1e-3) { t = nt; paint(); }
         return;
       }
       const y = window.scrollY, dy = y - lastY;

@@ -435,6 +435,20 @@ img { display: block; }
      pill's box is unchanged and the verified bottom-clearance/.bowl-floor
      geometry still holds. */
   border-color: transparent;
+  /* The dark ring that kept showing around the dome is NOT this border — that
+     is already transparent here, and recolouring it proved nothing changed.
+     It is the SPOON'S OWN HEAD in hand-spoon-raw.png. The pill is designed to
+     sit on the spoon's tip, and the scoop is a hair wider than the pill, so the
+     photo's dark rim shows around the purple ellipse. Hiding .hand made the
+     ring vanish completely — that was the test that settled it.
+     No CSS can recolour a photograph, so the pill covers it instead: a spread
+     shadow in the pill's own purple grows the dome's silhouette by 2.5 units,
+     which is more than the rim measured. It reads as a slightly larger dome,
+     not as a glow — same colour, hard edge, no blur. box-shadow paints outside
+     the border box without affecting layout, so every verified position, the
+     bottom-peek clearance and the .bowl-floor mask all still hold. It applies
+     only while dipped, so the resting pill is untouched. */
+  box-shadow: 0 0 0 calc(2.5 * var(--s)) #560476;
 }
 .run__label {
   color: var(--yellow);
@@ -949,7 +963,10 @@ img { display: block; }
    are swapped for their calmer variants. */
 .spoon-rig.is-finishing,
 #run.is-finishing { animation: rig-stir-calm 1080ms infinite; }
-#run.is-finishing { border-color: transparent; }
+/* is-finishing is applied ON TOP of is-mixing, so it must carry the same cover
+   for the spoon's head — otherwise the dark rim would reappear for the last
+   few seconds of the mix, which is exactly when the user is watching it. */
+#run.is-finishing { border-color: transparent; box-shadow: 0 0 0 calc(2.5 * var(--s)) #560476; }
 .bowl.is-finishing .bowl__rim,
 .bowl.is-finishing .bowl__body,
 .bowl.is-finishing ~ .bowl-fill { animation: bowl-jiggle-calm 1080ms infinite; }
@@ -1163,22 +1180,21 @@ img { display: block; }
   user-select: none;
   -webkit-user-drag: none;
 }
-/* Pinned to the SCREEN, not to the frame. The chase band is taller than a
-   viewport, so a panel sitting at the frame's bottom-left corner was simply
-   below the fold the whole time you were looking at the band — present, but
-   never on screen. Fixed + a class the observer in hero-chase.js toggles means
-   it rides along for exactly as long as the band is in view, and is gone the
-   rest of the time. (Fixed is not clipped by the band's overflow:hidden — no
-   ancestor here creates a containing block for it.) */
+/* The panel rides the VISIBLE part of the band. In normal scrolling the band is
+   taller than the viewport, so its bottom-left corner — where this used to sit —
+   was below the fold the whole time you were looking at the band: present, but
+   never on screen. `top` is therefore set by hero-chase.js each frame, clamped
+   so the panel stays both inside the band and inside the screen.
+   Note it cannot be position:fixed: in sideways mode the reel's ancestors are
+   transformed, which makes them the containing block for fixed children and
+   threw the panel thousands of pixels off to the left. */
 .hc-controls {
-  position: fixed;
+  position: absolute;
   left: calc(16 * var(--sc));
-  bottom: calc(16 * var(--sc));
+  top: 0;                       /* hero-chase.js keeps this in the visible band */
   z-index: 55;
   cursor: auto;                 /* the band hides the cursor; the panel needs it */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .18s ease;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: calc(5 * var(--sc));
@@ -1186,7 +1202,6 @@ img { display: block; }
   background: rgba(0, 0, 0, .55);
   border-radius: calc(6 * var(--sc));
 }
-.hc-controls.is-onscreen { opacity: 1; pointer-events: auto; }
 .hc-controls label {
   display: flex;
   align-items: center;
@@ -2192,4 +2207,41 @@ body.sideways .pop-stage { position: relative; top: auto; left: auto; width: 100
 .has-mixed .spoon-rig:not(.is-mixing):not(.is-finishing):not(.is-done),
 .has-mixed .run:not(.is-mixing):not(.is-finishing):not(.is-done) {
   animation: none;
+}
+
+/* ── recording mode (recording.js) ────────────────────────────────────────
+   A scripted, cursor-less demo for a clean ~25s screen capture. `body.recording`
+   strips every on-screen control and the OS cursor so nothing but the tool and
+   an animated finger is on screen. */
+body.recording { cursor: none; }
+/* the floating pills (colour / sideways) carry .rec-hide; the in-scene tuning
+   panels have their own classes. !important beats their inline display. */
+body.recording .rec-hide,
+body.recording .hc-controls,
+body.recording .pop-controls { display: none !important; }
+
+/* the demo finger and the "held" thumbnail it carries into a slot */
+.rec-finger,
+.rec-carry {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 90;                 /* above the reel, below the .mixwin modal (100) */
+  pointer-events: none;
+  will-change: transform, opacity;
+  opacity: 0;
+}
+/* wrapper is animated (translate + tap scale); the inner <img> is mirrored so
+   the photographic hand points LEFT, toward the sidebar slots */
+.rec-finger__img {
+  display: block;
+  width: 150px; height: auto;
+  transform: scaleX(-1);
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .38));
+}
+.rec-carry {
+  width: 96px; height: 96px;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .38);
+  transform-origin: 50% 50%;
 }

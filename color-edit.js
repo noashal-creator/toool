@@ -112,6 +112,7 @@
   const btn = document.createElement('button');
   btn.textContent = '🎨 צבעים';
   btn.title = 'צבעי הסרגל';
+  btn.className = 'rec-hide';
   btn.style.cssText =
     'position:fixed;top:14px;right:14px;z-index:2147483646;padding:11px 16px;border-radius:24px;' +
     'border:2px solid #fff;background:#111;color:#fff;font:600 15px/1 -apple-system,Helvetica,Arial,sans-serif;' +

@@ -125,19 +125,34 @@
   applyZoom();
   window.addEventListener('resize', applySize);
 
-  /* the tuning panel is screen-pinned (see .hc-controls), so it is shown for
-     exactly as long as the band is on screen and hidden the rest of the time */
+  /* The tuning panel rides the visible part of the band: its `top` is pinned to
+     the bottom of whatever slice of the band is currently on screen, clamped so
+     it never leaves the band itself. Sitting at the band's own bottom-left put
+     it below the fold whenever the band was taller than the viewport, which is
+     the normal-scrolling case. */
   const panel = section.querySelector('.hc-controls');
-  const showPanel = on => panel && panel.classList.toggle('is-onscreen', on);
+  function parkPanel() {
+    if (!panel) return;
+    const r = section.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(panel).left) || 16;
+    const h = panel.offsetHeight;
+    const want = -r.top + window.innerHeight - h - pad;      // bottom of the visible slice
+    const max = Math.max(pad, r.height - h - pad);
+    panel.style.top = Math.min(Math.max(want, pad), max).toFixed(0) + 'px';
+  }
+  window.addEventListener('scroll', parkPanel, { passive: true });
+  window.addEventListener('resize', parkPanel);
 
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(entries => {
       for (const en of entries) {
-        visible = en.isIntersecting; visible ? start() : stop(); showPanel(visible);
+        visible = en.isIntersecting; visible ? start() : stop();
+        parkPanel();
       }
     }, { threshold: 0.15 });
     io.observe(section);
   } else {
-    visible = true; start(); showPanel(true);
+    visible = true; start();
   }
+  parkPanel();
 })();

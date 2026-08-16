@@ -46,12 +46,17 @@
   const isOn  = () => body.classList.contains('sideways');
   const active = () => isOn() && wideEnough();
 
-  // Discrete slides (stick 1-2-3) — EXCEPT the cow→tomato hero band, which keeps
-  // a DWELL: a held region where you scroll and the spectrum SWEEPS across
-  // inside the slide FIRST, then you move on (as agreed). The pop ring (ambient
-  // carousel) and the intro video (plays on arrival) don't need a scrub region,
-  // so they stay discrete. Length in screen-heights, keyed by element id.
-  const DWELL_VH = { 'hero': 1.5 };
+  /* Sections whose animation is DRIVEN BY SCROLL get a dwell: a held region
+     where the slide stays centred and scrolling scrubs the animation from 0 to
+     1 before the reel moves on. Everything else is a plain stop.
+       · hero — the cow→tomato spectrum sweeps across;
+       · toy-pop-converge — the lollipops gather and scatter again.
+     Without a dwell the animation only has the slide's own entry/exit to play
+     against, so standing on the slide and scrolling did nothing at all. */
+  const DWELL_VH = { 'hero': 1.5, 'toy-pop-converge': 1.5 };
+  /* how much of a dwell one pixel of wheel covers — geared down so a single
+     flick advances part of the animation instead of crossing all of it */
+  const DWELL_GEAR = 0.2;
 
   // ── layout: a segment track (recomputed on enter + resize) ──
   // segs: ordered {start,end,txFrom,txTo} in pos-px — flat during the logo step
@@ -79,7 +84,7 @@
         dwell[kids[i].id] = { start: p, len: len };
         segs.push({ start: p, end: p + len, txFrom: tx, txTo: tx });   // dwell: held centred
         p += len;
-        snaps.push(p);                                    // dwell end (still centred, anim = 1)
+        snaps.push(p);                                    // the far end of the sweep
       }
       if (i < N - 1) {                                    // transition to the next slide
         segs.push({ start: p, end: p + slideW, txFrom: tx, txTo: -(i + 1) * slideW });
@@ -106,7 +111,7 @@
 
   // ── motion: inertia toward target, gentle idle-settle ──
   let pos = 0, target = 0, raf = 0, settleTimer = 0;
-  const LERP = 0.18, SETTLE_MS = 120;   // LERP: smooth glide between slides; SETTLE_MS: land on a slide promptly
+  const LERP = 0.18;                    // smooth glide between stops
 
   function nearestSnap(v) {
     let best = snaps[0], bd = Infinity;
@@ -118,7 +123,27 @@
     return snaps[Math.max(0, Math.min(snaps.length - 1, idx + dir))];
   }
 
-  function frame() {
+  /* A step between slides is TIMED and eased at both ends, not chased with the
+     lerp. A lerp covers 18% of the gap in its first frame, so leaving the
+     tomato threw a quarter of a slide across the screen in one frame and then
+     crawled — front-loaded, which reads as a hard cut into the next frame.
+     Smootherstep leaves and arrives at zero speed, so the slide is handed over
+     rather than snapped. The lerp still handles the scrub, where following the
+     finger closely is the whole point. */
+  const STEP_MS = 620;
+  let tween = null;
+  const smootherstep = k => k * k * k * (k * (k * 6 - 15) + 10);
+
+  function frame(now) {
+    now = now || performance.now();
+    if (tween) {
+      const k = Math.min(1, (now - tween.t0) / STEP_MS);
+      pos = tween.from + (tween.to - tween.from) * smootherstep(k);
+      applyTransforms(pos); ping();
+      if (k >= 1) { tween = null; pos = target; applyTransforms(pos); ping(); raf = 0; return; }
+      raf = requestAnimationFrame(frame);
+      return;
+    }
     const d = target - pos;
     if (Math.abs(d) < 0.5) { pos = target; applyTransforms(pos); ping(); raf = 0; return; }
     pos += d * LERP;
@@ -129,25 +154,16 @@
   function ping() { window.dispatchEvent(new Event('scroll')); }  // feeds the set-pieces
   function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 
-  // true while target sits strictly inside a dwell (endpoints are snaps)
-  function inDwellInterior(v) {
-    for (const id in dwell) {
-      const d = dwell[id];
-      if (v > d.start + 1 && v < d.start + d.len - 1) return true;
-    }
-    return false;
+  /* Every move now lands on a stop by construction (one stop per gesture), so
+     the old "settle to the nearest snap shortly after free scrolling stops"
+     pass — and the dwell-interior exception it needed — are gone with it. */
+  function step(dir) { goToSnap(neighborSnap(target, dir)); }
+  function goToSnap(s) {
+    if (settleTimer) { clearTimeout(settleTimer); settleTimer = 0; }
+    target = clampPos(s);
+    tween = { from: pos, to: target, t0: performance.now() };   // eased, both ends
+    kick();
   }
-  function armSettle() {
-    if (settleTimer) clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      settleTimer = 0;
-      if (inDwellInterior(target)) return;   // resting inside a dwell → don't yank; watch the animation
-      target = nearestSnap(target);          // transition/logo → land cleanly on the nearest centred slide
-      kick();
-    }, SETTLE_MS);
-  }
-  function nudge(delta) { target = clampPos(target + delta); kick(); armSettle(); }
-  function goToSnap(s)  { if (settleTimer) { clearTimeout(settleTimer); settleTimer = 0; } target = clampPos(s); kick(); }
 
   // ── input ──
   function typingElsewhere() {
@@ -158,13 +174,65 @@
     return false;
   }
 
+  /* Two behaviours, and which one you get depends on where you are:
+
+     · ON A DWELL — scrolling SCRUBS the animation. Continuous, geared down, no
+       stepping: the whole point is that the spectrum / the lollipops move under
+       your finger. (Stepping through it in thirds, which is what this did
+       first, read as random: the thing jumped, then sat still.)
+     · ANYWHERE ELSE — one stop per gesture. Adding every wheel delta to the
+       position meant a single trackpad flick — a long stream of events, inertia
+       included — could cross several slides at once. Now the first meaningful
+       delta of a gesture moves exactly one stop and the rest of that gesture is
+       ignored, a gesture ending after GESTURE_GAP of quiet. That lock is also
+       what stops the inertia tail from carrying you straight out of a dwell the
+       moment its animation finishes. */
+  const GESTURE_GAP = 170;   // ms of no wheel events that ends a gesture
+  const STEP_MIN = 12;       // px of delta before a gesture counts as a move
+  let wheelLock = false, wheelLast = 0, wheelAcc = 0;
+  function dwellAt(v) {
+    for (const id in dwell) {
+      const d = dwell[id];
+      if (v >= d.start - 1 && v <= d.start + d.len + 1) return d;
+    }
+    return null;
+  }
   function onWheel(e) {
     if (!active()) return;
     e.preventDefault();                                            // no native scroll in this mode
+    const now = performance.now();
+    if (now - wheelLast > GESTURE_GAP) { wheelLock = false; wheelAcc = 0; }   // a new gesture
+    wheelLast = now;
     let d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     if (e.deltaMode === 1) d *= 16;                               // lines → px
     else if (e.deltaMode === 2) d *= VH;                          // pages → px
-    if (d) nudge(d);
+
+    const dw = dwellAt(target);
+    if (dw) {
+      /* The lock is checked BEFORE scrubbing, not cleared by it: a gesture that
+         has already carried you out of one region must not then pour its
+         inertia tail into the next one — which is exactly what let a single
+         flick run through the lollipops, across a slide, and halfway into the
+         spectrum. */
+      if (wheelLock) return;
+      const next = target + d * DWELL_GEAR;
+      if (next > dw.start && next < dw.start + dw.len) {           // scrub in place
+        tween = null;                     // the scrub follows the finger, not a tween
+        target = clampPos(next); kick();
+        return;
+      }
+      wheelLock = true; wheelAcc = 0;                              // ran off an end
+      goToSnap(next <= dw.start ? neighborSnap(dw.start, -1)
+                                : neighborSnap(dw.start + dw.len, +1));
+      return;
+    }
+
+    if (wheelLock) return;                                         // already stepped for this one
+    wheelAcc += d;
+    if (Math.abs(wheelAcc) < STEP_MIN) return;                    // ignore jitter
+    const dir = wheelAcc > 0 ? 1 : -1;
+    wheelLock = true; wheelAcc = 0;
+    step(dir);
   }
 
   function onKey(e) {
@@ -186,6 +254,7 @@
   const INTERACTIVE = 'a,button,input,textarea,select,label,iframe,[role],[draggable="true"]';
   function onDown(e) {
     if (!active() || e.button !== 0 || e.target.closest(INTERACTIVE)) return;
+    tween = null;                                                // the hand takes over
     dragging = true; dragMoved = false; dragX0 = e.clientX; dragT0 = target;
     if (settleTimer) { clearTimeout(settleTimer); settleTimer = 0; }
   }
@@ -193,11 +262,20 @@
     if (!dragging) return;
     const dx = e.clientX - dragX0;
     if (Math.abs(dx) > 3) dragMoved = true;
-    target = clampPos(dragT0 - dx);
-    pos = target; applyTransforms(pos); ping();                   // 1:1 while held
+    /* held 1:1, but fenced in by the two neighbouring stops — a long drag can
+       no longer carry you across several slides in one go */
+    const lo = neighborSnap(dragT0, -1), hi = neighborSnap(dragT0, +1);
+    target = Math.max(Math.min(clampPos(dragT0 - dx), hi), lo);
+    pos = target; applyTransforms(pos); ping();
     if (dragMoved) e.preventDefault();
   }
-  function onUp() { if (!dragging) return; dragging = false; if (dragMoved) armSettle(); }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    if (!dragMoved) return;
+    const moved = target - dragT0;                                // one stop, or back
+    goToSnap(Math.abs(moved) > 40 ? neighborSnap(dragT0, moved > 0 ? 1 : -1) : nearestSnap(dragT0));
+  }
 
   // ── progress fed to the set-pieces (hero.js / toys.js). For a slide with a
   //    dwell, it's the dwell fraction (0→1) computed from the eased pos, so the
@@ -214,7 +292,21 @@
     const pinLeft = reelPin.getBoundingClientRect().left;
     return Math.max(0, Math.min(1, (pinLeft - r.left) / r.width + 0.5));
   }
-  window.reelMode = { active, progress };
+  /* recording.js drives a scripted tour through the reel. enable() turns the
+     mode on WITHOUT persisting (the demo shouldn't rewrite the user's saved
+     preference); go(i)/count() step through the same snaps the input handlers
+     use, so the set-piece dwells scrub exactly as they do by hand. */
+  window.reelMode = {
+    active, progress,
+    enable() { wantsOn = true; apply(); },
+    count() { return snaps.length; },
+    go(i) {
+      const n = snaps.length;
+      const idx = Math.max(0, Math.min(n - 1, i | 0));
+      goToSnap(snaps[idx]);
+    },
+    goEnd() { goToSnap(maxPos); },
+  };
 
   // ── enter / leave ──
   // Re-entrancy guard: nudgeOthers() dispatches a synthetic `resize`, and the
@@ -276,10 +368,10 @@
     'border:2px solid #fff;background:#111;color:#fff;font:600 15px/1 -apple-system,Helvetica,Arial,sans-serif;' +
     'cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.5)';
   const btn = document.createElement('button');      // mode: sideways ⇄ vertical
-  btn.type = 'button'; btn.style.cssText = PILL + ';top:62px';
+  btn.type = 'button'; btn.className = 'rec-hide'; btn.style.cssText = PILL + ';top:62px';
   document.body.appendChild(btn);
   const logoBtn = document.createElement('button');  // logo band: short ⇄ long (sideways only)
-  logoBtn.type = 'button'; logoBtn.style.cssText = PILL + ';top:110px';
+  logoBtn.type = 'button'; logoBtn.className = 'rec-hide'; logoBtn.style.cssText = PILL + ';top:110px';
   document.body.appendChild(logoBtn);
 
   let wantsOn = false, longLogo = false, running = false;

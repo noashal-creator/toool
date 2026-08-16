@@ -78,17 +78,12 @@
     idleRaf = 0;
   }
 
-  /* ── sideways handoff: drifts on its own, scroll takes over ──────────────
-     While the reel owns the hero slide, the strip offset is scroll-sweep PLUS
-     an idle-only drift, kept as one continuous sum so neither transition jumps:
-       · sweep = p·travel, p = the slide's dwell fraction (0→1) — scrolling
-         drives it, sweeping cow→tomato across inside the held-centred slide;
-       · drift accrues ONLY once p has been still for a moment, so the instant
-         you scroll the drift steps aside and the sweep reads cleanly, then it
-         drifts again when you stop.
-     mod stripW + the seamless clone hide the wrap. */
+  /* ── sideways: the sweep is the scroll ───────────────────────────────────
+     While the reel owns the hero slide the strip offset is p·travel, and
+     nothing else: p is the slide's dwell fraction (0→1), scrubbed by scrolling
+     while the slide is held centred, so the cow→tomato spectrum moves exactly
+     as much as you scroll and stops exactly where you stop. */
   let swRaf = 0, swDrift = 0, swPrevP = null, swLastMove = 0, swLast = 0;
-  const SW_IDLE_MS = 140;
   function swTick(now) {
     if (!window.reelMode?.active() || travel <= 0 || stripW <= 0) { swStop(); return; }
     if (!swLast) swLast = now;
@@ -98,7 +93,10 @@
     const p = (raw == null) ? (swPrevP == null ? 0 : swPrevP) : raw;
     if (swPrevP !== null && Math.abs(p - swPrevP) > 1e-4) swLastMove = now;   // scrolling
     swPrevP = p;
-    if (now - swLastMove > SW_IDLE_MS) swDrift += idleSpeed * dt;             // idle → drift
+    /* No idle drift here any more. It kept the band panning on its own between
+       gestures, which meant the strip was almost always moving by itself — so
+       scrolling never read as the thing driving it, and the band felt random.
+       In sideways mode the sweep is now exactly what the scroll says it is. */
     const off = (((p * travel + swDrift) % stripW) + stripW) % stripW;
     track.style.transform = 'translate3d(' + (-off) + 'px,0,0)';
     swRaf = requestAnimationFrame(swTick);
@@ -131,9 +129,8 @@
        sweep the strip, scrubbed from the section's horizontal progress instead
        of vertical scroll. No self-pin (the reel owns positioning). */
     if (window.reelMode?.active()) {
-      /* sideways: the strip drifts on its own, and the moment you scroll the
-         drift steps aside and your scroll sweeps the spectrum across inside the
-         slide (see swTick). */
+      /* sideways: your scroll sweeps the spectrum across inside the slide,
+         and only your scroll — see swTick. */
       swStart();
       return;
     }

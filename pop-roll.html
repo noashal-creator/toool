@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — roll</title>
+<style>
+  :root { --bg:#E4002B; --ink:#000; }
+  * { box-sizing:border-box; }
+  html, body { background:#0c0c0e; }
+  body { margin:0; color:#fff; overflow-x:hidden;
+         font:400 13px/1.4 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+
+  .lead { padding:20px 26px 12px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .lead h1 { font-size:16px; font-weight:600; margin:0; }
+  .lead p  { margin:0; color:rgba(255,255,255,.45); font-size:12px; }
+  .sw { display:flex; gap:7px; margin-inline-start:auto; }
+  .sw button { width:24px; height:24px; border-radius:50%; padding:0; cursor:pointer;
+               border:1px solid rgba(255,255,255,.25); appearance:none; -webkit-appearance:none; }
+  .sw button.on { outline:2px solid #fff; outline-offset:2px; }
+
+  /* runway — JS owns the height; .stage inside gets pinned to the screen */
+  .band { position:relative; }
+  .band__tag { position:absolute; top:14px; inset-inline-start:26px; z-index:6;
+               font-size:12px; color:rgba(255,255,255,.55); mix-blend-mode:difference; }
+  .stage { position:absolute; top:0; left:0; width:100%; height:100vh;
+           overflow:hidden; background:var(--bg); container-type:size; }
+
+  /* The WORLD travels, not just the figure — that is what makes it read like
+     the cow band. The strip is several screens wide and slides sideways under
+     a pinned camera, so vertical scroll becomes a sideways journey.
+
+     direction:ltr matters. The page is RTL for the Hebrew, but the strip is
+     wider than the stage, and `inset:0` + an explicit width over-constrains
+     left/right/width — under RTL the RIGHT edge wins, which parked the whole
+     4608px world at left:-3168 and every figure off-screen. The stage is a
+     coordinate system, not text, so it runs LTR and pins its own left edge. */
+  .stage { direction:ltr; }
+  .strip { position:absolute; top:0; bottom:0; left:0; right:auto;
+           will-change:transform; }
+  .ground { position:absolute; left:0; right:auto; width:100%; height:200%;
+            top:var(--ground, 74%); background:rgba(0,0,0,.16); }
+
+  .fig { position:absolute; left:0; right:auto; top:0; height:10%; width:auto;
+         transform-origin:50% 50%; will-change:transform;
+         user-select:none; pointer-events:none; }
+
+  .tail { height:36vh; display:flex; align-items:center; justify-content:center;
+          color:rgba(255,255,255,.3); font-size:12px; }
+</style>
+</head>
+<body>
+
+<div class="lead">
+  <h1>ארבע אנימציות — גדולות, נעוצות, נגללות הצידה</h1>
+  <p>גללי למטה</p>
+  <span class="sw" id="sw"></span>
+</div>
+
+<section class="band" data-anim="somersault"><div class="band__tag">01 · סלטה</div></section>
+<section class="band" data-anim="trail"><div class="band__tag">02 · שובל — משאירה את עצמה מאחור</div></section>
+<section class="band" data-anim="approach"><div class="band__tag">03 · התקרבות — מהאופק עד למסך מלא</div></section>
+<section class="band" data-anim="stomp"><div class="band__tag">04 · רקיעה — כל נחיתה מטלטלת את העולם</div></section>
+
+<p class="tail">תגידי איזו</p>
+
+<script>
+const POPS = [1,2,3,4,5].map(n => `assets/troll-cut/w${n}.png`);
+for (const s of POPS) { const im = new Image(); im.src = s; }
+
+const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NARROW  = () => innerWidth <= 860;
+
+const PIN_SCREENS = 2.2;
+const GROUND = 74;
+
+/* Measured opaque bounds of the five PNGs on their shared 640px canvas.
+   The set is registered on the SOLES (all at y 638) with a matched body width
+   (296 for all five), so the canvas is mostly empty above the short stages —
+   the tooth carries 246px of nothing over its head. Two things break if you
+   ignore that: the box centres instead of the figure, and rotation pivots the
+   figure around a point floating above it. Everything below places and spins
+   by these numbers rather than by the box. */
+const CONTENT_H   = [393, 474, 464, 512, 638];   // visible height, canvas px
+const CONTENT_TOP = [246, 165, 175, 127,   1];   // empty canvas above it
+/* the visible middle, as a share of the box — both the anchor and the pivot */
+const MID = CONTENT_TOP.map((t, k) => (t + t + CONTENT_H[k] - 1) / 2 / 640);
+/* visible height as a share of the box */
+const VIS = CONTENT_H.map(h => h / 640);
+
+const COLOURS = ['#E4002B','#F0D800','#560476','#00961C','#0b0b0b','#f2f2ef'];
+
+/* Each animation returns the strip offset plus a list of figures.
+   `p` is 0..1 across the pin, and travel, rotation, scale and the tooth->troll
+   stage all come off that one value — so scrubbing back rewinds everything. */
+const ANIMS = {
+
+  /* the one you picked. A whole turn per hop so it lands upright each time.
+     HOP_H is deliberately small: a figure this large sweeps its half-DIAGONAL
+     when it tumbles, and at 14 it measured 59px out of the top of the frame. */
+  somersault(p) {
+    const HOPS = 5, SIZE = 58, HOP_H = 10, DRIFT = 16;
+    const phase = (p * HOPS) % 1;
+    const air = Math.sin(phase * Math.PI);
+    const i = clamp(Math.floor(p * 5), 0, 4);
+    const cH = SIZE * VIS[i];
+    /* Pivot on the visible middle. Spinning about the BOX centre made the tooth
+       orbit a point 95px above itself — a swing, not a tumble. Anchoring and
+       pivoting on the same point keeps it there through the whole rotation. */
+    return { stripW: 320, offset: -(320 - 100) * p, figs: [{
+      i,
+      x: 50 - DRIFT/2 + DRIFT * p,
+      y: GROUND - cH / 2 - air * HOP_H,     // soles meet the ground on landing
+      h: SIZE, rot: (Math.floor(p * HOPS) + phase) * 360,
+      anchor: `-50%,-${(MID[i] * 100).toFixed(3)}%`, pivot: MID[i]
+    }]};
+  },
+
+  /* Walks the world past and sheds each earlier self as it goes, so by the end
+     the whole lineage is standing behind you across the landscape. The strip is
+     the only one of these you can look BACK along. */
+  trail(p) {
+    /* The pan is deliberately SHORT. At 320cqw the camera outran its own trail:
+       every copy was shed behind you and by the end all four stood off the left
+       edge, so you never saw more than one figure at a time — which is the
+       whole point of this one. At 50 the last frame holds all five. */
+    const stripW = 150, SIZE = 44;
+    const TRAVEL = stripW - 100;
+    /* horizon well below the shared 74: the lineup is short, and at 74 it left
+       341px of air above against 215 below. 86.5 splits it evenly. */
+    const GND = 86.5;
+    /* Everything is positioned in STRIP coordinates, which is the only way the
+       shed copies stay put in the world while the camera moves on. The camera
+       sees strip-x [TRAVEL*p, TRAVEL*p + 100], so the centre of the frame is
+       always at TRAVEL*p + 50 — that is where the live figure walks, and where
+       each copy is left standing at the moment it is shed. Spacing them a flat
+       18cqw apart instead put the whole lineage 4547px off the left edge. */
+    const centre = q => TRAVEL * q + 70;   // 70, not 50: centres the finished group
+    const figs = [];
+    for (let k = 1; k <= 4; k++) {
+      const born = k / 5;
+      if (p <= born) continue;                       // not shed yet
+      figs.push({ i: k - 1, y: GND, h: SIZE, rot: (k - 2) * 3,
+                  anchor:'-50%,-100%', onStrip:true, sx: centre(born) });
+    }
+    const step = clamp(Math.floor(p * 5), 0, 4);
+    const within = (p * 5) % 1;
+    figs.push({ i: step, y: GND - Math.abs(Math.sin(within * Math.PI)) * 7,
+                h: SIZE, rot: Math.sin(p * 22) * 7, anchor:'-50%,-100%',
+                onStrip:true, live:true, sx: centre(p) });
+    return { stripW, offset: -TRAVEL * p, ground: GND, figs };
+  },
+
+  /* Straight at the camera: a speck on the horizon that ends as a troll filling
+     the frame. Scale does all the work — the strip barely moves, just enough
+     parallax to say the ground is passing. */
+  approach(p) {
+    const e = p * p;                                  // accelerates as it nears
+    return { stripW: 150, offset: -(150 - 100) * p * 0.5, figs: [{
+      i: clamp(Math.floor(p * 5), 0, 4),
+      x: 50 + Math.sin(p * 7) * 6 * (1 - e),          // wanders while far off
+      /* The end frame has to FIT. Growing to 104% while standing at y 78 put the
+         final troll 258px above the frame and cut its head off — which is the
+         one thing worth seeing. It now walks further down as it grows, so the
+         top of the head lands just inside. */
+      y: GROUND - 22 + e * 40,
+      h: 4 + e * 82, rot: Math.sin(p * 9) * 3 * (1 - e), anchor:'-50%,-100%'
+    }]};
+  },
+
+  /* Heavy. It lands, and the landing jolts the whole world — the shake is
+     applied to the STRIP, not the figure, so it reads as impact rather than
+     wobble. Each landing is also where it changes. */
+  stomp(p) {
+    /* BIG. A figure standing on the horizon can never be taller than the horizon
+       itself, so the only way to grow it is to drop the ground — at GROUND 74
+       the ceiling was 636px and 52 was already close to it. The horizon goes to
+       88, which buys 757px of standing room and reads like the cow band: low
+       skyline, subject towering over it. The apex lift and the tilt come down to
+       pay for the extra size (7 and 5, from 12 and 9) — at this scale every
+       degree of tilt throws ~5px of shoulder above the head. */
+    const STEPS = 5, SIZE = 79, LIFT = 7;
+    const phase = (p * STEPS) % 1;
+    const idx = clamp(Math.floor(p * STEPS), 0, 4);
+    const air = Math.sin(phase * Math.PI);
+    /* decaying jolt right after each landing */
+    const since = phase < 0.12 ? phase / 0.12 : 1;
+    const jolt = (1 - since) * Math.sin(since * Math.PI * 5) * 2.4;
+    const squash = phase < 0.1 ? 1 - (1 - phase/0.1) * 0.18 : 1;
+
+    /* Centring has to go by the PIXELS YOU SEE, not the box. All five PNGs sit
+       on one 640px canvas with the soles registered at 638, but their visible
+       heights run 393..638 — the tooth carries 246px of empty canvas above it.
+       Anchoring the box to a fixed horizon therefore hung the short stages ~117px
+       below centre while the troll nearly touched the ceiling. Scaling them to a
+       common height is not the way out: the content width is a matched 296 across
+       all five, so it would have swollen the tooth to 481 wide.
+       Instead each stage is placed by its own visible middle, and the horizon
+       steps down to meet the soles. The step lands on the same frame as the image
+       swap and the impact jolt, which is exactly where it is invisible. */
+    const cH   = SIZE * VIS[idx];                  // visible height, share of stage
+    const feet = 50 + cH / 2;                      // soles, once the content is centred
+
+    return { stripW: 260, offset: -(260 - 100) * p + jolt, joltY: jolt * 0.6,
+      ground: feet, figs: [{
+      i: idx,
+      x: 24 + p * 52,
+      y: feet + SIZE * 2 / 640 - air * LIFT,       // box bottom is 2 canvas px under the soles
+      h: SIZE, rot: Math.sin(phase * Math.PI * 2) * 5, anchor:'-50%,-100%',
+      sy: squash
+    }]};
+  },
+};
+
+function setup(band) {
+  const name = band.dataset.anim;
+  band.insertAdjacentHTML('beforeend',
+    `<div class="stage"><div class="strip"><div class="ground"></div></div></div>`);
+  const stage = band.querySelector('.stage');
+  const strip = band.querySelector('.strip');
+  const pool = [];
+  let pinLeft = 0, pinW = 0, pinRange = 0;
+
+  function place(p) {
+    const out = ANIMS[name](p);
+    strip.style.width = out.stripW + '%';
+    // the horizon is per-animation: a big figure needs a low one to stand on
+    stage.style.setProperty('--ground', (out.ground ?? GROUND) + '%');
+    strip.style.transform =
+      `translate3d(${out.offset}cqw, ${(out.joltY||0)}cqh, 0)`;
+
+    while (pool.length < out.figs.length) {
+      const im = document.createElement('img');
+      im.className = 'fig'; im.alt = '';
+      /* figures that belong to the WORLD go inside the strip so they travel
+         with it; the live one sits on the stage so it stays on screen */
+      strip.appendChild(im); pool.push(im);
+    }
+    pool.forEach((im, k) => {
+      const f = out.figs[k];
+      if (!f) { im.style.display = 'none'; return; }
+      im.style.display = '';
+      if (im._i !== f.i) { im.src = POPS[f.i]; im._i = f.i; }
+      im.style.height = f.h + '%';
+      const x = f.onStrip ? (f.sx ?? f.x) : (f.x - out.offset);
+      /* Pivot and anchor must be the SAME point, and then (x,y) lands exactly on
+         it whatever the rotation: with transform-origin O the matrix is
+         T(O)·M·T(-O), so O maps to O + M(0) — and M(0) is just the translate
+         pair. Give the anchor the same fraction as the origin and the two Os
+         cancel. Default 0.5 is the plain box centre. */
+      const pivot = f.pivot ?? 0.5;
+      im.style.transformOrigin = `50% ${(pivot * 100).toFixed(3)}%`;
+      /* Keep the squash planted. scaleY about a pivot at fraction c lifts the
+         soles by (1-c)(1-s) of the height — half of it at the centre, which
+         measured as a 40px hover at every landing. Put exactly that back. It
+         sits LEFT of the scale, so it applies after it, in unscaled percentages. */
+      const squash = f.sy
+        ? ` translateY(${((1 - pivot) * (1 - f.sy) * 100).toFixed(3)}%) scaleY(${f.sy})` : '';
+      im.style.transform =
+        `translate(${x}cqw, ${f.y}cqh) translate(${f.anchor}) `
+        + `rotate(${f.rot}deg)` + squash;
+    });
+  }
+
+  function measure() {
+    if (REDUCED || NARROW()) {
+      band.style.height = '100vh'; stage.style.cssText = ''; place(0); return;
+    }
+    const r = band.getBoundingClientRect();
+    pinLeft = r.left; pinW = band.clientWidth;
+    pinRange = Math.round(innerHeight * PIN_SCREENS);
+    band.style.height = (innerHeight + pinRange) + 'px';
+    onScroll();
+  }
+
+  /* fixed, not sticky — body carries overflow-x:hidden, which makes body a
+     scroll container and stops sticky ever sticking. hero.js pins the cow the
+     same way for the same reason. */
+  function onScroll() {
+    if (!pinRange) return;
+    const top = band.getBoundingClientRect().top, s = stage.style;
+    if (top > 0) { s.position='absolute'; s.top='0'; s.bottom='auto'; s.left='0'; s.width='100%'; place(0); }
+    else if (-top < pinRange) { s.position='fixed'; s.top='0'; s.bottom='auto';
+      s.left=pinLeft+'px'; s.width=pinW+'px'; place(clamp(-top/pinRange,0,1)); }
+    else { s.position='absolute'; s.top='auto'; s.bottom='0'; s.left='0'; s.width='100%'; place(1); }
+  }
+
+  addEventListener('scroll', onScroll, { passive:true });
+  addEventListener('resize', measure);
+  measure();
+  return { name, band, stage, strip, place, measure, get pinRange(){ return pinRange; } };
+}
+
+window.BANDS = [...document.querySelectorAll('.band')].map(setup);
+
+const swWrap = document.getElementById('sw');
+COLOURS.forEach((c, k) => {
+  const b = document.createElement('button');
+  b.style.background = c; b.className = k === 0 ? 'on' : '';
+  b.onclick = () => { document.documentElement.style.setProperty('--bg', c);
+    swWrap.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); };
+  swWrap.appendChild(b);
+});
+</script>
+</body>
+</html>
