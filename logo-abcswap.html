@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — החלפות פונטים ABC</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<style>
+:root{ --red:#CC0000; --blue:#1A6FFF; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px;direction:rtl}
+.sub{opacity:.62;margin:0 0 20px;font-size:14px;max-width:960px;line-height:1.6;direction:rtl}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:960px}
+figure{min-width:0;margin:0}
+figcaption{margin-top:9px;font-size:16px;font-weight:700;direction:rtl}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+.band{position:relative;width:100%;min-width:0;max-width:100%;aspect-ratio:1288/396;
+  background:var(--blue);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.word{width:max-content;white-space:nowrap;line-height:1;letter-spacing:-.055em;margin:0}
+.ltr{display:inline-block;vertical-align:baseline;font-size:1em;text-transform:lowercase;
+  color:var(--red);-webkit-text-stroke:2px #000;paint-order:stroke fill}
+/* zero-size inline-block: its bottom edge IS the line's baseline */
+.bl{display:inline-block;width:0;height:0;overflow:hidden;vertical-align:baseline}
+</style></head><body>
+<h2>TOOOL — החלפות פונטים מהספרייה שלך 👇</h2>
+<p class="sub">31 משפחות ABC מתחלפות. כל התיקונים בפנים: <b>נרמול גובה-x</b> (הגופנים מתיישרים אופטית), <b>איזון רוחב</b> — כל פוזה מורכבת כקבוצה כך שהמילה תמיד באותו רוחב, <b>בלי outline מהבהב</b>, והתאמה על תיבת הדיו כך ששום אות לא נחתכת. מה שמשתנה בין הווריאציות הוא <b>הקצב</b>.</p>
+<div class="grid" id="grid"></div>
+
+<script>
+const FONTS=['"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"','"ABC Gravity Trial"',
+ '"ABC Gravity Wide Trial"','"ABC Gravity Expanded Trial"','"ABC Gravity Compressed Trial"',
+ '"ABC Gravity Extra Condensed Trial"','"ABC Ginto Nord Trial"','"ABC Ginto Condensed Trial"',
+ '"ABC Ginto Rounded Nord Trial"','"ABC Arizona Serif Trial"','"ABC Arizona Flare Trial"',
+ '"ABC Arizona Mix Trial"','"ABC Gramercy Display Trial"','"ABC Gramercy Fine Trial"',
+ '"ABC Diatype Extended Trial"','"ABC Diatype Compressed Trial"','"ABC Diatype Rounded Trial"',
+ '"ABC Favorit Expanded Trial"','"ABC Favorit Compressed Trial"','"ABC Camera Rounded Trial"',
+ '"ABC Ikarus Contrast Trial"','"ABC Ikarus Flair Trial"','"ABC Daily Slab Trial"',
+ '"ABC Daily Scotch Trial"','"ABC Estragon Trial"','"ABC Asfalt Expanded Trial"',
+ '"ABC Bingo Trial"','"ABC Cowboy Trial"','"ABC Honeymoon Trial"','"ABC Bubblegum Trial"'];
+const WEIGHTS=['200','300','400','500','700','800','900'];
+const XH=0.52, MAX_H=0.80, TARGET=3.15, TOL=0.12;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const cx=document.createElement('canvas').getContext('2d');
+
+const CAND={};
+function buildMetrics(){
+  for(const ch of 'tol'){
+    const list=[];
+    for(const fam of FONTS) for(const w of WEIGHTS) for(const st of ['normal','italic']){
+      cx.font=`${st} ${w} 200px ${fam}`;
+      const mo=cx.measureText('o');
+      const xh=(mo.actualBoundingBoxAscent+mo.actualBoundingBoxDescent)/200;
+      if(!(xh>0.05)) continue;
+      const sizeEm=XH/xh;
+      const m=cx.measureText(ch);
+      const ascR=m.actualBoundingBoxAscent/200, descR=m.actualBoundingBoxDescent/200;
+      if((ascR+descR)*sizeEm>MAX_H) continue;
+      /* the FONT's own ascent/descent — with line-height:1 the baseline sits
+         inside the box in this proportion, which is how the true ink box is
+         located below */
+      const fA=(m.fontBoundingBoxAscent||ascR*200)/200, fD=(m.fontBoundingBoxDescent||descR*200)/200;
+      /* where the ink actually starts and ends inside the advance box — a
+         glyph with a wide left side bearing sits right of its box, which made
+         the centred word look pushed to the right */
+      const blR=(m.actualBoundingBoxLeft||0)/200, brR=(m.actualBoundingBoxRight||m.width)/200;
+      list.push({fam,w,st,sizeEm,ascR,descR,fA,fD,blR,brR,adv:(m.width/200)*sizeEm});
+    }
+    CAND[ch]=list;
+  }
+}
+function apply(el,p){
+  el.style.fontFamily=p.fam+', "Helvetica Neue", sans-serif';
+  el.style.fontWeight=p.w; el.style.fontStyle=p.st;
+  el.style.fontSize=p.sizeEm.toFixed(3)+'em';
+  el.dataset.asc=p.ascR; el.dataset.desc=p.descR;
+  el.dataset.fa=p.fA;    el.dataset.fd=p.fD;
+  el.dataset.bl2=p.blR;  el.dataset.br2=p.brR;
+}
+/* compose the pose as a SET so the word never grows or shrinks */
+function balance(chars,p){
+  for(let i=0;i<24;i++){
+    const t=p.reduce((s,x)=>s+x.adv,0);
+    if(Math.abs(t-TARGET)<=TOL) break;
+    const wider=t<TARGET;
+    const j=p.reduce((m,x,k)=>(wider? x.adv<p[m].adv : x.adv>p[m].adv)?k:m,0);
+    let best=p[j];
+    for(let a=0;a<8;a++){const c=pick(CAND[chars[j]]); if(wider? c.adv>best.adv : c.adv<best.adv) best=c;}
+    p[j]=best;
+  }
+  return p;
+}
+function fit(word,band,letters){
+  /* Fit and centre on the TRUE ink box.
+     The baseline is read from a zero-size inline-block probe rather than
+     estimated from font metrics — estimating it left the word sitting low in
+     the band (52px of air above, 22 below). Every letter shares that baseline,
+     so the ink box is simply baseline ∓ the measured ascent/descent. */
+  word.style.transform='none';
+  const b=band.getBoundingClientRect();
+  const probe=word.querySelector('.bl');
+  const baseline=probe? probe.getBoundingClientRect().bottom : null;
+  let L=1e9,R=-1e9,T=1e9,B=-1e9,xTop=1e9;
+  letters.forEach(el=>{
+    const q=el.getBoundingClientRect();
+    const fs=parseFloat(getComputedStyle(el).fontSize);
+    const bl=baseline!==null? baseline : q.bottom;
+    const top=bl-(+el.dataset.asc||0.7)*fs;
+    /* horizontal bounds from the real ink, not the advance box */
+    L=Math.min(L, q.left - (+el.dataset.bl2||0)*fs);
+    R=Math.max(R, q.left + (+el.dataset.br2||0)*fs);
+    T=Math.min(T, top);
+    if(el.textContent==='o') xTop=Math.min(xTop,top);   // the x-height mass
+    /* "toool" has no descenders, so the baseline IS the visual bottom */
+    B=Math.max(B, bl);
+  });
+  if(xTop===1e9) xTop=T;
+  const w=R-L;
+  if(!(w>0)) return;
+
+  /* Optical centring: the visual mass of "toool" is the row of o's, not the
+     thin ascenders of t and l. Centring the full box is arithmetically correct
+     but reads as sitting low, so bias the centre toward the x-height band. */
+  const OPTICAL = 0.62;                       // 0 = full box, 1 = x-height only
+  const cFull = (T+B)/2, cX = (xTop+B)/2;
+  const inkCy = cFull + (cX-cFull)*OPTICAL;
+
+  /* Because that centre is off the geometric middle, the ink reaches further
+     on one side than the other — so the scale has to come from the LARGER
+     half-extent around it, not from the box height. Using the height was what
+     let the t and l get clipped once the centre moved. */
+  const half = Math.max(inkCy-T, B-inkCy);
+  if(!(half>0)) return;
+  const k = Math.min((b.width*0.88)/w, (b.height*0.5*0.94)/half);
+
+  const wr=word.getBoundingClientRect();
+  const cx0=wr.left+wr.width/2, cy0=wr.top+wr.height/2;
+  const tx=(b.left+b.width/2)-cx0-(((L+R)/2)-cx0)*k;
+  const ty=(b.top+b.height/2)-cy0-(inkCy-cy0)*k;
+  word.style.transform=`translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${k.toFixed(3)})`;
+}
+
+const V=[
+ ['1 · מדורג מהיר','כל אות בקצב משלה ~0.4–0.7 שנ׳ — תמיד משהו מתחלף', 420, 320, true],
+ ['2 · מדורג רגוע','אותו דבר, ~0.9–1.4 שנ׳ לאות — נושם', 900, 500, true],
+ ['3 · כל המילה יחד','כל חמש האותיות מתחלפות באותו רגע, כל 0.9 שנ׳', 900, 0, false],
+ ['4 · מהיר מאוד','~0.25–0.4 שנ׳ לאות — קצבי ואינטנסיבי', 250, 150, true],
+];
+const grid=document.getElementById('grid');
+document.fonts.ready.then(()=>{
+  buildMetrics();
+  V.forEach(([name,desc,base,jit,stagger])=>{
+    const f=document.createElement('figure');
+    f.innerHTML=`<div class="band"><h1 class="word">`+
+      [...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+'<span class="bl"></span>'+
+      `</h1></div><figcaption>${name}<span>${desc}</span></figcaption>`;
+    grid.appendChild(f);
+    const band=f.querySelector('.band'), word=f.querySelector('.word');
+    const letters=[...f.querySelectorAll('.ltr')], chars=letters.map(e=>e.textContent);
+    const size=()=>{word.style.fontSize=(band.clientWidth*0.30)+'px';};
+    size(); new ResizeObserver(()=>{size();fit(word,band,letters);}).observe(band);
+
+    let p=balance(chars,chars.map(ch=>pick(CAND[ch])));
+    letters.forEach((el,k)=>apply(el,p[k])); fit(word,band,letters);
+
+    const redraw=()=>{p=balance(chars,p); letters.forEach((e,i)=>apply(e,p[i])); fit(word,band,letters);};
+    if(stagger){
+      letters.forEach((el,k)=>{
+        const beat=()=>{ p[k]=pick(CAND[chars[k]]); redraw(); };
+        setTimeout(()=>{beat(); setInterval(beat, base+Math.random()*jit);}, k*110+Math.random()*150);
+      });
+    } else {
+      setInterval(()=>{ chars.forEach((ch,k)=>p[k]=pick(CAND[ch])); redraw(); }, base);
+    }
+  });
+});
+</script>
+</body></html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — גופנים משונים שמתמרפפים</title>
+<style>
+@font-face{font-family:VKablammo; src:url('assets/fonts/var/Kablammo.ttf')      format('truetype-variations')}
+@font-face{font-family:VClimate;  src:url('assets/fonts/var/ClimateCrisis.ttf') format('truetype-variations')}
+@font-face{font-family:VWorkbench;src:url('assets/fonts/var/Workbench.ttf')     format('truetype-variations')}
+@font-face{font-family:VSixtyfour;src:url('assets/fonts/var/Sixtyfour.ttf')     format('truetype-variations')}
+@font-face{font-family:VFraunces; src:url('assets/fonts/var/Fraunces.ttf')      format('truetype-variations');font-weight:1 1000}
+@font-face{font-family:VBigSh;    src:url('assets/fonts/var/BigShoulders.ttf')  format('truetype-variations');font-weight:1 1000}
+@font-face{font-family:VWavefont; src:url('assets/fonts/var/Wavefont.ttf')      format('truetype-variations');font-weight:1 1000}
+@font-face{font-family:VAnybody;  src:url('assets/fonts/var/Anybody.ttf')       format('truetype-variations');font-weight:1 1000;font-stretch:50% 150%}
+@font-face{font-family:VBricolage;src:url('assets/fonts/var/Bricolage.ttf')     format('truetype-variations');font-weight:1 1000;font-stretch:50% 150%}
+
+:root{ --red:#CC0000; --blue:#1A6FFF; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px;direction:rtl}
+.sub{opacity:.62;margin:0 0 20px;font-size:14px;max-width:960px;line-height:1.6;direction:rtl}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:960px}
+figure{min-width:0;margin:0}
+figcaption{margin-top:9px;font-size:16px;font-weight:700;direction:rtl}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+.band{position:relative;width:100%;min-width:0;max-width:100%;aspect-ratio:1288/396;background:var(--blue);
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.word{width:max-content;white-space:nowrap;line-height:1;letter-spacing:-.03em;margin:0}
+.ltr{display:inline-block;vertical-align:baseline;font-size:1em;text-transform:lowercase;
+  color:var(--red);-webkit-text-stroke:2px #000;paint-order:stroke fill}
+.ltr:nth-child(1){animation-delay:0s}     .ltr:nth-child(2){animation-delay:-.28s}
+.ltr:nth-child(3){animation-delay:-.56s}  .ltr:nth-child(4){animation-delay:-.84s}
+.ltr:nth-child(5){animation-delay:-1.12s}
+
+/* each face morphs on ITS OWN weird axis — that's where the character is */
+@keyframes mMORF{0%,100%{font-variation-settings:'MORF' 0}50%{font-variation-settings:'MORF' 60}}
+@keyframes mYEAR{0%,100%{font-variation-settings:'YEAR' 1979}50%{font-variation-settings:'YEAR' 2050}}
+@keyframes mSCAN{0%,100%{font-variation-settings:'BLED' 0,'SCAN' -53}50%{font-variation-settings:'BLED' 100,'SCAN' 0}}
+@keyframes mWONK{0%,100%{font-variation-settings:'wght' 100,'SOFT' 0,'WONK' 0}
+                 50%    {font-variation-settings:'wght' 900,'SOFT' 100,'WONK' 1}}
+@keyframes mWGHT{0%,100%{font-variation-settings:'wght' 100}50%{font-variation-settings:'wght' 900}}
+@keyframes mWAVE{0%,100%{font-variation-settings:'wght' 100,'ROND' 0,'YELA' -100}
+                 50%    {font-variation-settings:'wght' 900,'ROND' 100,'YELA' 100}}
+@keyframes mWDTH{0%,100%{font-variation-settings:'wght' 200,'wdth' 60}
+                 50%    {font-variation-settings:'wght' 900,'wdth' 150}}
+
+.wK  .ltr{font-family:VKablammo; animation:mMORF 1.6s linear infinite}
+.wC  .ltr{font-family:VClimate;  animation:mYEAR 1.8s linear infinite}
+.wW  .ltr{font-family:VWorkbench;animation:mSCAN 1.6s linear infinite}
+.wS  .ltr{font-family:VSixtyfour;animation:mSCAN 1.6s linear infinite}
+.wF  .ltr{font-family:VFraunces; animation:mWONK 1.6s linear infinite}
+.wB  .ltr{font-family:VBigSh;    animation:mWGHT 1.5s linear infinite}
+.wV  .ltr{font-family:VWavefont; animation:mWAVE 1.5s linear infinite}
+
+/* the mixes — a different weird face on every letter, each on its own axis */
+.wMix .ltr:nth-child(1){font-family:VKablammo; animation:mMORF 1.6s linear infinite}
+.wMix .ltr:nth-child(2){font-family:VClimate;  animation:mYEAR 1.8s linear infinite}
+.wMix .ltr:nth-child(3){font-family:VFraunces; animation:mWONK 1.6s linear infinite}
+.wMix .ltr:nth-child(4){font-family:VAnybody;  animation:mWDTH 1.4s linear infinite}
+.wMix .ltr:nth-child(5){font-family:VBigSh;    animation:mWGHT 1.5s linear infinite}
+
+.wMix2 .ltr:nth-child(1){font-family:VBricolage;animation:mWDTH 1.4s linear infinite}
+.wMix2 .ltr:nth-child(2){font-family:VKablammo; animation:mMORF 1.6s linear infinite}
+.wMix2 .ltr:nth-child(3){font-family:VWorkbench;animation:mSCAN 1.6s linear infinite}
+.wMix2 .ltr:nth-child(4){font-family:VKablammo; animation:mMORF 1.6s linear infinite}
+.wMix2 .ltr:nth-child(5){font-family:VFraunces; animation:mWONK 1.6s linear infinite}
+</style></head><body>
+<h2>TOOOL — גופנים משונים <b>שמתמרפפים</b> 👇</h2>
+<p class="sub">אלה גופני display משתנים עם צירים חריגים משלהם: <b>Kablammo</b> (ציר MORF שמעוות את הצורה), <b>Climate Crisis</b> (ציר שנים 1979→2050), <b>Workbench</b> ו-<b>Sixtyfour</b> (סריקה/דימום טכנולוגי), <b>Fraunces</b> (SOFT/WONK — סריף עקום), <b>Wavefont</b>, <b>Big Shoulders</b>. כל אחד מתמרפף על הציר המשונה שלו — משונה <b>וגם</b> חלק.</p>
+<div class="grid" id="grid"></div>
+<script>
+const V=[
+ ['wMix','1 · תערובת משונה','אות אחרת בכל גופן, כל אחת על הציר החריג שלה'],
+ ['wMix2','2 · תערובת משונה #2','דגש על Kablammo + Workbench'],
+ ['wK','3 · Kablammo','ציר MORF — הצורה עצמה מתעוותת. הכי מוזר'],
+ ['wC','4 · Climate Crisis','ציר שנים — נמתח ומתעבה דרמטית'],
+ ['wW','5 · Workbench','סריקה טכנולוגית, קווים נשברים'],
+ ['wS','6 · Sixtyfour','פיקסלים רטרו שנוזלים'],
+ ['wF','7 · Fraunces','סריף עם SOFT/WONK — עקום ומשוגע'],
+ ['wB','8 · Big Shoulders','דיספליי צר ודרמטי'],
+ ['wV','9 · Wavefont','גלי לגמרי — לא אותיות רגילות'],
+];
+const grid=document.getElementById('grid');
+V.forEach(([cls,name,desc])=>{
+  const f=document.createElement('figure');
+  f.innerHTML=`<div class="band"><h1 class="word ${cls}">`+
+    [...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+
+    `</h1></div><figcaption>${name}<span>${desc}</span></figcaption>`;
+  grid.appendChild(f);
+  const band=f.querySelector('.band'), word=f.querySelector('.word');
+  const relock=()=>{word.style.fontSize=(band.clientWidth*0.22)+'px';};
+  relock(); new ResizeObserver(relock).observe(band);
+  (function pin(){
+    word.style.transform='none';
+    const r=word.getBoundingClientRect();
+    const targetW=band.clientWidth*0.88, maxH=band.clientHeight*0.86;
+    if(r.width>0 && r.height>0){
+      /* fit on BOTH axes — several of these display faces render far taller
+         than a normal grotesque, and scaling on width alone let them spill
+         right off the band. Uniform, so nothing is squashed. */
+      const k=Math.min(targetW/r.width, maxH/r.height);
+      word.style.transform=`scale(${k.toFixed(4)})`;
+    }
+    requestAnimationFrame(pin);
+  })();
+});
+</script>
+</body></html>

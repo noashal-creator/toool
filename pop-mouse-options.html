@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — mouse options</title>
+<style>
+  :root {
+    --sky:#000; --table:#9fb3ce; --table2:#7d93b8;
+    --ui:#e9e9ea; --dim:rgba(233,233,234,.55); --line:rgba(255,255,255,.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:20px 20px 60px; background:#101013; color:var(--ui);
+    font:400 13px/1.45 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  }
+  h1 { font-size:15px; font-weight:600; margin:0 0 4px; }
+  .sub { color:var(--dim); margin:0 0 16px; font-size:12px; }
+  .bar {
+    position:sticky; top:0; z-index:20; display:flex; flex-wrap:wrap; gap:15px; align-items:center;
+    padding:11px 15px; margin:0 0 18px; background:rgba(20,20,24,.94); backdrop-filter:blur(10px);
+    border:1px solid var(--line); border-radius:14px;
+  }
+  label { display:flex; align-items:center; gap:7px; color:var(--dim); white-space:nowrap; }
+  input[type=range] { width:110px; accent-color:#fff; }
+  .val { color:var(--ui); font-variant-numeric:tabular-nums; min-width:44px; }
+  button {
+    appearance:none; -webkit-appearance:none; font:inherit; color:var(--ui); background:#1e1e24;
+    border:1px solid var(--line); border-radius:999px; padding:6px 13px; cursor:pointer;
+  }
+  button:hover { border-color:rgba(255,255,255,.34); }
+  .swatches { display:flex; gap:6px; }
+  .sw { width:22px; height:22px; border-radius:6px; border:1px solid var(--line); cursor:pointer; padding:0; }
+  .sw.on { outline:2px solid #fff; outline-offset:2px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#17171b; }
+  .card__top { display:flex; align-items:baseline; gap:8px; padding:9px 12px 7px; }
+  .card__n { font-variant-numeric:tabular-nums; color:var(--dim); font-size:11px; }
+  .card__name { font-weight:600; }
+  .card__note { padding:0 12px 10px; color:var(--dim); font-size:11.5px; min-height:46px; }
+
+  .stage {
+    position:relative; aspect-ratio:4/3; overflow:hidden; background:var(--sky);
+    container-type:size; cursor:crosshair; touch-action:none;
+  }
+  .stage__bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .stage__photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .stage__actors { position:absolute; inset:0; }
+  /* no transitions: every one of these is stepped, same as the band */
+  .actor {
+    position:absolute; left:0; top:0; height:10%; width:auto;
+    transform-origin:50% 50%; will-change:transform; user-select:none; pointer-events:none;
+  }
+  .hint {
+    position:absolute; inset-inline-start:10px; bottom:8px; z-index:9;
+    font-size:11px; color:rgba(255,255,255,.5); pointer-events:none;
+  }
+</style>
+</head>
+<body>
+
+<h1>pop — אינטראקציות עכבר</h1>
+<p class="sub">
+  הזיזי את העכבר בתוך כל משבצת. הכל מדורג באותו דופק סטופ-מושן של הפס — לא מחליק.
+  <code>hero-chase</code> כבר עושה "רודף אחרי הסמן", אז אין כאן אחד כזה.
+</p>
+
+<div class="bar">
+  <label>דופק <input type="range" id="fps" min="3" max="24" step="1" value="9"><span class="val" id="fpsVal">9 fps</span></label>
+  <label>גודל <input type="range" id="size" min="60" max="160" step="5" value="100"><span class="val" id="sizeVal">100%</span></label>
+  <label>סט <span class="swatches" id="sets"></span></label>
+  <label>רקע <span class="swatches" id="swatches"></span></label>
+  <span class="val" style="color:var(--dim)" id="tick">t 0</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+/* Two normalised sets, both registered so a swap reads as one object changing:
+   the lollipops on their stick axis, the tooth->troll on its feet with the body
+   width matched (the hair cannot be allowed to drive the scale, or the creature
+   appears to shrink as it grows hair). POPS is repointed by the set toggle. */
+const SETS = {
+  troll:    { label: 'שן → טרול',  src: n => `assets/troll-cut/w${n}.png` },
+  lollipop: { label: 'סוכריות',    src: n => `assets/pop-cut/w${n}.png` },
+};
+let POPS = [1,2,3,4,5].map(SETS.troll.src);
+const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+const BGS = [
+  { name:'התמונה', photo:true },
+  { name:'המקורי', sky:'#000000', table:'#9fb3ce', table2:'#7d93b8' },
+  { name:'סגול',   sky:'#560476', table:'#f0d800', table2:'#d8b400' },
+  { name:'אדום',   sky:'#c8102e', table:'#0b0b0b', table2:'#000000' },
+  { name:'לבן',    sky:'#f2f2ef', table:'#c9c4b6', table2:'#b0aa9a' },
+];
+
+const N = (a,b) => { const s = Math.sin(a*127.1+b*311.7)*43758.5453; return s - Math.floor(s); };
+const S = (a,b) => N(a,b) - 0.5;
+const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+/* quantise — the whole point of the look. Every response gets rounded onto a
+   grid so it lands on discrete positions instead of gliding with the pointer. */
+const q = (v, step) => Math.round(v / step) * step;
+
+const HOME_Y = 54, HEAD_H = 40;   // matching the band on the site
+
+/* Each variant is fn(t, m) -> actors, where m is the pointer in stage per cent
+   plus .in (is it over the tile) and .down (is it pressed). Pure, like the
+   band's moves: same input, same picture. */
+const VARIANTS = [
+{
+  id:'sunflowers', name:'sunflowers',
+  note:'שורה נטועה. כל סוכריה נוטה לכיוון הסמן כמו חמנייה לשמש — ככל שהוא קרוב, ההטיה חדה יותר.',
+  fn: (t,m) => Array.from({length:6},(_,k)=>{
+    const x = 12 + k*15.2;
+    const ang = Math.atan2(m.y - (HOME_Y-18), m.x - x) * 180/Math.PI + 90;
+    const near = clamp(1 - Math.hypot(m.x-x, m.y-HOME_Y)/60, 0, 1);
+    return { i:k%5, x, y:HOME_Y, h:HEAD_H, o:'50% 100%',
+             r: q(clamp(ang,-52,52) * (m.in ? .35+near*.65 : 0), 6) };
+  })
+},
+{
+  id:'magnet', name:'magnet',
+  note:'נמשכות אל הסמן ונאספות סביבו. הרחוקות מגיעות באיחור, אז יש גרר טבעי בין הראשונות לאחרונות.',
+  fn: (t,m) => Array.from({length:8},(_,k)=>{
+    const hx = 12 + (k%4)*25, hy = 34 + ((k/4)|0)*34;
+    const pullK = m.in ? clamp(.35 + (k%4)*.16, 0, 1) : 0;
+    return { i:(k+Math.floor(t/6))%5,
+             x:q(hx + (m.x-hx)*pullK, 2), y:q(hy + (m.y-hy)*pullK, 2),
+             h:HEAD_H-6, r:q(S(k,3)*18,6), z:k };
+  })
+},
+{
+  id:'repel', name:'repel',
+  note:'בורחות מהסמן ופותחות סביבו חור. מרגיש כמו לדחוף אצבע לתוך משהו צפוף.',
+  fn: (t,m) => Array.from({length:9},(_,k)=>{
+    const hx = 18 + (k%3)*32, hy = 30 + ((k/3)|0)*22;
+    const dx = hx-m.x, dy = hy-m.y, d = Math.hypot(dx,dy) || 1;
+    const push = m.in ? clamp((36-d)/36,0,1)*28 : 0;
+    return { i:k%5, x:q(hx+dx/d*push,2), y:q(hy+dy/d*push,2), h:HEAD_H-10,
+             r:q(S(k,4)*14 + push*.5, 6), z:9-k };
+  })
+},
+{
+  id:'spotlight', name:'spotlight',
+  note:'הסמן הוא הזרקור, והוא לא מזיז אף אחת — הוא קובע באיזה שלב של ההפיכה כל אחת נמצאת. קרוב אליו = סוכריה גמורה, רחוק = עדיין פנים.',
+  fn: (t,m) => Array.from({length:9},(_,k)=>{
+    const x = 16 + (k%3)*34, y = 32 + ((k/3)|0)*20;
+    const d = m.in ? Math.hypot(x-m.x, y-m.y) : 999;
+    const stage = clamp(Math.round(4 - d/13), 0, 4);
+    return { i:stage, x, y, h:HEAD_H-10, r:q(S(k,5)*12,6), z:k };
+  })
+},
+{
+  id:'stir', name:'stir',
+  note:'הסמן מערבב. הן חגות סביבו בכיוון שאת מסובבת אותו, וממשיכות להסתחרר רגע אחרי שעצרת — כמו כף שיצאה מהקערה.',
+  /* driven by m.stir, which the pointer winds up by circling the centre — see
+     makeStage. It genuinely reads the direction you move in; an earlier version
+     span on a clock and only pretended to. */
+  fn: (t,m) => Array.from({length:7},(_,k)=>{
+    const a = k*(Math.PI*2/7) + m.stir;
+    const R = m.in ? 26 : 30;
+    return { i:(k+Math.floor(t/7))%5,
+             x:q(50 + Math.cos(a)*R*1.5, 1.5), y:q(HOME_Y + Math.sin(a)*R*.55, 1.5),
+             h:HEAD_H-8, r:q(a*180/Math.PI%360*.15,6), z:Math.round(Math.sin(a)*8)+10 };
+  })
+},
+{
+  id:'pick', name:'pick up',
+  note:'שורה שלמה, והקרובה ביותר לסמן נשלפת החוצה וגדלה — כמו לבחור סוכריה מתוך צנצנת.',
+  fn: (t,m) => {
+    let best = -1, bd = 1e9;
+    for (let k=0;k<6;k++){ const x=12+k*15.2; const d=Math.abs(x-m.x); if (m.in && d<bd){bd=d;best=k;} }
+    return Array.from({length:6},(_,k)=>{
+      const on = k===best && bd<12;
+      return { i:k%5, x:12+k*15.2, y:q(HOME_Y - (on?14:0),2), h:HEAD_H + (on?9:0),
+               r:q(S(k,6)*8 + (on?0:0),6), z:on?20:k };
+    });
+  }
+},
+{
+  id:'scrub', name:'scrub',
+  note:'הסמן משמאל לימין מגלגל את כל ההפיכה קדימה ואחורה. שליטה ידנית מלאה על השלב — הכי קרוב ל"לשחק עם הרצף".',
+  fn: (t,m) => Array.from({length:5},(_,k)=>{
+    const base = m.in ? m.x/100*5 : 2.5;
+    return { i: clamp(Math.round(base + k*.35) % 5, 0, 4), x: 16+k*17, y: HOME_Y,
+             h: HEAD_H-4, r: q(S(k,7)*10,6), z:k };
+  })
+},
+{
+  id:'shy', name:'shy',
+  note:'מתחמקות. כשהסמן מתקרב הן צונחות מטה ונעלמות מתחת לקו האופק, וחוזרות כשהוא מתרחק.',
+  fn: (t,m) => Array.from({length:6},(_,k)=>{
+    const x = 12 + k*15.2;
+    const d = m.in ? Math.abs(x-m.x) : 99;
+    const duck = clamp((22-d)/22, 0, 1);
+    return { i:k%5, x, y:q(HOME_Y + duck*44, 3), h:HEAD_H,
+             r:q(S(k,8)*10,6), z:k };
+  })
+},
+{
+  id:'swat', name:'swat',
+  note:'לחיצה מפילה אותן. הן נוטות בכיוון ההדף לפי הצד שממנו לחצת, ומתייצבות בחזרה כשמשחררים.',
+  fn: (t,m) => Array.from({length:6},(_,k)=>{
+    const x = 12 + k*15.2;
+    const hit = m.down ? clamp((26-Math.abs(x-m.x))/26,0,1) : 0;
+    const dir = x < m.x ? -1 : 1;
+    return { i:k%5, x, y:HOME_Y, h:HEAD_H, o:'50% 100%',
+             r:q(dir*hit*62 + S(k,9)*6, 6), z:k };
+  })
+},
+{
+  id:'grid-wake', name:'wake',
+  note:'רשת ישנה שהסמן מעיר. כל אחת שהוא עובר לידה קופצת גודל ומתחלפת שלב, ואז נרגעת — שובל של עקבות ולא רדיפה.',
+  fn: (t,m) => Array.from({length:12},(_,k)=>{
+    const x = 12 + (k%4)*25, y = 30 + ((k/4)|0)*22;
+    const d = m.in ? Math.hypot(x-m.x,y-m.y) : 999;
+    const wake = clamp((26-d)/26, 0, 1);
+    return { i: wake>.5 ? 4 : k%5, x, y:q(y - wake*7,2), h:(HEAD_H-14) + wake*13,
+             r:q(S(k,10)*14 * (1-wake), 6), z: wake>.4 ? 20+k : k };
+  })
+},
+];
+
+/* ── stage plumbing (same two-layer ground as the band) ── */
+let seq = 0;
+function makeStage() {
+  const n = ++seq;
+  const st = document.createElement('div');
+  st.className = 'stage';
+  st.innerHTML =
+    `<svg class="stage__bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+       <rect width="400" height="300" fill="var(--sky)"/>
+       <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#mg${n})"/>
+       <defs><linearGradient id="mg${n}" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+       </linearGradient></defs>
+     </svg>
+     <img class="stage__photo" alt="" hidden>
+     <div class="stage__actors"></div>`;
+  st._actors = st.querySelector('.stage__actors');
+  st._photo  = st.querySelector('.stage__photo');
+  st._pool   = [];
+  st._m = { x: 50, y: HOME_Y, in: false, down: false, stir: 0 };
+  st._stirVel = 0; st._lastA = null;
+
+  const at = e => {
+    const r = st.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 };
+  };
+  st.addEventListener('pointermove', e => {
+    const p = at(e); st._m.x = p.x; st._m.y = p.y; st._m.in = true;
+    /* wind the stir up from how far the pointer swept AROUND the centre, not
+       from how far it travelled — that is what makes circling it stir and
+       moving straight past it barely register */
+    const a = Math.atan2(p.y - HOME_Y, p.x - 50);
+    if (st._lastA !== null) {
+      let d = a - st._lastA;
+      while (d >  Math.PI) d -= Math.PI * 2;      // shortest way round the seam
+      while (d < -Math.PI) d += Math.PI * 2;
+      st._stirVel = clamp(st._stirVel + d * 0.9, -0.5, 0.5);
+    }
+    st._lastA = a;
+  });
+  st.addEventListener('pointerenter', () => { st._m.in = true; });
+  st.addEventListener('pointerleave', () => { st._m.in = false; st._m.down = false; st._lastA = null; });
+  st.addEventListener('pointerdown', e => { st._m.down = true; const p = at(e); st._m.x = p.x; st._m.y = p.y; });
+  st.addEventListener('pointerup',   () => { st._m.down = false; });
+  return st;
+}
+
+function draw(stage, v, t, mul) {
+  const list = v.fn(t, stage._m), pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className = 'actor'; img.alt = '';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img, k) => {
+    const a = list[k];
+    if (!a) { img.style.display = 'none'; return; }
+    img.style.display = '';
+    if (img._i !== a.i) { img.src = POPS[a.i]; img._i = a.i; }
+    img.style.height = (a.h * mul) + '%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transformOrigin = a.o || '50% 50%';
+    img.style.transform = `translate(${a.x}cqw, ${a.y}cqh) translate(-50%,-50%) rotate(${a.r||0}deg)`;
+  });
+}
+
+const grid = document.getElementById('grid');
+const cards = VARIANTS.map((v, n) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+1).padStart(2,'0')}</span>
+                    <span class="card__name">${v.name}</span></div>`;
+  const stage = makeStage();
+  stage.insertAdjacentHTML('beforeend', '<span class="hint">הזיזי כאן</span>');
+  card.appendChild(stage);
+  card.insertAdjacentHTML('beforeend', `<p class="card__note">${v.note}</p>`);
+  grid.appendChild(card);
+  return { v, stage };
+});
+
+/* ── background ── */
+function applyBg(b) {
+  const root = document.documentElement.style;
+  if (!b.photo) { root.setProperty('--sky',b.sky); root.setProperty('--table',b.table); root.setProperty('--table2',b.table2); }
+  for (const c of cards) {
+    const p = c.stage._photo;
+    if (b.photo) { p.onerror = () => { p.hidden = true; }; p.onload = () => { p.hidden = false; }; p.src = DEFAULT_BG; }
+    else p.hidden = true;
+  }
+}
+const swWrap = document.getElementById('swatches');
+BGS.forEach((b,k) => {
+  const btn = document.createElement('button');
+  btn.className = 'sw' + (k===0 ? ' on' : '');
+  btn.title = b.name;
+  btn.style.background = b.photo ? 'linear-gradient(160deg,#1b2a44 0 55%,#8fa8c8 55%)'
+                                 : `linear-gradient(160deg, ${b.sky} 0 55%, ${b.table} 55%)`;
+  btn.onclick = () => { applyBg(b); swWrap.querySelectorAll('.sw').forEach(s=>s.classList.remove('on')); btn.classList.add('on'); };
+  swWrap.appendChild(btn);
+});
+applyBg(BGS[0]);
+
+/* ── set toggle ── */
+const setWrap = document.getElementById('sets');
+Object.entries(SETS).forEach(([key, cfg], k) => {
+  const btn = document.createElement('button');
+  btn.textContent = cfg.label;
+  btn.className = 'sw' + (k === 0 ? ' on' : '');
+  btn.style.cssText = 'width:auto;padding:4px 10px;border-radius:999px;font-size:11px';
+  btn.onclick = () => {
+    POPS = [1,2,3,4,5].map(cfg.src);
+    /* clear the cached frame index on every actor, or draw() skips the src
+       assignment (it only writes when the STAGE changes, not the set) */
+    for (const c of cards) for (const img of c.stage._pool) img._i = undefined;
+    setWrap.querySelectorAll('.sw').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+  };
+  setWrap.appendChild(btn);
+});
+
+/* ── the pulse. One clock for every tile, so the whole sheet steps together
+      and the mouse is SAMPLED on the beat rather than tracked continuously —
+      that sampling is what keeps it stop-motion instead of a smooth follow. ── */
+const fpsEl = document.getElementById('fps'), sizeEl = document.getElementById('size');
+const tickEl = document.getElementById('tick');
+let t = 0, last = 0;
+function frame(now) {
+  if (now - last >= 1000 / +fpsEl.value) {
+    last = now; t++;
+    const mul = +sizeEl.value / 100;
+    /* the stir coasts down on the beat — this is the "keeps turning a moment
+       after you stop" half of it, and why it settles instead of stopping dead */
+    for (const c of cards) {
+      c.stage._m.stir += c.stage._stirVel;
+      c.stage._stirVel *= 0.88;
+      if (Math.abs(c.stage._stirVel) < 0.002) c.stage._stirVel = 0;
+    }
+    for (const c of cards) draw(c.stage, c.v, t, mul);
+    tickEl.textContent = 't ' + t;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+fpsEl.oninput  = () => document.getElementById('fpsVal').textContent = fpsEl.value + ' fps';
+sizeEl.oninput = () => document.getElementById('sizeVal').textContent = sizeEl.value + '%';
+
+for (const c of cards) draw(c.stage, c.v, 0, 1);
+</script>
+</body>
+</html>

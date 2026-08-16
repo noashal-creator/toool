@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — bold compositions</title>
+<style>
+  :root { --sky:#000; --table:#9fb3ce; --table2:#7d93b8;
+          --ui:#e9e9ea; --dim:rgba(233,233,234,.55); --line:rgba(255,255,255,.14); }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:20px 20px 60px; background:#101013; color:var(--ui);
+         font:400 13px/1.45 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+  h1 { font-size:15px; font-weight:600; margin:0 0 4px; }
+  .sub { color:var(--dim); margin:0 0 16px; font-size:12px; }
+  .bar { position:sticky; top:0; z-index:20; display:flex; flex-wrap:wrap; gap:15px; align-items:center;
+         padding:11px 15px; margin:0 0 18px; background:rgba(20,20,24,.94); backdrop-filter:blur(10px);
+         border:1px solid var(--line); border-radius:14px; }
+  label { display:flex; align-items:center; gap:7px; color:var(--dim); white-space:nowrap; }
+  input[type=range] { width:110px; accent-color:#fff; }
+  .val { color:var(--ui); font-variant-numeric:tabular-nums; min-width:44px; }
+  button { appearance:none; -webkit-appearance:none; font:inherit; color:var(--ui); background:#1e1e24;
+           border:1px solid var(--line); border-radius:999px; padding:6px 13px; cursor:pointer; }
+  button:hover { border-color:rgba(255,255,255,.34); }
+  .swatches { display:flex; gap:6px; }
+  .sw { width:22px; height:22px; border-radius:6px; border:1px solid var(--line); cursor:pointer; padding:0; }
+  .sw.on { outline:2px solid #fff; outline-offset:2px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#17171b; }
+  .card__top { display:flex; align-items:baseline; gap:8px; padding:9px 12px 7px; }
+  .card__n { font-variant-numeric:tabular-nums; color:var(--dim); font-size:11px; }
+  .card__name { font-weight:600; }
+  .card__note { padding:0 12px 10px; color:var(--dim); font-size:11.5px; min-height:52px; }
+
+  .stage { position:relative; aspect-ratio:4/3; overflow:hidden; background:var(--sky);
+           container-type:size; cursor:zoom-in; }
+  .stage__bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .stage__photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .stage__actors { position:absolute; inset:0; }
+  .actor { position:absolute; left:0; top:0; height:10%; width:auto;
+           transform-origin:50% 50%; will-change:transform; user-select:none; pointer-events:none; }
+
+  .zoom { position:fixed; inset:0; z-index:60; background:rgba(8,8,10,.95); display:none; padding:3vh 3vw; }
+  .zoom.open { display:flex; flex-direction:column; gap:10px; }
+  .zoom .stage { flex:1; border-radius:12px; cursor:zoom-out; }
+  .zoom__bar { display:flex; gap:12px; align-items:center; color:var(--dim); }
+</style>
+</head>
+<body>
+
+<h1>pop — קומפוזיציות נועזות, סבב 4</h1>
+<p class="sub">
+  הפעם עם חיתוך בקצה הפריים, ניגודי קנה מידה קיצוניים, סימטריה ופרספקטיבה — דברים
+  שלא היו בסבבים הקודמים. לחיצה מגדילה.
+</p>
+
+<div class="bar">
+  <label>קצב <input type="range" id="fps" min="2" max="24" step="1" value="8"><span class="val" id="fpsVal">8 fps</span></label>
+  <label>גודל <input type="range" id="size" min="60" max="160" step="5" value="100"><span class="val" id="sizeVal">100%</span></label>
+  <label>סט <span class="swatches" id="sets"></span></label>
+  <label>רקע <span class="swatches" id="swatches"></span></label>
+  <span class="val" style="color:var(--dim)" id="tick">t 0</span>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="zoom" id="zoom">
+  <div class="zoom__bar"><strong id="zoomName"></strong><span id="zoomNote"></span>
+  <span style="margin-inline-start:auto">לחצי לסגירה</span></div>
+</div>
+
+<script>
+const SETS = {
+  troll:    { label:'שן → טרול', src:n=>`assets/troll-cut/w${n}.png` },
+  lollipop: { label:'סוכריות',   src:n=>`assets/pop-cut/w${n}.png` },
+};
+let POPS = [1,2,3,4,5].map(SETS.troll.src);
+const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+const BGS = [
+  { name:'התמונה', photo:true },
+  { name:'שחור',   sky:'#000000', table:'#9fb3ce', table2:'#7d93b8' },
+  { name:'סגול',   sky:'#560476', table:'#f0d800', table2:'#d8b400' },
+  { name:'אדום',   sky:'#c8102e', table:'#0b0b0b', table2:'#000000' },
+  { name:'לבן',    sky:'#f2f2ef', table:'#c9c4b6', table2:'#b0aa9a' },
+];
+const N = (a,b)=>{ const s=Math.sin(a*127.1+b*311.7)*43758.5453; return s-Math.floor(s); };
+const S = (a,b)=>N(a,b)-0.5;
+
+/* actor: { i, x, y, h, r, z, o, flip } — x/y/h in per cent of the stage.
+   x/y are allowed OUTSIDE 0-100 on purpose here: letting a subject run off the
+   edge is the single biggest thing missing from the earlier rounds, where
+   everything was politely contained and so everything read as a diagram. */
+const VARIANTS = [
+{
+  id:'giant', name:'giant',
+  note:'אחת ענקית חתוכה בקצה הפריים, ולרגליה שורה זעירה. כל הכוח כאן הוא ביחס הגדלים — פי שמונה בין הקדמית לרקע.',
+  fn: t => {
+    const out = [{ i: Math.floor(t/9)%5, x: 34, y: 62, h: 190, r: -3, z: 30 }];
+    for (let k=0;k<7;k++) out.push({ i:(k+Math.floor(t/5))%5, x: 60+k*7, y: 84, h: 24, r: S(k,1)*10, z: k });
+    return out;
+  }
+},
+{
+  id:'wallpaper', name:'wallpaper',
+  note:'טפט. רשת צפופה שממלאת את הפריים מקצה לקצה וגולשת החוצה, וכל תא מתחלף שלב בתורו — נקרא כבד ודקורטיבי, לא כמו סצנה.',
+  fn: t => {
+    const out = []; let n = 0;
+    for (let r=0;r<4;r++) for (let c=0;c<7;c++) {
+      out.push({ i:(r*7+c+Math.floor(t/3))%5, x:-4+c*17, y:6+r*29,
+                 h:34, r:S(r*7+c,2)*8, z:n++ });
+    }
+    return out;
+  }
+},
+{
+  id:'spiral', name:'spiral',
+  note:'ספירלה שמתרחבת החוצה — קטנה ודחוסה במרכז, ענקית וחתוכה בקצה. העין נגררת החוצה במקום לנוח באמצע.',
+  /* R grows as k^2, so the coefficient decides where the outer arm lands: at
+     0.72 the last one sat at x=162%, i.e. completely outside the frame rather
+     than cropped by it. 0.45 puts it at ~125% — still cut by the edge, which is
+     the intent, but with most of it on screen. */
+  fn: t => Array.from({length:11},(_,k)=>{
+    const a = k*0.85 + t/14, R = 3 + k*k*0.45;
+    return { i:(k+Math.floor(t/6))%5, x:50+Math.cos(a)*R*1.5, y:52+Math.sin(a)*R*0.72,
+             h:9+k*7, r:S(k,3)*14, z:k };
+  })
+},
+{
+  id:'corridor', name:'corridor',
+  note:'מסדרון פרספקטיבי: שתי שורות נסוגות אל נקודת מגוז, גדולות וחתוכות בקדמה וזעירות באופק. עומק אמיתי, לא רק גדלים שונים.',
+  fn: t => {
+    const out = [];
+    for (let k=0;k<6;k++) {
+      const p = k/5, h = 96 - p*80, y = 74 - p*22;
+      out.push({ i:(k+Math.floor(t/5))%5, x: 14 - p*22 + p*36, y, h, r:S(k,4)*4, z: 20-k });
+      out.push({ i:(k+2+Math.floor(t/5))%5, x: 86 + p*22 - p*36, y, h, r:S(k,5)*4, z: 20-k, flip:true });
+    }
+    return out;
+  }
+},
+{
+  id:'cascade', name:'cascade',
+  note:'נופלות באלכסון וחוצות את הפריים, נכנסות מלמעלה-שמאל ויוצאות מלמטה-ימין. הכיוון האלכסוני עושה את התנועה גם כשהן קפואות.',
+  fn: t => Array.from({length:8},(_,k)=>{
+    const p = (((t + k*5) % 40) / 40);
+    return { i:(k+Math.floor(t/7))%5, x:-12+p*128, y:-14+p*126,
+             h:26+Math.sin(p*Math.PI)*30, r:-24+p*70, z:Math.round(p*10) };
+  })
+},
+{
+  id:'kaleido', name:'kaleidoscope',
+  note:'סימטריה משושה עם זוגות משוקפים. הרצף מתפרק לדגם מופשט וכמעט מפסיק להיקרא כאובייקט — הכי רחוק מצילום מוצר.',
+  fn: t => {
+    const out = [];
+    for (let k=0;k<6;k++) {
+      const a = k*(Math.PI*2/6) + t/18;
+      const stage = (k%3 + Math.floor(t/7))%5;
+      out.push({ i:stage, x:50+Math.cos(a)*30, y:52+Math.sin(a)*24, h:46,
+                 r:a*180/Math.PI, z:k, flip:k%2===1 });
+    }
+    out.push({ i:(Math.floor(t/7)+3)%5, x:50, y:52, h:40, r:-t*4%360, z:20 });
+    return out;
+  }
+},
+{
+  id:'parade', name:'parade',
+  note:'תהלוכה זעירה צועדת על קו האופק, ואחת עצומה חתוכה בקדמה מסתכלת עליה. שתי סקאלות באותו פריים בלי שלב ביניים.',
+  fn: t => {
+    const out = [{ i:(Math.floor(t/11))%5, x: 78, y: 40, h: 155, r: 4, z: 30, flip:true }];
+    for (let k=0;k<9;k++) {
+      const p = (((t*1.4 + k*9) % 108) / 108);
+      out.push({ i:(k+Math.floor(t/6))%5, x:-6+p*112, y:70, h:17, r:S(k+t,6)*7, z:k });
+    }
+    return out;
+  }
+},
+{
+  id:'tower', name:'tower',
+  note:'מגדל אחד שנחתך גם למעלה וגם למטה — לא רואים לא את הבסיס ולא את הפסגה, אז הוא מרגיש גבוה בהרבה מהפריים.',
+  fn: t => Array.from({length:7},(_,k)=>({
+    i:((k+Math.floor(t/4))%5),
+    x:50+S(k,7)*11, y:-16+k*22 + (t%4)*0.8,
+    h:40, r:S(k,8)*13, z:10-k
+  }))
+},
+{
+  id:'split', name:'split',
+  note:'הפריים חצוי: שן בצד אחד, טרול בצד השני, והגבול נודד. שתי הקצוות של הרצף נפגשות באותה תמונה במקום להתחלף בזמן.',
+  fn: t => {
+    /* the sweep has to clear the outermost columns (x 8 and 92) or the two ends
+       never flip and the boundary only ever moves through the middle three */
+    const edge = 50 + Math.sin(t/9)*46;
+    return Array.from({length:10},(_,k)=>{
+      const x = 8 + (k%5)*21, y = 38 + ((k/5)|0)*26;
+      return { i: x < edge ? 0 : 4, x, y, h:38, r:S(k,9)*10, z:k };
+    });
+  }
+},
+{
+  id:'stampede', name:'stampede',
+  note:'עדר שרץ אל המצלמה — הקרובות חתוכות בקצה התחתון והרחוקות זעירות באופק. מרגיש כמו רגע לפני התנגשות.',
+  fn: t => Array.from({length:12},(_,k)=>{
+    const p = (((t*1.6 + k*8.5) % 96) / 96);
+    const e = p*p;                        // accelerate toward the camera
+    return { i:(k+Math.floor(t/5))%5,
+             x: 50 + (N(k,10)-0.5)*90*e, y: 40 + e*62,
+             h: 10 + e*110, r: S(k,11)*10*e, z: Math.round(e*20) };
+  })
+},
+];
+
+/* ── plumbing ── */
+let seq = 0;
+function makeStage() {
+  const n = ++seq;
+  const st = document.createElement('div');
+  st.className = 'stage';
+  st.innerHTML =
+    `<svg class="stage__bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+       <rect width="400" height="300" fill="var(--sky)"/>
+       <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#bg${n})"/>
+       <defs><linearGradient id="bg${n}" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+       </linearGradient></defs>
+     </svg>
+     <img class="stage__photo" alt="" hidden>
+     <div class="stage__actors"></div>`;
+  st._actors = st.querySelector('.stage__actors');
+  st._photo  = st.querySelector('.stage__photo');
+  st._pool   = [];
+  return st;
+}
+
+function draw(stage, v, t, mul) {
+  const list = v.fn(t), pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className = 'actor'; img.alt = '';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img,k) => {
+    const a = list[k];
+    if (!a) { img.style.display='none'; return; }
+    img.style.display = '';
+    if (img._i !== a.i) { img.src = POPS[a.i]; img._i = a.i; }
+    img.style.height = (a.h*mul) + '%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transformOrigin = a.o || '50% 50%';
+    img.style.transform = `translate(${a.x}cqw, ${a.y}cqh) translate(-50%,-50%) rotate(${a.r||0}deg)`
+                        + (a.flip ? ' scale(-1,1)' : '');
+  });
+}
+
+const grid = document.getElementById('grid');
+const cards = VARIANTS.map((v,n) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+1).padStart(2,'0')}</span>
+                    <span class="card__name">${v.name}</span></div>`;
+  const stage = makeStage();
+  card.appendChild(stage);
+  card.insertAdjacentHTML('beforeend', `<p class="card__note">${v.note}</p>`);
+  grid.appendChild(card);
+  stage.addEventListener('click', () => openZoom(v));
+  return { v, stage };
+});
+
+const zoom = document.getElementById('zoom');
+let zoomEntry = null;
+function openZoom(v) {
+  zoom.querySelectorAll('.stage').forEach(s=>s.remove());
+  const st = makeStage();
+  st.addEventListener('click', () => { zoom.classList.remove('open'); zoomEntry=null; });
+  zoom.appendChild(st);
+  document.getElementById('zoomName').textContent = v.name;
+  document.getElementById('zoomNote').textContent = v.note;
+  zoom.classList.add('open');
+  zoomEntry = { v, stage: st };
+  applyBg(curBg);
+}
+addEventListener('keydown', e => { if (e.key==='Escape') { zoom.classList.remove('open'); zoomEntry=null; } });
+
+let curBg = BGS[0];
+function applyBg(b) {
+  curBg = b;
+  const root = document.documentElement.style;
+  if (!b.photo) { root.setProperty('--sky',b.sky); root.setProperty('--table',b.table); root.setProperty('--table2',b.table2); }
+  const all = [...cards.map(c=>c.stage), ...(zoomEntry?[zoomEntry.stage]:[])];
+  for (const st of all) {
+    const p = st._photo;
+    if (b.photo) { p.onerror=()=>{p.hidden=true;}; p.onload=()=>{p.hidden=false;}; p.src=DEFAULT_BG; }
+    else p.hidden = true;
+  }
+}
+const swWrap = document.getElementById('swatches');
+BGS.forEach((b,k)=>{
+  const btn = document.createElement('button');
+  btn.className = 'sw' + (k===0?' on':''); btn.title = b.name;
+  btn.style.background = b.photo ? 'linear-gradient(160deg,#1b2a44 0 55%,#8fa8c8 55%)'
+                                 : `linear-gradient(160deg, ${b.sky} 0 55%, ${b.table} 55%)`;
+  btn.onclick = () => { applyBg(b); swWrap.querySelectorAll('.sw').forEach(s=>s.classList.remove('on')); btn.classList.add('on'); };
+  swWrap.appendChild(btn);
+});
+applyBg(BGS[0]);
+
+const setWrap = document.getElementById('sets');
+Object.entries(SETS).forEach(([key,cfg],k)=>{
+  const btn = document.createElement('button');
+  btn.textContent = cfg.label;
+  btn.className = 'sw' + (k===0?' on':'');
+  btn.style.cssText = 'width:auto;padding:4px 10px;border-radius:999px;font-size:11px';
+  btn.onclick = () => {
+    POPS = [1,2,3,4,5].map(cfg.src);
+    /* drop the cached frame index or draw() skips the src write — it only
+       reassigns when the STAGE changes, not when the set does */
+    for (const c of cards) for (const img of c.stage._pool) img._i = undefined;
+    if (zoomEntry) for (const img of zoomEntry.stage._pool) img._i = undefined;
+    setWrap.querySelectorAll('.sw').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  };
+  setWrap.appendChild(btn);
+});
+
+const fpsEl = document.getElementById('fps'), sizeEl = document.getElementById('size');
+const tickEl = document.getElementById('tick');
+let t = 0, last = 0;
+function frame(now) {
+  if (now - last >= 1000 / +fpsEl.value) {
+    last = now; t++;
+    const mul = +sizeEl.value/100;
+    for (const c of cards) draw(c.stage, c.v, t, mul);
+    if (zoomEntry) draw(zoomEntry.stage, zoomEntry.v, t, mul);
+    tickEl.textContent = 't ' + t;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+fpsEl.oninput  = () => document.getElementById('fpsVal').textContent = fpsEl.value+' fps';
+sizeEl.oninput = () => document.getElementById('sizeVal').textContent = sizeEl.value+'%';
+for (const c of cards) draw(c.stage, c.v, 0, 1);
+</script>
+</body>
+</html>

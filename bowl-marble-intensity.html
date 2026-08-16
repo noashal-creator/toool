@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — כמה חזק השיוש?</title>
+<style>
+/* ─────────────────────────────────────────────────────────────────────
+   MARBLING INTENSITY — option ד was chosen, "but the mixing needs to look
+   more significant".
+
+   Four knobs decide how much a displacement warp reads as stirring:
+     scale          how far each pixel is pushed  → the raw amount of warp
+     baseFrequency  the size of the noise cells   → LOW = big lazy swirls,
+                                                    HIGH = fine fizz
+     numOctaves     how much fine detail rides on the big shapes
+     motion         animating scale/seed/frequency is what makes it churn
+                    instead of sitting there as a frozen distortion
+   The earlier version was scale 22 with a fairly high frequency — a lot of
+   small fizz, which reads as texture rather than as movement. The stronger
+   cells here mostly LOWER the frequency and RAISE the scale, so the swirls
+   get big enough to actually see travelling.
+
+   Cell ג also rotates the media itself: real stirring is rotational flow,
+   and a vortex reads as mixing far more than warping alone.
+   ───────────────────────────────────────────────────────────────────── */
+:root{--red:#FE0000;--yellow:#FFFF01;--panel:#FFFF00;--black:#000;--purple:#560476;
+  --bg:#141414;--card:#1e1e1e;--line:#333;}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:#eee;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;padding:26px 22px 70px;}
+header{max-width:1320px;margin:0 auto 18px;}
+h1{margin:0 0 6px;font-size:21px;}
+header p{margin:0;color:#8a8a8a;font-size:13.5px;line-height:1.5;}
+.controls{max-width:1320px;margin:0 auto 22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
+.controls .lbl{font-size:12px;color:#8a8a8a;}
+button.ctl{font:inherit;font-size:13px;font-weight:600;color:#ddd;cursor:pointer;
+  background:#2a2a2a;border:1px solid #3a3a3a;border-radius:8px;padding:7px 12px;}
+button.ctl.on{background:#560476;border-color:#7b1aa3;color:#fff;}
+.grid{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;}
+.cell{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;}
+.cap{margin:10px 2px 0;font-size:13.5px;font-weight:700;}
+.cap small{display:block;font-weight:400;color:#8a8a8a;font-size:12px;margin-top:3px;line-height:1.4;}
+.cap code{color:#9ad;font-size:11px;}
+
+.stage{--s:calc(258px / 352);position:relative;
+  width:calc(352 * var(--s));height:calc(320 * var(--s));
+  margin:0 auto;overflow:hidden;background:var(--panel);border-radius:8px;}
+.panel{position:absolute;left:0;top:calc(-760 * var(--s));width:calc(352 * var(--s));height:calc(1080 * var(--s));}
+.spoon-rig{position:absolute;left:calc(146.03 * var(--s));top:calc(867.16 * var(--s));
+  width:0;height:0;transform-origin:0 0;z-index:20;}
+.hand{position:absolute;display:block;left:calc(-10.36 * var(--s));top:calc(-149.29 * var(--s));
+  width:calc(73.57 * var(--s));height:calc(251.82 * var(--s));overflow:hidden;
+  transform:rotate(90deg);transform-origin:center;z-index:20;}
+.hand img{position:absolute;left:-43.59%;top:-0.21%;width:196.15%;height:123.88%;max-width:none;display:block;
+  filter:brightness(90%) contrast(110%) saturate(127%);}
+.hand-tip{position:absolute;left:calc(-107.03 * var(--s));top:calc(-28.16 * var(--s));
+  width:calc(15 * var(--s));height:calc(41 * var(--s));z-index:20;}
+.run{position:absolute;left:calc(200 * var(--s));top:calc(806 * var(--s));
+  width:calc(121 * var(--s));height:calc(72 * var(--s));background:#560476;
+  border:calc(1 * var(--s)) solid transparent;border-radius:50%;
+  transform-origin:calc(-53.97 * var(--s)) calc(61.16 * var(--s));z-index:21;}
+.bowl{position:absolute;left:calc(57 * var(--s));top:calc(910.16 * var(--s));
+  width:calc(240 * var(--s));height:calc(132.69 * var(--s));color:#FE0000;}
+.bowl svg{position:absolute;display:block;width:auto;}
+.bowl__body{left:0;top:calc(15.55 * var(--s));width:calc(239.64 * var(--s));height:calc(117.14 * var(--s));z-index:22;}
+.bowl__rim{left:calc(1 * var(--s));top:0;width:calc(239 * var(--s));height:calc(33 * var(--s));z-index:1;}
+.bowl-fill{position:absolute;left:calc(57 * var(--s));top:calc(925.71 * var(--s));
+  width:calc(239.64 * var(--s));height:calc(117.14 * var(--s));overflow:hidden;z-index:23;
+  clip-path:polygon(1.2% 0.9%,4.7% 6.3%,15.4% 10.7%,31.3% 13.6%,50.7% 14.7%,
+    68.4% 13.8%,83.4% 11.3%,94.3% 7.6%,99.4% 3.0%,73.5% 99.1%,27.05% 99.1%);}
+.bowl-fill__level{position:absolute;left:0;right:0;bottom:0;height:100%;overflow:hidden;display:block;}
+.bowl-floor{position:absolute;left:0;top:calc(1042.85 * var(--s));width:100%;height:calc(40 * var(--s));
+  background:var(--panel);z-index:24;}
+@keyframes stir{
+  0%{transform:rotate(90.53deg);animation-timing-function:steps(1);}
+  22%{transform:rotate(100deg);animation-timing-function:steps(1);}
+  46%{transform:rotate(85deg);animation-timing-function:steps(1);}
+  58%{transform:rotate(82deg);animation-timing-function:steps(1);}
+  82%{transform:rotate(97deg);animation-timing-function:steps(1);}
+  100%{transform:rotate(90.53deg);}
+}
+.spoon-rig,.run{animation:stir 640ms infinite;}
+
+.mixmedia{position:absolute;left:0;bottom:0;width:100%;height:calc(117.14 * var(--s));
+  isolation:isolate;background:#000;}
+.mm{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+.mm--b{mix-blend-mode:hard-light;}
+
+.wave{position:absolute;left:0;top:0;width:200%;height:calc(13 * var(--s));
+  background-repeat:repeat-x;background-size:calc(60 * var(--s)) 100%;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='13' viewBox='0 0 60 13' preserveAspectRatio='none'><path d='M0 7 Q 7.5 1 15 7 T 30 7 T 45 7 T 60 7 L60 0 L0 0 Z' fill='%23FE0000'/></svg>");
+  animation:wave-scroll 2600ms linear infinite;z-index:3;}
+@keyframes wave-scroll{from{transform:translateX(0);} to{transform:translateX(calc(-60 * var(--s)));}}
+
+/* the drift underneath: bigger amplitude than before, so the two photos
+   visibly travel across each other instead of just shimmering */
+@keyframes drift-a{from{transform:scale(1.3) translate(-6%,4%) rotate(-6deg);} to{transform:scale(1.3) translate(7%,-5%) rotate(6deg);}}
+@keyframes drift-b{from{transform:scale(1.3) translate(7%,-4%) rotate(6deg);}  to{transform:scale(1.3) translate(-6%,5%) rotate(-6deg);}}
+.mm--a{animation:drift-a 7000ms ease-in-out infinite alternate;}
+.mm--b{animation:drift-b 7000ms ease-in-out infinite alternate;}
+
+/* per-cell filters */
+.i-1 .mixmedia{filter:url(#mb1);}
+.i-2 .mixmedia{filter:url(#mb2);}
+.i-3 .mixmedia{filter:url(#mb3);}
+.i-4 .mixmedia{filter:url(#mb4);}
+.i-5 .mixmedia{filter:url(#mb5);}
+/* ג adds real rotational flow — a vortex, which is what stirring makes.
+   The rotating layer has to be a SQUARE bigger than the bowl's diagonal,
+   not the bowl's own rectangle: a rectangle turned about its centre stops
+   covering its own box, and the corners swing away and expose the red at
+   the sides. Bowl interior is 239.64×117.14 → diagonal 266.7, so 267 is
+   the bare minimum at every angle; 320 also leaves room for the ±17 that
+   feDisplacementMap pushes pixels around. Centred on the fill box and
+   anchored by `bottom`, so it still stays put while the level reveals it. */
+.i-3 .mixmedia{
+  width:calc(320 * var(--s));
+  height:calc(320 * var(--s));
+  left:calc(-40.18 * var(--s));
+  bottom:calc(-101.43 * var(--s));
+  animation:vortex 9000ms linear infinite;
+}
+@keyframes vortex{to{transform:rotate(360deg);}}
+.i-3 .mm{transform-origin:50% 50%;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- א · the current setting, for reference -->
+  <filter id="mb1" x="-15%" y="-15%" width="130%" height="130%">
+    <feTurbulence type="turbulence" baseFrequency="0.010 0.022" numOctaves="2" seed="7" result="n">
+      <animate attributeName="baseFrequency" dur="11s" repeatCount="indefinite"
+               values="0.010 0.022; 0.020 0.012; 0.013 0.026; 0.010 0.022"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+
+  <!-- ב · same character, roughly double the push -->
+  <filter id="mb2" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="turbulence" baseFrequency="0.011 0.018" numOctaves="3" seed="4" result="n">
+      <animate attributeName="baseFrequency" dur="9s" repeatCount="indefinite"
+               values="0.011 0.018; 0.019 0.011; 0.011 0.018"/>
+      <animate attributeName="seed" dur="9s" repeatCount="indefinite" values="4;11;4"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="48" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+
+  <!-- ג · vortex: gentler warp, but the whole body of liquid rotates -->
+  <filter id="mb3" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="turbulence" baseFrequency="0.008 0.014" numOctaves="2" seed="2" result="n">
+      <animate attributeName="baseFrequency" dur="10s" repeatCount="indefinite"
+               values="0.008 0.014; 0.014 0.008; 0.008 0.014"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="34" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+
+  <!-- ד · big lazy swirls: much LOWER frequency, much higher scale -->
+  <filter id="mb4" x="-35%" y="-35%" width="170%" height="170%">
+    <feTurbulence type="turbulence" baseFrequency="0.004 0.008" numOctaves="4" seed="9" result="n">
+      <animate attributeName="baseFrequency" dur="13s" repeatCount="indefinite"
+               values="0.004 0.008; 0.009 0.004; 0.005 0.010; 0.004 0.008"/>
+      <animate attributeName="seed" dur="13s" repeatCount="indefinite" values="9;15;21;9"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="78" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+
+  <!-- ה · violent: the push itself pulses, so the churn surges -->
+  <filter id="mb5" x="-40%" y="-40%" width="180%" height="180%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.006 0.012" numOctaves="4" seed="5" result="n">
+      <animate attributeName="baseFrequency" dur="6s" repeatCount="indefinite"
+               values="0.006 0.012; 0.014 0.006; 0.006 0.012"/>
+      <animate attributeName="seed" dur="6s" repeatCount="indefinite" values="5;13;5"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="60">
+      <animate attributeName="scale" dur="6s" repeatCount="indefinite" values="45;110;45"/>
+    </feDisplacementMap>
+  </filter>
+</svg>
+
+<header>
+  <h1>אפשרות ד — כמה חזק השיוש?</h1>
+  <p>
+    כולן מלאות וקפואות על מלא, כדי שתשווי את הערבוב עצמו. מה שהכי משפיע זה לא רק
+    <b>עוצמת הדחיפה</b> אלא <b>גודל המערבולות</b> — תדר נמוך נותן מערבולות גדולות שרואים אותן נעות,
+    תדר גבוה נותן רעש דק שנראה כמו טקסטורה ולא כמו תנועה.
+  </p>
+</header>
+
+<div class="controls">
+  <span class="lbl">תצוגה:</span>
+  <button class="ctl on" data-mode="full">קערה מלאה</button>
+  <button class="ctl" data-mode="fill">עם מילוי חוזר</button>
+  <span class="lbl" style="margin-inline-start:12px">אנימציה:</span>
+  <button class="ctl on" data-anim="on">רצה</button>
+  <button class="ctl" data-anim="off">קפואה (להשוואת מרקם)</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<template id="scene">
+  <div class="panel">
+    <div class="spoon-rig">
+      <span class="hand"><img src="assets/hand-spoon-raw.png" alt=""></span>
+      <img class="hand-tip" src="assets/hand-tip.svg" alt="">
+    </div>
+    <span class="run"></span>
+    <div class="bowl">
+      <svg class="bowl__body" preserveAspectRatio="none" overflow="visible" width="239.639" height="117.143" viewBox="0 0 239.639 117.143" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <mask id="m" fill="white"><path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z"/></mask>
+        <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z" fill="currentColor"/>
+        <path d="M1.9043 0L2.9043 -0.000103812L2.90419 -1H1.9043V0ZM121.429 16.1904V17.1904V17.1904V16.1904ZM239.639 2.40625L240.517 2.8852L238.966 1.66612L239.639 2.40625ZM177.039 117.143V118.143H177.633L177.917 117.622L177.039 117.143ZM63.9131 117.143L63.0352 117.622L63.3195 118.143H63.9131V117.143ZM0 0V-1H-1.68476L-0.877842 0.478951L0 0ZM1.9043 0L0.904297 0.000103812C0.904468 1.64816 2.1244 3.00028 3.78095 4.09678C5.48534 5.22496 7.9342 6.2749 10.9926 7.25437C17.1235 9.21777 25.9427 10.9715 36.7786 12.4393C58.4652 15.3769 88.393 17.1904 121.429 17.1904V16.1904V15.1904C88.4538 15.1904 58.6199 13.3796 37.0471 10.4574C26.2534 8.99529 17.5685 7.26024 11.6026 5.34966C8.6127 4.39213 6.365 3.40877 4.88487 2.42904C3.3569 1.41764 2.90436 0.587255 2.9043 -0.000103812L1.9043 0ZM121.429 16.1904V17.1904C151.443 17.1904 178.89 15.6931 199.921 13.2164C210.434 11.9783 219.363 10.4933 226.217 8.82213C229.643 7.98668 232.569 7.10038 234.923 6.16761C237.259 5.24166 239.106 4.24176 240.311 3.14638L239.639 2.40625L238.966 1.66612C238.026 2.52071 236.442 3.41403 234.186 4.3083C231.947 5.19573 229.116 6.05662 225.743 6.87906C218.998 8.52368 210.157 9.99716 199.687 11.2301C178.751 13.6956 151.385 15.1904 121.429 15.1904V16.1904ZM239.639 2.40625L238.761 1.9273L176.161 116.664L177.039 117.143L177.917 117.622L240.517 2.8852L239.639 2.40625ZM177.039 117.143V116.143H63.9131V117.143V118.143H177.039V117.143ZM63.9131 117.143L64.7909 116.664L0.877842 -0.478951L0 0L-0.877842 0.478951L63.0352 117.622L63.9131 117.143ZM0 0V1H1.9043V0V-1H0V0Z" fill="black" mask="url(#m)"/>
+      </svg>
+      <svg class="bowl__rim" preserveAspectRatio="none" overflow="visible" width="239" height="33" viewBox="0 0 239 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M119.5 0.5C152.483 0.5 182.334 2.34623 203.931 5.32812C214.733 6.8196 223.449 8.59236 229.454 10.5527C232.46 11.534 234.757 12.5528 236.293 13.5889C237.85 14.6396 238.5 15.6216 238.5 16.5C238.5 17.3784 237.85 18.3604 236.293 19.4111C234.757 20.4472 232.46 21.466 229.454 22.4473C223.449 24.4076 214.733 26.1804 203.931 27.6719C182.334 30.6538 152.483 32.5 119.5 32.5C86.5166 32.5 56.6656 30.6538 35.0693 27.6719C24.2675 26.1804 15.5511 24.4076 9.5459 22.4473C6.53996 21.466 4.24256 20.4472 2.70703 19.4111C1.14985 18.3604 0.5 17.3784 0.5 16.5C0.5 15.6216 1.14985 14.6396 2.70703 13.5889C4.24256 12.5528 6.53996 11.534 9.5459 10.5527C15.5511 8.59236 24.2675 6.8196 35.0693 5.32812C56.6656 2.34623 86.5166 0.5 119.5 0.5Z" fill="currentColor" stroke="black"/>
+      </svg>
+    </div>
+    <div class="bowl-fill">
+      <span class="bowl-fill__level">
+        <span class="mixmedia">
+          <img class="mm mm--a" src="assets/object-a.jpg" alt="">
+          <img class="mm mm--b" src="assets/object-b.jpg" alt="">
+        </span>
+        <span class="wave"></span>
+      </span>
+    </div>
+    <div class="bowl-floor"></div>
+  </div>
+</template>
+
+<script>
+const LEVELS = [
+  { cls:'i-1', title:'א · הנוכחי', code:'scale 22 · freq 0.010–0.022',
+    note:'מה שראית. הרבה רעש דק — נקרא כמו מרקם, פחות כמו תנועה.' },
+  { cls:'i-2', title:'ב · חזק פי 2', code:'scale 48 · freq 0.011–0.018 · 3 אוקטבות',
+    note:'אותו אופי, דחיפה כפולה. כבר רואים את הצורות נעות.' },
+  { cls:'i-3', title:'ג · מערבולת', code:'scale 34 + סיבוב 360° של הנוזל',
+    note:'עיוות בינוני, אבל כל גוף הנוזל מסתובב. ערבוב אמיתי הוא זרימה סיבובית — זה מה שהכי "מערבבים".' },
+  { cls:'i-4', title:'ד · מערבולות גדולות', code:'scale 78 · freq 0.004–0.008 · 4 אוקטבות',
+    note:'תדר נמוך = מערבולות גדולות ועצלות שרואים אותן נודדות. הכי "צבע שמתערבב".' },
+  { cls:'i-5', title:'ה · סוער', code:'scale 45→110 פועם · fractalNoise',
+    note:'עוצמת הדחיפה עצמה פועמת, אז הערבוב מגיע בגלים. הכי דרמטי — אולי יותר מדי.' },
+];
+
+const grid=document.getElementById('grid'), tpl=document.getElementById('scene'), stages=[];
+for(const l of LEVELS){
+  const cell=document.createElement('figure'); cell.className='cell';
+  const stage=document.createElement('div'); stage.className='stage '+l.cls;
+  stage.appendChild(tpl.content.cloneNode(true));
+  const cap=document.createElement('figcaption'); cap.className='cap';
+  cap.innerHTML=`${l.title}<small><code>${l.code}</code><br>${l.note}</small>`;
+  cell.append(stage,cap); grid.appendChild(cell); stages.push(stage);
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-mode]').forEach(o=>o.classList.toggle('on',o===b));
+  const fill=b.dataset.mode==='fill';
+  stages.forEach(s=>{
+    const lvl=s.querySelector('.bowl-fill__level');
+    lvl.style.animation='none'; void lvl.offsetWidth;
+    if(fill){ lvl.style.height=''; lvl.style.animation='fill 5200ms linear infinite'; }
+    else { lvl.style.height='100%'; }
+  });
+}));
+document.querySelectorAll('[data-anim]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-anim]').forEach(o=>o.classList.toggle('on',o===b));
+  const on=b.dataset.anim==='on';
+  document.getAnimations().forEach(a=>on?a.play():a.pause());
+  // SMIL (the filter animations) is driven separately from the Web Animations API
+  document.querySelectorAll('svg')[0].querySelectorAll('animate').forEach(el=>{
+    on ? el.beginElement() : el.ownerSVGElement.pauseAnimations();
+  });
+  if(on) document.querySelectorAll('svg')[0].unpauseAnimations();
+}));
+const style=document.createElement('style');
+style.textContent='@keyframes fill{0%{height:0;}74%{height:100%;}92%{height:100%;}100%{height:0;}}';
+document.head.appendChild(style);
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — merge sequence (flowchart mockup)</title>
+<style>
+  html,body{margin:0;height:100%;background:#cfc9ba;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Courier New",ui-monospace,monospace;}
+  .sheet{background:#ece7d9;padding:24px;box-shadow:0 2px 18px rgba(0,0,0,.25);}
+  svg{display:block;width:min(760px,92vw);height:auto;}
+  text{fill:#1a1a1a;text-transform:uppercase;letter-spacing:.5px;
+    font-family:"Courier New",ui-monospace,monospace;font-weight:700;}
+  .lbl{font-size:13px;}
+  .yn{font-size:13px;font-weight:700;}
+  .cap{font-size:15px;letter-spacing:1px;}
+  .box{fill:#ece7d9;stroke:#1a1a1a;stroke-width:2;}
+  .ln{stroke:#1a1a1a;stroke-width:2;fill:none;}
+</style>
+</head>
+<body>
+  <div class="sheet">
+  <svg viewBox="0 0 760 650" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#1a1a1a"/>
+      </marker>
+    </defs>
+
+    <!-- ── main spine lines ── -->
+    <!-- begin -> upload (loop-back joins this line) -->
+    <path class="ln" d="M390,84 L390,138" marker-end="url(#arrow)"/>
+    <!-- upload -> diamond -->
+    <path class="ln" d="M390,212 L390,253" marker-end="url(#arrow)"/>
+    <!-- diamond YES -> right -->
+    <path class="ln" d="M455,300 L560,300 L560,343" marker-end="url(#arrow)"/>
+    <!-- generate -> new object ready -->
+    <path class="ln" d="M560,417 L560,453" marker-end="url(#arrow)"/>
+    <!-- diamond NO -> need two -->
+    <path class="ln" d="M390,347 L390,373" marker-end="url(#arrow)"/>
+    <!-- need two -> try again -->
+    <path class="ln" d="M390,429 L390,455" marker-end="url(#arrow)"/>
+    <!-- try again YES -> left -> clear slots -->
+    <path class="ln" d="M330,502 L200,502 L200,334" marker-end="url(#arrow)"/>
+    <!-- clear slots -> up -> back into begin/upload line -->
+    <path class="ln" d="M200,270 L200,112 L384,112" marker-end="url(#arrow)"/>
+    <!-- try again NO -> end -->
+    <path class="ln" d="M390,547 L390,575" marker-end="url(#arrow)"/>
+
+    <!-- ── nodes ── -->
+    <!-- BEGIN (terminator) -->
+    <rect class="box" x="330" y="42" width="120" height="42" rx="21"/>
+    <text class="lbl" x="390" y="68" text-anchor="middle">BEGIN</text>
+
+    <!-- UPLOAD TWO IMAGES (process) -->
+    <rect class="box" x="325" y="140" width="130" height="72"/>
+    <text class="lbl" x="390" y="170" text-anchor="middle">UPLOAD</text>
+    <text class="lbl" x="390" y="188" text-anchor="middle">TWO</text>
+    <text class="lbl" x="390" y="206" text-anchor="middle">IMAGES</text>
+
+    <!-- TWO IMAGES? (decision) -->
+    <polygon class="box" points="390,253 458,300 390,347 322,300"/>
+    <text class="lbl" x="390" y="296" text-anchor="middle">TWO</text>
+    <text class="lbl" x="390" y="313" text-anchor="middle">IMAGES?</text>
+
+    <!-- GENERATE (process) -->
+    <rect class="box" x="500" y="343" width="120" height="74"/>
+    <text class="lbl" x="560" y="372" text-anchor="middle">GENERATE</text>
+    <text class="lbl" x="560" y="390" text-anchor="middle">MIDPOINT</text>
+    <text class="lbl" x="560" y="408" text-anchor="middle">OBJECT</text>
+
+    <!-- NEW OBJECT READY (terminator) -->
+    <rect class="box" x="493" y="453" width="134" height="46" rx="23"/>
+    <text class="lbl" x="560" y="476" text-anchor="middle">NEW OBJECT</text>
+    <text class="lbl" x="560" y="492" text-anchor="middle">READY</text>
+
+    <!-- NEED TWO IMAGES (process) -->
+    <rect class="box" x="325" y="373" width="130" height="56"/>
+    <text class="lbl" x="390" y="398" text-anchor="middle">NEED TWO</text>
+    <text class="lbl" x="390" y="416" text-anchor="middle">IMAGES</text>
+
+    <!-- TRY AGAIN? (decision) -->
+    <polygon class="box" points="390,455 452,500 390,545 328,500"/>
+    <text class="lbl" x="390" y="496" text-anchor="middle">TRY</text>
+    <text class="lbl" x="390" y="513" text-anchor="middle">AGAIN?</text>
+
+    <!-- CLEAR SLOTS (process) -->
+    <rect class="box" x="140" y="270" width="120" height="64"/>
+    <text class="lbl" x="200" y="298" text-anchor="middle">CLEAR</text>
+    <text class="lbl" x="200" y="316" text-anchor="middle">SLOTS</text>
+
+    <!-- END (terminator) -->
+    <rect class="box" x="340" y="575" width="100" height="42" rx="21"/>
+    <text class="lbl" x="390" y="601" text-anchor="middle">END</text>
+
+    <!-- ── branch labels ── -->
+    <text class="yn" x="470" y="292" text-anchor="start">YES</text>
+    <text class="yn" x="400" y="366" text-anchor="start">NO</text>
+    <text class="yn" x="300" y="494" text-anchor="end">YES</text>
+    <text class="yn" x="400" y="568" text-anchor="start">NO</text>
+
+    <!-- caption -->
+    <text class="cap" x="620" y="560" text-anchor="middle">TOOOL —</text>
+    <text class="cap" x="620" y="582" text-anchor="middle">MERGE SEQUENCE</text>
+  </svg>
+  </div>
+</body>
+</html>

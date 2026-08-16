@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop lab</title>
+<style>
+  :root { --sky:#000; --table:#9fb3ce; --table2:#7d93b8;
+          --ui:#e9e9ea; --dim:rgba(233,233,234,.55); --line:rgba(255,255,255,.14); }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px 20px 60px; background:#101013; color:var(--ui);
+         font:400 13px/1.45 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+  h1 { font-size:15px; font-weight:600; margin:0 0 3px; }
+  .sub { color:var(--dim); margin:0 0 14px; font-size:12px; }
+
+  .bar { position:sticky; top:0; z-index:30; display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+         padding:10px 14px; margin:0 0 12px; background:rgba(20,20,24,.95); backdrop-filter:blur(10px);
+         border:1px solid var(--line); border-radius:14px; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 18px; }
+  label { display:flex; align-items:center; gap:7px; color:var(--dim); white-space:nowrap; }
+  input[type=range] { width:104px; accent-color:#fff; }
+  .val { color:var(--ui); font-variant-numeric:tabular-nums; min-width:44px; }
+  button { appearance:none; -webkit-appearance:none; font:inherit; color:var(--ui); background:#1e1e24;
+           border:1px solid var(--line); border-radius:999px; padding:6px 13px; cursor:pointer; }
+  button:hover { border-color:rgba(255,255,255,.34); }
+  .tab.on { background:#fff; color:#000; border-color:#fff; }
+  .tab .n { opacity:.5; font-size:11px; margin-inline-start:5px; }
+  .swatches { display:flex; gap:6px; }
+  .sw { width:22px; height:22px; border-radius:6px; border:1px solid var(--line); cursor:pointer; padding:0; }
+  .sw.on { outline:2px solid #fff; outline-offset:2px; }
+  .setbtn { width:auto; padding:4px 10px; font-size:11px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#17171b; }
+  .card__top { display:flex; align-items:baseline; gap:8px; padding:9px 12px 7px; }
+  .card__n { font-variant-numeric:tabular-nums; color:var(--dim); font-size:11px; }
+  .card__name { font-weight:600; }
+  .card__tag { margin-inline-start:auto; font-size:10px; color:var(--dim); border:1px solid var(--line);
+               border-radius:999px; padding:2px 8px; }
+  .card__note { padding:0 12px 10px; color:var(--dim); font-size:11.5px; min-height:50px; }
+
+  .stage { position:relative; aspect-ratio:4/3; overflow:hidden; background:var(--sky);
+           container-type:size; cursor:crosshair; touch-action:none; }
+  .stage__bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .stage__photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .stage__actors { position:absolute; inset:0; }
+  /* a second copy of the ground, in FRONT of the actors, so a figure can duck
+     behind the dune. Off unless a variant asks — on every stage it would bury
+     every stick and every pair of feet below the horizon. */
+  .stage__fg { position:absolute; inset:0; width:100%; height:100%; display:none; z-index:40; pointer-events:none; }
+  .stage.has-fg .stage__fg { display:block; }
+  /* nothing eases: every one of these is stepped, same grammar as the band */
+  .actor { position:absolute; left:0; top:0; height:10%; width:auto;
+           transform-origin:50% 50%; will-change:transform; user-select:none; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<h1>pop lab</h1>
+<p class="sub">כל הווריאנטים בעמוד אחד. הזיזי את העכבר בתוך משבצת — כולן מגיבות. הכל מדורג באותו דופק סטופ־מושן.</p>
+
+<div class="bar">
+  <label>דופק <input type="range" id="fps" min="3" max="24" step="1" value="9"><span class="val" id="fpsVal">9 fps</span></label>
+  <label>גודל <input type="range" id="size" min="60" max="160" step="5" value="100"><span class="val" id="sizeVal">100%</span></label>
+  <label>סט <span class="swatches" id="sets"></span></label>
+  <label>רקע <span class="swatches" id="swatches"></span></label>
+  <span class="val" style="color:var(--dim)" id="tick">t 0</span>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+/* ── sets ────────────────────────────────────────────────────────────────
+   `ground:true` means the figures STAND rather than hang. The lollipops are
+   registered on their stick axis, the trolls on their feet, so a variant that
+   plants figures has to know which it has — otherwise the troll set is just the
+   lollipop set re-skinned, landing in exactly the same places. */
+const SETS = {
+  troll:    { label:'שן → טרול', src:n=>`assets/troll-cut/w${n}.png`, ground:true  },
+  lollipop: { label:'סוכריות',   src:n=>`assets/pop-cut/w${n}.png`,   ground:false },
+};
+let SET = SETS.troll;
+let POPS = [1,2,3,4,5].map(SET.src);
+const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+const BGS = [
+  { name:'התמונה', photo:true },
+  { name:'שחור',   sky:'#000000', table:'#9fb3ce', table2:'#7d93b8' },
+  { name:'סגול',   sky:'#560476', table:'#f0d800', table2:'#d8b400' },
+  { name:'אדום',   sky:'#c8102e', table:'#0b0b0b', table2:'#000000' },
+  { name:'לבן',    sky:'#f2f2ef', table:'#c9c4b6', table2:'#b0aa9a' },
+];
+
+const N = (a,b)=>{ const s=Math.sin(a*127.1+b*311.7)*43758.5453; return s-Math.floor(s); };
+const S = (a,b)=>N(a,b)-0.5;
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const q = (v,st)=>Math.round(v/st)*st;
+const HOME_Y = 54, H0 = 40, HORIZON = 64;
+/* a figure that stands is anchored at its feet and sits ON the horizon;
+   one that hangs is anchored at its middle */
+const foot = () => SET.ground ? { o:'50% 100%', y:HORIZON+8 } : { o:'50% 50%', y:HOME_Y };
+
+/* every variant is fn(t, m) — m is the pointer in stage per cent, plus .in/.down */
+const V = [];
+const add = (group,id,name,note,fn) => V.push({group,id,name,note,fn});
+
+/* ══ תנועה ══════════════════════════════════════════════════════════ */
+add('motion','boil','boiling','עומדת במקום ורוטטת — הרעידה של צילום פריים־פריים ביד. הסמן מאיץ את קצב ההתחלפות.',
+ (t,m)=>{ const rate = m.in ? Math.max(1, 7 - Math.round(m.x/16)) : 7;
+   return [{ i:Math.floor(t/rate)%5, x:50+S(t,1)*1.6, y:HOME_Y+S(t,2)*1.6, h:74, r:S(t,3)*3.5 }]; });
+add('motion','multiply','multiply','נגררות לפריים אחת אחרי השנייה עד קומפוזיציה צפופה, ואז מתאפסת. הסמן קובע כמה צפוף.',
+ (t,m)=>{ const cap = m.in ? 3+Math.round(m.x/11) : 12; const n=(t%13)+1; const out=[];
+   for(let k=0;k<Math.min(n,cap);k++) out.push({ i:k%5, x:14+N(k,7)*72, y:24+N(k,8)*54,
+     h:34+N(k,9)*36, r:S(k,10)*54+S(t+k,11)*2, z:k }); return out; });
+add('motion','hop','hop across','אחת מנתרת משמאל לימין ומחליפה שלב בכל קפיצה. הסמן קובע כמה גבוה היא קופצת.',
+ (t,m)=>{ const p=(t%22)/21, b=Math.abs(Math.sin(p*Math.PI*4));
+   const lift = m.in ? 10+ (100-m.y)*0.3 : 26;
+   return [{ i:Math.min(4,Math.floor(p*5)), x:10+p*80, y:66-b*lift, h:62, r:Math.cos(p*Math.PI*4)*16 }]; });
+add('motion','plant','planted','נעוצה בקרקע והראש עולה ומתחלף. הסמן מושך אותה למעלה.',
+ (t,m)=>{ const p=(t%18)/17, pull = m.in ? (100-m.y)/100*20 : 0;
+   return [{ i:Math.min(4,Math.floor(p*5)), x:50+S(t,12)*1, y:118-p*62-pull,
+             h:30+p*52, r:S(t,13)*2.5, o:'50% 100%' }]; });
+add('motion','wave','row wave','שורה של חמש וגל של החלפת שלב עובר לאורכה. הסמן קובע מאיפה הגל יוצא.',
+ (t,m)=>{ const src = m.in ? m.x/100*5 : 0;
+   return Array.from({length:5},(_,k)=>({ i:((t-Math.round(Math.abs(k-src))*2)%5+5)%5,
+     x:12+k*19, y:HOME_Y+S(t+k,14)*1.2, h:56, r:S(t+k,15)*2.5 })); });
+add('motion','stack','stack up','נערמות מלמטה למעלה עד מגדל ואז נופלות לאחת. הסמן מטה את הערימה.',
+ (t,m)=>{ const lean = m.in ? (m.x-50)*0.22 : 0; const n=(t%6)+1; const out=[];
+   for(let k=0;k<n;k++) out.push({ i:k%5, x:50+S(k,24)*14+lean*k*0.4, y:96-k*15,
+     h:40, r:S(k,25)*18+lean, z:10-k }); return out; });
+
+/* ══ קומפוזיציה ═════════════════════════════════════════════════════ */
+add('composition','eclipse','eclipse','שתי ענקיות חוצות זו את זו ומסתירות לסירוגין. ההסתרה היא הקומפוזיציה. הסמן קובע כמה הן מתרחקות.',
+ (t,m)=>{ const p=(t%28)/28, a=Math.sin(p*Math.PI*2), sp = m.in ? 8+m.x*0.22 : 17;
+   return [{ i:Math.floor(t/14)%5, x:50-a*sp, y:50, h:82, r:-a*5, z:a>0?2:1 },
+           { i:(Math.floor(t/14)+2)%5, x:50+a*sp, y:53, h:82, r:a*5, z:a>0?1:2 }]; });
+add('composition','depth','depth row','שורה שנסוגה לעומק: הקדמית ענקית, האחרונה זעירה. הסמן מזיז את נקודת המבט.',
+ (t,m)=>{ const sh = m.in ? (m.x-50)*0.3 : 0;
+   return Array.from({length:5},(_,k)=>({ i:((t-k)%5+5)%5, x:15+k*18.5+sh*(1-k/5),
+     y:74-k*8, h:74-k*12, r:S(t+k,3)*2, z:9-k })); });
+add('composition','crowd','crowd','קהל צפוף בגדלים מעורבים בשלושה עומקים. הסמן פותח בו שביל.',
+ (t,m)=>Array.from({length:12},(_,k)=>{ const row=k%3;
+   const hx=8+N(k,4)*84, hy=46+row*13+N(k,6)*8;
+   const d=m.in?Math.abs(hx-m.x):99, part=clamp((20-d)/20,0,1)*16*(hx<m.x?-1:1);
+   return { i:(k+Math.floor(t/4))%5, x:hx+part+S(t+k*3,5)*1.6, y:hy+S(t+k*5,7)*1.4,
+            h:26+row*9+N(k,8)*8, r:S(k,9)*16+S(t+k,10)*2.5, z:row*3+(k%3) }; }));
+add('composition','totem','totem','נערמות לעמוד אחד עם חפיפה כבדה — אובייקט מורכב, לא חמישה נפרדים. הסמן מסובב אותו.',
+ (t,m)=>{ const tw = m.in ? (m.x-50)*0.2 : 0;
+   return Array.from({length:5},(_,k)=>({ i:((t+k)%5+5)%5, x:50+S(k,11)*7+tw*(k-2)*0.5,
+     y:88-k*14, h:38, r:S(k,12)*10+S(t+k,13)*1.5+tw, z:10-k })); });
+add('composition','peek','peek','עולות מאחורי הדיונה ורק הקודקוד מציץ, כל אחת בקצב שלה — הקומפוזיציה היחידה שמשתמשת בקרקע כדי להסתיר. הסמן מרים את מי שקרוב אליו.',
+ (t,m)=>Array.from({length:6},(_,k)=>{ const x=10+k*16;
+   const ph=(t+k*4)%22, auto = ph<11?ph/11:(22-ph)/11;
+   const near = m.in ? clamp((20-Math.abs(x-m.x))/20,0,1) : 0;
+   const up = Math.max(auto, near);
+   return { i:(k+Math.floor(t/9))%5, x, y:108-up*32, h:44, r:S(t+k,14)*2, z:k }; }));
+V[V.length-1].fg = true;
+
+add('composition','fan','fan','מניפה סביב ציר מתחת לפריים, כמו יד של קלפים. הסמן פותח וסוגר אותה.',
+ (t,m)=>{ const spread = m.in ? 5+m.x*0.18 : 13;
+   return Array.from({length:7},(_,k)=>{ const a=(k-3)*spread+Math.sin(t/6)*6;
+     return { i:((t-k)%5+5)%5, x:50+Math.sin(a*Math.PI/180)*40, y:96-Math.cos(a*Math.PI/180)*30,
+              h:52, r:a, o:'50% 120%', z:7-Math.abs(k-3) }; }); });
+add('composition','domino','domino','שורה שנופלת אחת אחרי השנייה ומתרוממת. הסמן מפיל אותן לכיוון שלו.',
+ (t,m)=>Array.from({length:5},(_,k)=>{ const x=16+k*17;
+   const ph=((t-k*3)%24+24)%24, auto = ph<8?ph/8: ph<16?1:(24-ph)/8;
+   const hit = m.in ? clamp((26-Math.abs(x-m.x))/26,0,1) : 0;
+   const dir = x < m.x ? -1 : 1;
+   return { i:k%5, x, y:92, h:50, r:(hit?dir*hit*74:auto*74), o:'50% 100%', z:5-k }; }));
+add('composition','punch','zoom punch','אחת מסתערת על המצלמה עד שהיא חורגת מהפריים. הסמן קובע לאן היא מסתערת.',
+ (t,m)=>{ const p=(t%20)/20;
+   const back=Array.from({length:4},(_,k)=>({ i:(k+1)%5, x:14+k*24, y:52, h:26, r:S(k,15)*8, z:1 }));
+   return [...back,{ i:Math.floor(t/20)%5, x:m.in?50+(m.x-50)*p:50, y:m.in?52+(m.y-52)*p:56,
+                     h:18+p*p*110, r:p*14, z:20 }]; });
+add('composition','conga','conga','טור אלכסוני שצועד וחוצה את הפריים, כל אחת מסתירה חלקית את הבאה. הסמן מאיץ את הטור.',
+ (t,m)=>{ const sp = m.in ? 1+m.x/50 : 1;
+   return Array.from({length:6},(_,k)=>{ const p=(((t*sp+k*4)%30)/30);
+     return { i:(k+Math.floor(t/7))%5, x:-8+p*116, y:30+p*46, h:24+p*44, r:-10+p*20, z:Math.round(p*10) }; }); });
+add('composition','mirror','mirror','זוג משוקף על קו האופק — הקרקע כציר ולא כרצפה. הסמן מזיז את הזוג.',
+ (t,m)=>{ const i=Math.floor(t/6)%5, x = m.in ? m.x : 50+Math.sin(t/9)*16;
+   return [{ i, x, y:HORIZON-22, h:56, r:Math.sin(t/9)*6, z:2 },
+           { i, x, y:HORIZON+22, h:56, r:-Math.sin(t/9)*6, z:1, flip:true }]; });
+add('composition','glitch','glitch grid','רשת מסודרת שכמה תאים בה מסרבים להתנהג. הסמן מגדיל את הכאוס.',
+ (t,m)=>{ const chaos = m.in ? .55+ (100-m.y)/100*.35 : .78;
+   return Array.from({length:9},(_,k)=>{ const col=k%3,row=(k/3)|0, off=N(k+t*7,18)>chaos;
+     return { i:off?(k+t)%5:(k+Math.floor(t/6))%5, x:24+col*26+(off?S(t+k,19)*7:0),
+              y:30+row*22+(off?S(t+k,20)*6:0), h:off?34:28, r:off?S(t+k,21)*30:0, z:off?9:1 }; }); });
+
+/* ══ עכבר ═══════════════════════════════════════════════════════════ */
+add('mouse','sunflowers','sunflowers','שורה נטועה. כל אחת נוטה לכיוון הסמן כמו חמנייה לשמש.',
+ (t,m)=>Array.from({length:6},(_,k)=>{ const x=12+k*15.2, f=foot();
+   const ang=Math.atan2(m.y-(f.y-18), m.x-x)*180/Math.PI+90;
+   const near=clamp(1-Math.hypot(m.x-x,m.y-f.y)/60,0,1);
+   return { i:k%5, x, y:f.y, h:H0, o:'50% 100%', r:q(clamp(ang,-52,52)*(m.in?.35+near*.65:0),6) }; }));
+add('mouse','magnet','magnet','נמשכות אל הסמן ונאספות סביבו. הרחוקות מגיעות באיחור.',
+ (t,m)=>Array.from({length:8},(_,k)=>{ const hx=12+(k%4)*25, hy=34+((k/4)|0)*34;
+   const p=m.in?clamp(.35+(k%4)*.16,0,1):0;
+   return { i:(k+Math.floor(t/6))%5, x:q(hx+(m.x-hx)*p,2), y:q(hy+(m.y-hy)*p,2),
+            h:H0-6, r:q(S(k,3)*18,6), z:k }; }));
+add('mouse','repel','repel','בורחות מהסמן ופותחות סביבו חור.',
+ (t,m)=>Array.from({length:9},(_,k)=>{ const hx=18+(k%3)*32, hy=30+((k/3)|0)*22;
+   const dx=hx-m.x, dy=hy-m.y, d=Math.hypot(dx,dy)||1, push=m.in?clamp((36-d)/36,0,1)*28:0;
+   return { i:k%5, x:q(hx+dx/d*push,2), y:q(hy+dy/d*push,2), h:H0-10,
+            r:q(S(k,4)*14+push*.5,6), z:9-k }; }));
+add('mouse','spotlight','spotlight','הסמן לא מזיז אף אחת — הוא קובע באיזה שלב של ההפיכה כל אחת נמצאת.',
+ (t,m)=>Array.from({length:9},(_,k)=>{ const x=16+(k%3)*34, y=32+((k/3)|0)*20;
+   const d=m.in?Math.hypot(x-m.x,y-m.y):999;
+   return { i:clamp(Math.round(4-d/13),0,4), x, y, h:H0-10, r:q(S(k,5)*12,6), z:k }; }));
+add('mouse','stir','stir','הסמן מערבב. הן חגות בכיוון שאת מסובבת אותו וממשיכות רגע אחרי שעצרת.',
+ (t,m)=>Array.from({length:7},(_,k)=>{ const a=k*(Math.PI*2/7)+m.stir, R=m.in?26:30;
+   return { i:(k+Math.floor(t/7))%5, x:q(50+Math.cos(a)*R*1.5,1.5), y:q(HOME_Y+Math.sin(a)*R*.55,1.5),
+            h:H0-8, r:q(a*180/Math.PI%360*.15,6), z:Math.round(Math.sin(a)*8)+10 }; }));
+add('mouse','pick','pick up','הקרובה ביותר לסמן נשלפת החוצה וגדלה — כמו לבחור מתוך צנצנת.',
+ (t,m)=>{ let best=-1,bd=1e9;
+   for(let k=0;k<6;k++){ const x=12+k*15.2, d=Math.abs(x-m.x); if(m.in&&d<bd){bd=d;best=k;} }
+   return Array.from({length:6},(_,k)=>{ const on=k===best&&bd<12;
+     return { i:k%5, x:12+k*15.2, y:q(HOME_Y-(on?14:0),2), h:H0+(on?9:0), r:q(S(k,6)*8,6), z:on?20:k }; }); });
+add('mouse','scrub','scrub','הסמן משמאל לימין מגלגל את כל ההפיכה קדימה ואחורה.',
+ (t,m)=>Array.from({length:5},(_,k)=>({ i:clamp(Math.round((m.in?m.x/100*5:2.5)+k*.35)%5,0,4),
+   x:16+k*17, y:HOME_Y, h:H0-4, r:q(S(k,7)*10,6), z:k })));
+add('mouse','shy','shy','מתחמקות. כשהסמן מתקרב הן צונחות מתחת לקו האופק.',
+ (t,m)=>Array.from({length:6},(_,k)=>{ const x=12+k*15.2, d=m.in?Math.abs(x-m.x):99;
+   return { i:k%5, x, y:q(HOME_Y+clamp((22-d)/22,0,1)*44,3), h:H0, r:q(S(k,8)*10,6), z:k }; }));
+add('mouse','swat','swat','לחיצה מפילה אותן לצד שממנו לחצת, ומשחרור מעמיד אותן בחזרה.',
+ (t,m)=>Array.from({length:6},(_,k)=>{ const x=12+k*15.2;
+   const hit=m.down?clamp((26-Math.abs(x-m.x))/26,0,1):0, dir=x<m.x?-1:1;
+   return { i:k%5, x, y:HOME_Y, h:H0, o:'50% 100%', r:q(dir*hit*62+S(k,9)*6,6), z:k }; }));
+add('mouse','wake','wake','רשת ישנה שהסמן מעיר — משאיר שובל של עקבות ולא רדיפה.',
+ (t,m)=>Array.from({length:12},(_,k)=>{ const x=12+(k%4)*25, y=30+((k/4)|0)*22;
+   const w=clamp((26-(m.in?Math.hypot(x-m.x,y-m.y):999))/26,0,1);
+   return { i:w>.5?4:k%5, x, y:q(y-w*7,2), h:(H0-14)+w*13, r:q(S(k,10)*14*(1-w),6), z:w>.4?20+k:k }; }));
+
+/* ══ נועז — now all pointer-aware ═══════════════════════════════════ */
+add('bold','giant','giant','אחת ענקית חתוכה בקצה הפריים ולרגליה שורה זעירה, יחס 1:8. הסמן מטה את הענקית והקטנות נגררות אליו.',
+ (t,m)=>{ const lean = m.in ? (m.x-34)*0.10 : -3;
+   const out=[{ i:Math.floor(t/9)%5, x:34, y:62, h:190, r:clamp(lean,-14,14), z:30 }];
+   for(let k=0;k<7;k++){ const hx=60+k*7, d=m.in?(m.x-hx)*0.18:0;
+     out.push({ i:(k+Math.floor(t/5))%5, x:hx+d, y:84, h:24, r:S(k,1)*10, z:k }); }
+   return out; });
+add('bold','wallpaper','wallpaper','טפט צפוף שגולש מכל הצדדים. התאים ליד הסמן תופחים וקופצים שלב.',
+ (t,m)=>{ const out=[]; let n=0;
+   for(let r=0;r<4;r++) for(let c=0;c<7;c++){ const x=-4+c*17, y=6+r*29;
+     const w=clamp((22-(m.in?Math.hypot(x-m.x,y-m.y):999))/22,0,1);
+     out.push({ i:w>.5?4:(r*7+c+Math.floor(t/3))%5, x, y, h:34+w*16,
+                r:S(r*7+c,2)*8, z:w>.4?40+n:n++ }); }
+   return out; });
+add('bold','spiral','spiral','ספירלה שמתרחבת החוצה, 1:9. הסמן מסובב אותה סביב עצמה.',
+ (t,m)=>{ const wind = m.in ? (m.x-50)/50*Math.PI : 0;
+   return Array.from({length:11},(_,k)=>{ const a=k*0.85+t/14+wind, R=3+k*k*0.45;
+     return { i:(k+Math.floor(t/6))%5, x:50+Math.cos(a)*R*1.5, y:52+Math.sin(a)*R*0.72,
+              h:9+k*7, r:S(k,3)*14, z:k }; }); });
+add('bold','corridor','corridor','מסדרון פרספקטיבי אל נקודת מגוז. הסמן מזיז את נקודת המגוז והמסדרון מתעקם.',
+ (t,m)=>{ const vp = m.in ? (m.x-50)*0.5 : 0; const out=[];
+   for(let k=0;k<6;k++){ const p=k/5, h=96-p*80, y=74-p*22;
+     out.push({ i:(k+Math.floor(t/5))%5, x:14-p*22+p*36+vp*p, y, h, r:S(k,4)*4, z:20-k });
+     out.push({ i:(k+2+Math.floor(t/5))%5, x:86+p*22-p*36+vp*p, y, h, r:S(k,5)*4, z:20-k, flip:true }); }
+   return out; });
+add('bold','cascade','cascade','נופלות באלכסון וחוצות את הפריים. הסמן מסיט את הזרם הצידה.',
+ (t,m)=>{ const dfl = m.in ? (m.x-50)*0.5 : 0;
+   return Array.from({length:8},(_,k)=>{ const p=(((t+k*5)%40)/40);
+     return { i:(k+Math.floor(t/7))%5, x:-12+p*128+dfl*Math.sin(p*Math.PI), y:-14+p*126,
+              h:26+Math.sin(p*Math.PI)*30, r:-24+p*70, z:Math.round(p*10) }; }); });
+add('bold','parade','parade','תהלוכה זעירה על האופק מול ענקית בקדמה, 1:9. הסמן קובע לאן ובאיזו מהירות היא צועדת.',
+ (t,m)=>{ const sp = m.in ? (m.x-50)/25 : 1.4;
+   const out=[{ i:(Math.floor(t/11))%5, x:78, y:40, h:155, r:4, z:30, flip:true }];
+   for(let k=0;k<9;k++){ const p=((((t*sp+k*9)%108)+108)%108)/108;
+     out.push({ i:(k+Math.floor(t/6))%5, x:-6+p*112, y:70, h:17, r:S(k+t,6)*7, z:k }); }
+   return out; });
+add('bold','tower','tower','מגדל חתוך למעלה ולמטה, אז הוא מרגיש גבוה מהפריים. הסמן מטה אותו.',
+ (t,m)=>{ const lean = m.in ? (m.x-50)*0.25 : 0;
+   return Array.from({length:7},(_,k)=>({ i:((k+Math.floor(t/4))%5), x:50+S(k,7)*11+lean*(k-3)*0.5,
+     y:-16+k*22+(t%4)*0.8, h:H0, r:S(k,8)*13+lean, z:10-k })); });
+add('bold','split','split','שן בצד אחד, טרול בצד השני. הסמן הוא הגבול ביניהם.',
+ (t,m)=>{ const edge = m.in ? m.x : 50+Math.sin(t/9)*46;
+   return Array.from({length:10},(_,k)=>{ const x=8+(k%5)*21, y=38+((k/5)|0)*26;
+     return { i: x<edge?0:4, x, y, h:38, r:S(k,9)*10, z:k }; }); });
+add('bold','stampede','stampede','עדר שרץ אל המצלמה בתאוצה, 1:12. הסמן הוא היעד — הן רצות אליו.',
+ (t,m)=>Array.from({length:12},(_,k)=>{ const p=(((t*1.6+k*8.5)%96)/96), e=p*p;
+   const tx = m.in ? m.x : 50;
+   return { i:(k+Math.floor(t/5))%5, x:tx+(N(k,10)-0.5)*90*e, y:40+e*62,
+            h:10+e*110, r:S(k,11)*10*e, z:Math.round(e*20) }; }));
+
+/* ══ חדש — the ranges nothing else reaches ══════════════════════════ */
+add('new','solo','solo','אחת בלבד, 300%, חתוכה לפרצוף. הספירה הכי נמוכה והסקאלה הכי גבוהה שיש — ההפך הגמור מקהל.',
+ (t,m)=>[{ i:Math.floor(t/10)%5, x: m.in?clamp(m.x,25,75):50, y: m.in?clamp(m.y,30,70):48,
+           h:300, r:S(t,30)*2 }]);
+add('new','duet','duet','שתיים בלבד בפינות מנוגדות והאמצע ריק לגמרי. החלל הריק הוא הנושא, לא הדמויות.',
+ (t,m)=>{ const d = m.in ? clamp(m.x/100,0,1) : .5;
+   return [{ i:Math.floor(t/9)%5,     x:10+d*14, y:26, h:52, r:-6, z:2 },
+           { i:(Math.floor(t/9)+3)%5, x:90-d*14, y:76, h:52, r:6,  z:1 }]; });
+add('new','field','field','ארבעים זעירות — הספירה הכי גבוהה שיש. נקרא כמרקם ולא כאובייקטים. הסמן מפנה שדה סביבו.',
+ (t,m)=>Array.from({length:40},(_,k)=>{ const x=4+(k%10)*10.4, y=16+((k/10)|0)*22;
+   const d=m.in?Math.hypot(x-m.x,y-m.y):999, push=clamp((18-d)/18,0,1)*14;
+   const dx=(x-m.x)||1, dy=(y-m.y)||1, len=Math.hypot(dx,dy)||1;
+   return { i:(k+Math.floor(t/6))%5, x:x+dx/len*push, y:y+dy/len*push,
+            h:13+N(k,31)*5, r:S(k,32)*20, z:k }; }));
+add('new','edge','edge','הכל נדחק אל דפנות הפריים והמרכז נשאר ריק — קומפוזיציה שמסרבת למרכז. הסמן דוחף אותן פנימה.',
+ (t,m)=>{ const pull = m.in ? clamp((100-m.y)/100,0,1)*18 : 0; const f=foot(); const out=[];
+   for(let k=0;k<10;k++){ const a=k*(Math.PI*2/10)+Math.PI/10;
+     const rx=44-pull, ry=36-pull*0.7;
+     out.push({ i:(k+Math.floor(t/7))%5, x:50+Math.cos(a)*rx, y:52+Math.sin(a)*ry,
+                h:30, r:S(k,33)*22, z:k }); }
+   return out; });
+add('new','offbeat','offbeat','שורה במרווחים לא סדירים — סינקופה במקום מטרונום. אותה שורה, אבל הקצב שלה שבור.',
+ (t,m)=>{ const gaps=[0,9,11,24,27,30,44,58,62,76]; const sq = m.in ? m.x/50 : 1;
+   const f=foot();
+   return gaps.map((g,k)=>({ i:(k+Math.floor(t/5))%5, x:8+g*sq*0.95, y:f.y+S(t+k,34)*1.5,
+     h:34+N(k,35)*16, r:S(k,36)*9, o:f.o, z:k })); });
+add('new','queue','queue','טור אלכסוני צפוף שנסוג לעומק, בחפיפה כבדה — כמעט אובייקט אחד ארוך. הסמן מותח ומכווץ אותו.',
+ (t,m)=>{ const sp = m.in ? .6+m.x/100 : 1; const f=foot();
+   return Array.from({length:9},(_,k)=>{ const p=k/8;
+     return { i:(k+Math.floor(t/6))%5, x:16+p*58*sp, y:(f.y-14)+p*30, h:64-p*36,
+              r:S(k,37)*6, o:f.o, z:20-k }; }); });
+
+/* ══ plumbing ═══════════════════════════════════════════════════════ */
+let seq = 0;
+function makeStage() {
+  const n = ++seq;
+  const st = document.createElement('div');
+  st.className = 'stage';
+  st.innerHTML =
+    `<svg class="stage__bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+       <rect width="400" height="300" fill="var(--sky)"/>
+       <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#g${n})"/>
+       <defs><linearGradient id="g${n}" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+       </linearGradient></defs>
+     </svg>
+     <img class="stage__photo" alt="" hidden>
+     <div class="stage__actors"></div>
+     <svg class="stage__fg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+       <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#f${n})"/>
+       <defs><linearGradient id="f${n}" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+       </linearGradient></defs>
+     </svg>`;
+  st._actors = st.querySelector('.stage__actors');
+  st._photo  = st.querySelector('.stage__photo');
+  st._pool   = [];
+  st._m = { x:50, y:HOME_Y, in:false, down:false, stir:0 };
+  st._stirVel = 0; st._lastA = null;
+
+  const at = e => { const r = st.getBoundingClientRect();
+    return { x:(e.clientX-r.left)/r.width*100, y:(e.clientY-r.top)/r.height*100 }; };
+  st.addEventListener('pointermove', e => {
+    const p = at(e); st._m.x=p.x; st._m.y=p.y; st._m.in=true;
+    const a = Math.atan2(p.y-HOME_Y, p.x-50);
+    if (st._lastA !== null) { let d=a-st._lastA;
+      while(d>Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2;
+      st._stirVel = clamp(st._stirVel + d*0.9, -0.5, 0.5); }
+    st._lastA = a;
+  });
+  st.addEventListener('pointerenter', ()=>{ st._m.in=true; });
+  st.addEventListener('pointerleave', ()=>{ st._m.in=false; st._m.down=false; st._lastA=null; });
+  st.addEventListener('pointerdown', e=>{ st._m.down=true; const p=at(e); st._m.x=p.x; st._m.y=p.y; });
+  st.addEventListener('pointerup',   ()=>{ st._m.down=false; });
+  return st;
+}
+
+function draw(stage, v, t, mul) {
+  const list = v.fn(t, stage._m), pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className='actor'; img.alt='';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img,k)=>{
+    const a = list[k];
+    if (!a) { img.style.display='none'; return; }
+    img.style.display='';
+    if (img._i !== a.i) { img.src = POPS[a.i]; img._i = a.i; }
+    img.style.height = (a.h*mul)+'%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transformOrigin = a.o || '50% 50%';
+    img.style.transform = `translate(${a.x}cqw, ${a.y}cqh) translate(-50%,-50%) rotate(${a.r||0}deg)`
+                        + (a.flip ? ' scale(-1,1)' : '');
+  });
+}
+
+/* ── tabs ── */
+const GROUPS = [
+  { key:'motion',      label:'תנועה' },
+  { key:'composition', label:'קומפוזיציה' },
+  { key:'mouse',       label:'עכבר' },
+  { key:'bold',        label:'נועז' },
+  { key:'new',         label:'חדש' },
+  { key:'all',         label:'הכל' },
+];
+let group = 'motion';
+let cards = [];
+const grid = document.getElementById('grid');
+
+function build() {
+  grid.innerHTML = '';           // stale actors cannot survive a rebuild
+  cards = [];
+  const list = V.filter(v => group === 'all' || v.group === group);
+  list.forEach((v,n)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+1).padStart(2,'0')}</span>
+      <span class="card__name">${v.name}</span><span class="card__tag">${v.group}</span></div>`;
+    const stage = makeStage();
+    if (v.fg) stage.classList.add('has-fg');
+    card.appendChild(stage);
+    card.insertAdjacentHTML('beforeend', `<p class="card__note">${v.note}</p>`);
+    grid.appendChild(card);
+    cards.push({ v, stage });
+  });
+  applyBg(curBg);
+  for (const c of cards) draw(c.stage, c.v, tick, +sizeEl.value/100);
+}
+
+const tabs = document.getElementById('tabs');
+GROUPS.forEach((g,k)=>{
+  const b = document.createElement('button');
+  const n = g.key==='all' ? V.length : V.filter(v=>v.group===g.key).length;
+  b.className = 'tab' + (k===0?' on':'');
+  b.innerHTML = `${g.label}<span class="n">${n}</span>`;
+  b.onclick = () => { group = g.key; build();
+    tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
+  tabs.appendChild(b);
+});
+
+/* ── background ── */
+let curBg = BGS[0];
+function applyBg(b) {
+  curBg = b;
+  const root = document.documentElement.style;
+  if (!b.photo) { root.setProperty('--sky',b.sky); root.setProperty('--table',b.table); root.setProperty('--table2',b.table2); }
+  for (const c of cards) {
+    const p = c.stage._photo;
+    if (b.photo) { p.onerror=()=>{p.hidden=true;}; p.onload=()=>{p.hidden=false;}; p.src=DEFAULT_BG; }
+    else p.hidden = true;
+  }
+}
+const swWrap = document.getElementById('swatches');
+BGS.forEach((b,k)=>{
+  const btn = document.createElement('button');
+  btn.className='sw'+(k===0?' on':''); btn.title=b.name;
+  btn.style.background = b.photo ? 'linear-gradient(160deg,#1b2a44 0 55%,#8fa8c8 55%)'
+                                 : `linear-gradient(160deg, ${b.sky} 0 55%, ${b.table} 55%)`;
+  btn.onclick = ()=>{ applyBg(b); swWrap.querySelectorAll('.sw').forEach(s=>s.classList.remove('on')); btn.classList.add('on'); };
+  swWrap.appendChild(btn);
+});
+
+/* ── set toggle ── */
+const setWrap = document.getElementById('sets');
+Object.entries(SETS).forEach(([key,cfg],k)=>{
+  const btn = document.createElement('button');
+  btn.textContent = cfg.label;
+  btn.className = 'sw setbtn' + (k===0?' on':'');
+  btn.onclick = ()=>{
+    SET = cfg; POPS = [1,2,3,4,5].map(cfg.src);
+    /* clear the cached frame index or draw() skips the src write — it only
+       reassigns when the STAGE changes, not when the set does */
+    for (const c of cards) for (const img of c.stage._pool) img._i = undefined;
+    setWrap.querySelectorAll('.sw').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  };
+  setWrap.appendChild(btn);
+});
+
+/* ── clock: one for the whole page, and the pointer is SAMPLED on the beat
+      rather than tracked continuously — that sampling is what keeps every
+      response stepped instead of a smooth follow ── */
+const fpsEl = document.getElementById('fps'), sizeEl = document.getElementById('size');
+const tickEl = document.getElementById('tick');
+let tick = 0, last = 0;
+function frame(now) {
+  if (now - last >= 1000/+fpsEl.value) {
+    last = now; tick++;
+    const mul = +sizeEl.value/100;
+    for (const c of cards) {
+      c.stage._m.stir += c.stage._stirVel;
+      c.stage._stirVel *= 0.88;
+      if (Math.abs(c.stage._stirVel) < 0.002) c.stage._stirVel = 0;
+      draw(c.stage, c.v, tick, mul);
+    }
+    tickEl.textContent = 't ' + tick;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+fpsEl.oninput  = ()=> document.getElementById('fpsVal').textContent = fpsEl.value+' fps';
+sizeEl.oninput = ()=> document.getElementById('sizeVal').textContent = sizeEl.value+'%';
+
+build();
+</script>
+</body>
+</html>

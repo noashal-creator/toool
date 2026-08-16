@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — o font reference</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<style>
+:root{ --red:#FE0000; --black:#000; }
+*{box-sizing:border-box}
+body{margin:0;background:#560476;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 4px;color:#fff}
+.sub{opacity:.75;margin:0 0 20px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.cell{background:rgba(0,0,0,.18);border-radius:10px;padding:10px 6px 8px;text-align:center}
+.o{color:var(--red);-webkit-text-stroke:2px var(--black);paint-order:stroke fill;
+  text-transform:uppercase;font-size:88px;line-height:1.05;display:block;height:104px;overflow:hidden}
+.name{font-size:12px;opacity:.85;margin-top:6px;word-break:break-word}
+.idx{opacity:.5;font-size:11px}
+</style></head><body>
+<h2>TOOOL — כל הפונטים של ה־o</h2>
+<p class="sub">כל אות o בפונט אחר, עם השם. תגידי לי אילו מספרים/שמות להוריד.</p>
+<div class="grid" id="grid"></div>
+<script>
+const FONTS = [
+  '"ABC Helveesti Spikes Mono Trial"','Futura','"Snell Roundhand"','Impact','Georgia',
+  '"Comic Sans MS"','Didot','"American Typewriter"','"Brush Script MT"','"Arial Black"',
+  'Optima','"Bradley Hand"','Copperplate','"Chalkboard SE"','Phosphate','Luminari',
+  '"Courier New"','"Party LET"','Skia','"Apple Chancery"','Superclarendon','"Savoye LET"'
+];
+const grid = document.getElementById('grid');
+FONTS.forEach((f, i) => {
+  const c = document.createElement('div'); c.className = 'cell';
+  c.innerHTML = `<span class="o" style="font-family:${f},'Helvetica Neue',sans-serif">o</span>`
+    + `<div class="name"><span class="idx">${i+1}.</span> ${f.replace(/"/g,'')}</div>`;
+  grid.appendChild(c);
+});
+</script>
+</body></html>

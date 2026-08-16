@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — גיוון + מורף</title>
+<style>
+/* five real variable display faces, self-hosted in assets/fonts/var */
+@font-face{font-family:VAnybody;   src:url('assets/fonts/var/Anybody.ttf')    format('truetype-variations');font-weight:1 1000;font-stretch:50% 150%;}
+@font-face{font-family:VArchivo;   src:url('assets/fonts/var/Archivo.ttf')    format('truetype-variations');font-weight:1 1000;font-stretch:50% 150%;}
+@font-face{font-family:VBricolage; src:url('assets/fonts/var/Bricolage.ttf')  format('truetype-variations');font-weight:1 1000;font-stretch:50% 150%;}
+@font-face{font-family:VRoboto;    src:url('assets/fonts/var/RobotoFlex.ttf') format('truetype-variations');font-weight:1 1000;font-stretch:25% 151%;}
+@font-face{font-family:VRecursive; src:url('assets/fonts/var/Recursive.ttf')  format('truetype-variations');font-weight:1 1000;}
+
+:root{ --red:#CC0000; --blue:#1A6FFF; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px;direction:rtl}
+.sub{opacity:.62;margin:0 0 20px;font-size:14px;max-width:960px;line-height:1.6;direction:rtl}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:960px}
+figure{min-width:0;margin:0}
+figcaption{margin-top:9px;font-size:16px;font-weight:700;direction:rtl}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+.band{position:relative;width:100%;min-width:0;max-width:100%;aspect-ratio:1288/396;background:var(--blue);
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.word{width:max-content;white-space:nowrap;line-height:1;letter-spacing:-.055em;margin:0}
+.ltr{display:inline-block;vertical-align:baseline;font-size:1em;text-transform:lowercase;
+  color:var(--red);-webkit-text-stroke:2px #000;paint-order:stroke fill;
+  animation:vmorph 1.4s linear infinite}
+.ltr:nth-child(1){animation-delay:0s}     .ltr:nth-child(2){animation-delay:-.28s}
+.ltr:nth-child(3){animation-delay:-.56s}  .ltr:nth-child(4){animation-delay:-.84s}
+.ltr:nth-child(5){animation-delay:-1.12s}
+@keyframes vmorph{
+  0%   {font-variation-settings:'wght' 500,'wdth' 100} 12.5%{font-variation-settings:'wght' 830,'wdth' 132}
+  25%  {font-variation-settings:'wght' 900,'wdth' 150} 37.5%{font-variation-settings:'wght' 830,'wdth' 132}
+  50%  {font-variation-settings:'wght' 500,'wdth' 100} 62.5%{font-variation-settings:'wght' 170,'wdth' 68}
+  75%  {font-variation-settings:'wght' 100,'wdth' 52}  87.5%{font-variation-settings:'wght' 170,'wdth' 68}
+  100% {font-variation-settings:'wght' 500,'wdth' 100}}
+
+/* 1 · one face per letter — five different typefaces, all morphing */
+.vMix .ltr:nth-child(1){font-family:VAnybody}
+.vMix .ltr:nth-child(2){font-family:VArchivo}
+.vMix .ltr:nth-child(3){font-family:VBricolage}
+.vMix .ltr:nth-child(4){font-family:VRoboto}
+.vMix .ltr:nth-child(5){font-family:VRecursive}
+
+/* 2 · display-heavy mix */
+.vDisp .ltr:nth-child(1){font-family:VAnybody}
+.vDisp .ltr:nth-child(2){font-family:VBricolage}
+.vDisp .ltr:nth-child(3){font-family:VAnybody}
+.vDisp .ltr:nth-child(4){font-family:VArchivo}
+.vDisp .ltr:nth-child(5){font-family:VAnybody}
+
+/* 3–7 · each face on its own, so you can judge them individually */
+.vA .ltr{font-family:VAnybody} .vB .ltr{font-family:VArchivo}
+.vC .ltr{font-family:VBricolage} .vD .ltr{font-family:VRoboto}
+.vE .ltr{font-family:VRecursive}
+</style></head><body>
+<h2>TOOOL — גיוון גופנים <b>וגם</b> מורף רציף 👇</h2>
+<p class="sub">הורדתי חמישה גופני display <b>משתנים</b> (Anybody · Archivo · Bricolage · Roboto Flex · Recursive) לתיקיית הפרויקט. עכשיו אפשר גם וגם: לכל אות גופן אחר <b>וגם</b> כל אות מתמרפפת ברציפות על הצירים שלה — בלי אף קפיצה. הראשונות הן תערובות; אחריהן כל גופן לחוד.</p>
+<div class="grid" id="grid"></div>
+<script>
+const V=[
+ ['vMix','1 · חמישה גופנים שונים','כל אות בגופן משתנה אחר — הכי מגוון'],
+ ['vDisp','2 · תערובת display','דגש על Anybody ו-Bricolage — אופי חזק'],
+ ['vA','3 · Anybody בלבד','גופן display אקספרסיבי, טווח רוחב ענק'],
+ ['vB','4 · Archivo בלבד','גרוטסק נקי ומודרני'],
+ ['vC','5 · Bricolage בלבד','דחוס ואופייני'],
+ ['vD','6 · Roboto Flex בלבד','ניטרלי, טווח הרוחב הרחב ביותר'],
+ ['vE','7 · Recursive בלבד','משקל בלבד — אין ציר רוחב'],
+];
+const grid=document.getElementById('grid');
+V.forEach(([cls,name,desc])=>{
+  const f=document.createElement('figure');
+  f.innerHTML=`<div class="band"><h1 class="word ${cls}">`+
+    [...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+
+    `</h1></div><figcaption>${name}<span>${desc}</span></figcaption>`;
+  grid.appendChild(f);
+  const band=f.querySelector('.band'), word=f.querySelector('.word');
+  const relock=()=>{word.style.fontSize=(band.clientWidth*0.275)+'px';};
+  relock(); new ResizeObserver(relock).observe(band);
+  (function pin(){
+    word.style.transform='none';
+    const w=word.getBoundingClientRect().width, t=band.clientWidth*0.88;
+    if(w>0) word.style.transform=`scaleX(${(t/w).toFixed(4)})`;
+    requestAnimationFrame(pin);
+  })();
+});
+</script>
+</body></html>

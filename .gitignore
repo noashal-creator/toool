@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Claude Code workspace
+.claude/
+
+# scratch / dev-only files (underscore-prefixed)
+_*
+
+# backups
+*.bak
+
+# planning docs (keep private)
+GRID-PROMPT.md
+LIVE-PLAN.md
+
+# Netlify local state
+.netlify/

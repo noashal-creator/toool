@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pop — 5 frames</title>
+<style>
+  :root {
+    --bg: #000;
+    --panel: rgba(255,255,255,.06);
+    --line: rgba(255,255,255,.16);
+    --txt: #f2f2f2;
+    --dim: rgba(242,242,242,.55);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--txt);
+    font: 400 14px/1.4 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+  }
+
+  .stage {
+    position: relative;
+    width: min(90vw, 900px);
+    aspect-ratio: 6775 / 5059;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  }
+  .stage img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--fade, 0ms) linear;
+  }
+  .stage img.on { opacity: 1; }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 12px 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  button {
+    font: inherit;
+    color: var(--txt);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  button:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.32); }
+  button.active { background: #fff; color: #000; border-color: #fff; }
+
+  label { display: flex; align-items: center; gap: 8px; color: var(--dim); white-space: nowrap; }
+  input[type=range] { width: 130px; accent-color: #fff; }
+  .val { color: var(--txt); font-variant-numeric: tabular-nums; min-width: 52px; }
+
+  .dots { display: flex; gap: 7px; }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: rgba(255,255,255,.22);
+    cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .dot.on { background: #fff; transform: scale(1.35); }
+
+  .hint { color: var(--dim); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <img src="assets/pop-frames/frame-1.jpg" alt="frame 1" class="on">
+  <img src="assets/pop-frames/frame-2.jpg" alt="frame 2">
+  <img src="assets/pop-frames/frame-3.jpg" alt="frame 3">
+  <img src="assets/pop-frames/frame-4.jpg" alt="frame 4">
+  <img src="assets/pop-frames/frame-5.jpg" alt="frame 5">
+</div>
+
+<div class="bar">
+  <button id="play" class="active">❚❚ Pause</button>
+
+  <label>מהירות
+    <input type="range" id="speed" min="80" max="1200" step="20" value="380">
+    <span class="val" id="speedVal">380ms</span>
+  </label>
+
+  <label>מעבר
+    <input type="range" id="fade" min="0" max="600" step="20" value="0">
+    <span class="val" id="fadeVal">0ms</span>
+  </label>
+
+  <button id="mode">↻ Loop</button>
+
+  <div class="dots" id="dots"></div>
+</div>
+
+<div class="hint">רווח = play/pause · ← → = פריים אחורה/קדימה</div>
+
+<script>
+  const frames = [...document.querySelectorAll('#stage img')];
+  const stage  = document.getElementById('stage');
+  const dotsEl = document.getElementById('dots');
+  const playBtn = document.getElementById('play');
+  const modeBtn = document.getElementById('mode');
+  const speedEl = document.getElementById('speed');
+  const fadeEl  = document.getElementById('fade');
+
+  let i = 0, dir = 1, playing = true, pingpong = false, timer = null;
+
+  frames.forEach((_, n) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (n === 0 ? ' on' : '');
+    d.onclick = () => { show(n); pause(); };
+    dotsEl.appendChild(d);
+  });
+  const dots = [...dotsEl.children];
+
+  function show(n) {
+    i = (n + frames.length) % frames.length;
+    frames.forEach((f, k) => f.classList.toggle('on', k === i));
+    dots.forEach((d, k) => d.classList.toggle('on', k === i));
+  }
+
+  function step() {
+    if (pingpong) {
+      if (i + dir >= frames.length || i + dir < 0) dir *= -1;
+      show(i + dir);
+    } else {
+      show(i + 1);
+    }
+  }
+
+  function restart() {
+    clearInterval(timer);
+    if (playing) timer = setInterval(step, +speedEl.value);
+  }
+
+  function play()  { playing = true;  playBtn.textContent = '❚❚ Pause'; playBtn.classList.add('active'); restart(); }
+  function pause() { playing = false; playBtn.textContent = '▶ Play';   playBtn.classList.remove('active'); clearInterval(timer); }
+
+  playBtn.onclick = () => playing ? pause() : play();
+
+  modeBtn.onclick = () => {
+    pingpong = !pingpong;
+    dir = 1;
+    modeBtn.textContent = pingpong ? '⇄ Ping-pong' : '↻ Loop';
+    modeBtn.classList.toggle('active', pingpong);
+  };
+
+  speedEl.oninput = () => {
+    document.getElementById('speedVal').textContent = speedEl.value + 'ms';
+    restart();
+  };
+
+  fadeEl.oninput = () => {
+    document.getElementById('fadeVal').textContent = fadeEl.value + 'ms';
+    stage.style.setProperty('--fade', fadeEl.value + 'ms');
+  };
+
+  addEventListener('keydown', e => {
+    if (e.code === 'Space')      { e.preventDefault(); playing ? pause() : play(); }
+    if (e.code === 'ArrowRight') { pause(); show(i + 1); }
+    if (e.code === 'ArrowLeft')  { pause(); show(i - 1); }
+  });
+
+  play();
+</script>
+</body>
+</html>

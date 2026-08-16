@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — 4 natural-slide options</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<style>
+:root{ --sc:0.48px; --red:#FE0000; --black:#000; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px}
+.sub{opacity:.6;margin:0 0 20px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:1500px}
+.cell{margin:0}
+figcaption{margin-top:10px;font-size:15px;font-weight:700}
+figcaption span{display:block;font-weight:400;opacity:.6;font-size:13px;margin-top:2px}
+
+/* real-site geometry (Figma node 2949:14, same numbers as styles.css) */
+.banner{position:relative;width:calc(1288 * var(--sc));height:calc(396 * var(--sc));background:#560476;overflow:hidden}
+.logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);width:calc(418.17 * var(--sc));height:calc(1051.43 * var(--sc));margin:0}
+.logo .ltr{position:absolute;left:0;width:100%;margin:0;height:calc(201.25 * var(--sc));
+  font-family:"ABC Helveesti Spikes Mono Trial","Helvetica Neue",sans-serif;font-weight:400;
+  font-size:calc(478.17 * var(--sc));line-height:calc(201.25 * var(--sc));text-align:center;
+  text-transform:uppercase;color:var(--red);-webkit-text-stroke:calc(2.46 * var(--sc)) var(--black);
+  paint-order:stroke fill;transform-origin:center}
+.logo .lt-t{top:calc(22.59 * var(--sc))} .logo .lt-o1{top:calc(223.84 * var(--sc))}
+.logo .lt-o2{top:calc(425.09 * var(--sc))} .logo .lt-o3{top:calc(626.34 * var(--sc))}
+.logo .lt-l{top:calc(827.59 * var(--sc))}
+
+/* easings */
+/* ease-out (settle, no overshoot) */
+/* spring (slight overshoot) = cubic-bezier(.34,1.56,.64,1) */
+
+/* ── Option 1 · Domino from T ─────────────────────────────────
+   every letter collapses behind the T, then slides out to its slot
+   one-by-one. T is the fixed anchor. */
+.v1 .lt-o1{animation:v1o1 4s cubic-bezier(.22,1,.36,1) infinite}
+.v1 .lt-o2{animation:v1o2 4s cubic-bezier(.22,1,.36,1) infinite}
+.v1 .lt-o3{animation:v1o3 4s cubic-bezier(.22,1,.36,1) infinite}
+.v1 .lt-l {animation:v1l  4s cubic-bezier(.22,1,.36,1) infinite}
+@keyframes v1o1{0%,8%{transform:translateY(calc(-201.25 * var(--sc)))}24%,68%{transform:translateY(0)}84%,100%{transform:translateY(calc(-201.25 * var(--sc)))}}
+@keyframes v1o2{0%,16%{transform:translateY(calc(-402.5 * var(--sc)))}32%,68%{transform:translateY(0)}84%,100%{transform:translateY(calc(-402.5 * var(--sc)))}}
+@keyframes v1o3{0%,24%{transform:translateY(calc(-603.75 * var(--sc)))}40%,68%{transform:translateY(0)}84%,100%{transform:translateY(calc(-603.75 * var(--sc)))}}
+@keyframes v1l {0%,32%{transform:translateY(calc(-805 * var(--sc)))}48%,68%{transform:translateY(0)}84%,100%{transform:translateY(calc(-805 * var(--sc)))}}
+
+/* ── Option 2 · Cascade spring drop-in ────────────────────────
+   letters fly in from past the L end and spring into place with a
+   slight overshoot, staggered in reading order. */
+.v2 .lt-o1{animation:v2o1 4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v2 .lt-o2{animation:v2o2 4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v2 .lt-o3{animation:v2o3 4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v2 .lt-l {animation:v2l  4s cubic-bezier(.34,1.56,.64,1) infinite}
+@keyframes v2o1{0%,6%{transform:translateY(calc(640 * var(--sc)))}28%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(640 * var(--sc)))}}
+@keyframes v2o2{0%,12%{transform:translateY(calc(640 * var(--sc)))}34%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(640 * var(--sc)))}}
+@keyframes v2o3{0%,18%{transform:translateY(calc(640 * var(--sc)))}40%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(640 * var(--sc)))}}
+@keyframes v2l {0%,24%{transform:translateY(calc(640 * var(--sc)))}46%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(640 * var(--sc)))}}
+
+/* ── Option 3 · Spread from center ────────────────────────────
+   middle O anchors; the rest collapse onto it then slide symmetrically
+   outward to their slots. Inner pair leads, outer pair follows. */
+.v3 .lt-t {animation:v3t  4s cubic-bezier(.22,1,.36,1) infinite}
+.v3 .lt-o1{animation:v3o1 4s cubic-bezier(.22,1,.36,1) infinite}
+.v3 .lt-o3{animation:v3o3 4s cubic-bezier(.22,1,.36,1) infinite}
+.v3 .lt-l {animation:v3l  4s cubic-bezier(.22,1,.36,1) infinite}
+@keyframes v3o1{0%,10%{transform:translateY(calc(201.25 * var(--sc)))}24%,68%{transform:translateY(0)}86%,100%{transform:translateY(calc(201.25 * var(--sc)))}}
+@keyframes v3o3{0%,10%{transform:translateY(calc(-201.25 * var(--sc)))}24%,68%{transform:translateY(0)}86%,100%{transform:translateY(calc(-201.25 * var(--sc)))}}
+@keyframes v3t {0%,14%{transform:translateY(calc(402.5 * var(--sc)))}30%,68%{transform:translateY(0)}86%,100%{transform:translateY(calc(402.5 * var(--sc)))}}
+@keyframes v3l {0%,14%{transform:translateY(calc(-402.5 * var(--sc)))}30%,68%{transform:translateY(0)}86%,100%{transform:translateY(calc(-402.5 * var(--sc)))}}
+
+/* ── Option 4 · Accordion unstack ─────────────────────────────
+   letters start bunched (60% compressed toward center) then spring
+   apart to even spacing all together, with overshoot. */
+.v4 .lt-t {animation:v4t  4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v4 .lt-o1{animation:v4o1 4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v4 .lt-o3{animation:v4o3 4s cubic-bezier(.34,1.56,.64,1) infinite}
+.v4 .lt-l {animation:v4l  4s cubic-bezier(.34,1.56,.64,1) infinite}
+@keyframes v4o1{0%,12%{transform:translateY(calc(120.75 * var(--sc)))}40%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(120.75 * var(--sc)))}}
+@keyframes v4o3{0%,12%{transform:translateY(calc(-120.75 * var(--sc)))}40%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(-120.75 * var(--sc)))}}
+@keyframes v4t {0%,12%{transform:translateY(calc(241.5 * var(--sc)))}40%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(241.5 * var(--sc)))}}
+@keyframes v4l {0%,12%{transform:translateY(calc(-241.5 * var(--sc)))}40%,70%{transform:translateY(0)}88%,100%{transform:translateY(calc(-241.5 * var(--sc)))}}
+</style></head><body>
+<h2>TOOOL — 4 אפשרויות החלקה טבעית. בחרי מספר 👇</h2>
+<p class="sub">כולן החלקה אמיתית (translate) עם easing טבעי — בלי מתיחה, בלי חיתוך. גודל אמיתי של הלוגו באתר.</p>
+<div class="grid">
+  <figure class="cell"><div class="banner"><h1 class="logo v1"><span class="ltr lt-t">t</span><span class="ltr lt-o1">o</span><span class="ltr lt-o2">o</span><span class="ltr lt-o3">o</span><span class="ltr lt-l">l</span></h1></div><figcaption>1 · Domino from T<span>אותיות מחליקות החוצה מאחורי ה־T, אחת אחרי השנייה</span></figcaption></figure>
+  <figure class="cell"><div class="banner"><h1 class="logo v2"><span class="ltr lt-t">t</span><span class="ltr lt-o1">o</span><span class="ltr lt-o2">o</span><span class="ltr lt-o3">o</span><span class="ltr lt-l">l</span></h1></div><figcaption>2 · Cascade spring<span>נכנסות מהקצה וקופצות למקום עם overshoot קפיצי</span></figcaption></figure>
+  <figure class="cell"><div class="banner"><h1 class="logo v3"><span class="ltr lt-t">t</span><span class="ltr lt-o1">o</span><span class="ltr lt-o2">o</span><span class="ltr lt-o3">o</span><span class="ltr lt-l">l</span></h1></div><figcaption>3 · Spread from center<span>נפתחות מהמרכז החוצה, סימטרי</span></figcaption></figure>
+  <figure class="cell"><div class="banner"><h1 class="logo v4"><span class="ltr lt-t">t</span><span class="ltr lt-o1">o</span><span class="ltr lt-o2">o</span><span class="ltr lt-o3">o</span><span class="ltr lt-l">l</span></h1></div><figcaption>4 · Accordion<span>מתחילות צפופות ונפרשות יחד בקפיצה</span></figcaption></figure>
+</div></body></html>

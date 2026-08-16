@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — reach</title>
+<style>
+  :root { --sky:#000; --table:#9fb3ce; --table2:#7d93b8;
+          --ui:#e9e9ea; --dim:rgba(233,233,234,.5); --line:rgba(255,255,255,.14); }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:14px 16px 60px; background:#0e0e11; color:var(--ui);
+         font:400 13px/1.45 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+  h1 { font-size:15px; font-weight:600; margin:0 0 3px; }
+  .sub { color:var(--dim); font-size:12px; margin:0 0 12px; }
+  h2 { font-size:13px; font-weight:600; margin:26px 0 3px; }
+  .sech { color:var(--dim); font-size:12px; margin:0 0 12px; }
+
+  .bar { position:sticky; top:0; z-index:60; display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+         margin:0 0 14px; padding:9px 13px; background:rgba(20,20,24,.95); backdrop-filter:blur(10px);
+         border:1px solid var(--line); border-radius:12px; }
+  label { display:flex; align-items:center; gap:7px; color:var(--dim); white-space:nowrap; }
+  input[type=range] { width:104px; accent-color:#fff; }
+  .val { color:var(--ui); font-variant-numeric:tabular-nums; min-width:42px; }
+  button { appearance:none; -webkit-appearance:none; font:inherit; color:var(--ui); background:#1e1e24;
+           border:1px solid var(--line); border-radius:999px; padding:5px 12px; cursor:pointer; font-size:12px; }
+  button.on { background:#fff; color:#000; border-color:#fff; }
+
+  .stage { position:relative; overflow:hidden; border-radius:12px; background:var(--sky);
+           container-type:size; cursor:crosshair; touch-action:none; }
+  .hero .stage { aspect-ratio:16/9; max-height:70vh; }
+  .stage__bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .stage__photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .stage__actors { position:absolute; inset:0; }
+  /* stepped, never eased — same grammar as the band on the site */
+  .actor { position:absolute; left:0; top:0; height:10%; width:auto;
+           transform-origin:50% 100%; will-change:transform; user-select:none; pointer-events:none; }
+  /* the trigger has to be legible or the change looks like it fired at random */
+  .edge { position:absolute; inset:0; border:2px solid transparent; border-radius:12px;
+          pointer-events:none; z-index:50; }
+  .edge.hot { border-color:#fff; }
+  .readout { position:absolute; inset-inline-start:10px; top:8px; z-index:51; font-size:11px;
+             font-variant-numeric:tabular-nums; color:rgba(255,255,255,.8);
+             background:rgba(0,0,0,.4); padding:3px 9px; border-radius:999px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
+  .card { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#17171b; }
+  .card .stage { border-radius:0; aspect-ratio:4/3; }
+  .card__top { display:flex; align-items:baseline; gap:8px; padding:9px 12px 7px; }
+  .card__n { font-variant-numeric:tabular-nums; color:var(--dim); font-size:11px; }
+  .card__name { font-weight:600; }
+  .card__note { padding:0 12px 10px; color:var(--dim); font-size:11.5px; min-height:48px; }
+</style>
+</head>
+<body>
+
+<h1>reach — אינטראקציות שגורמות להפיכה</h1>
+<p class="sub">
+  בכל אחת מהן העכבר <b>גורם</b> למשהו, ולכל אחת יש טריגר ברור שמפיל את כולה לשלב הבא —
+  לא רק דמויות שזזות. עמוד אחד, גוללים.
+</p>
+
+<div class="bar">
+  <label>דופק <input type="range" id="fps" min="4" max="24" step="1" value="10"><span class="val" id="fpsVal">10 fps</span></label>
+  <label>סט <span id="sets"></span></label>
+  <button id="bgBtn" class="on">רקע</button>
+  <span class="val" style="color:var(--dim)" id="tick">t 0</span>
+</div>
+
+<div class="hero">
+  <h2>01 · reach — הרעיון שלך</h2>
+  <p class="sech">שורה ארוכה שיוצאת מהאופק, אחת על השנייה. גוררת אותה עם העכבר, וכשהראש נוגע בגבול הפריים — כולה נהפכת לשלב הבא.</p>
+  <div id="heroSlot"></div>
+</div>
+
+<h2>וריאציות על אותו עיקרון</h2>
+<p class="sech">אותו חוזה בכולן: אתה עושה משהו → נוגעים בגבול / משלימים תנאי → כל השרשרת עוברת שלב.</p>
+<div class="grid" id="grid"></div>
+
+<script>
+const SETS = {
+  troll:    { label:'שן → טרול', src:n=>`assets/troll-cut/w${n}.png` },
+  lollipop: { label:'סוכריות',   src:n=>`assets/pop-cut/w${n}.png` },
+};
+let SET = SETS.troll;
+let POPS = [1,2,3,4,5].map(SET.src);
+const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const S = (a,b)=>{ const s=Math.sin(a*127.1+b*311.7)*43758.5453; return (s-Math.floor(s))-0.5; };
+const VAN = { x:50, y:60 };            // the horizon point everything leaves from
+const EDGE_AT = 6, REARM_AT = 14;
+
+/* distance to the nearest frame edge, as 0..1 where 1 means touching */
+const edgeProx = (x,y) => Math.max(0,
+  (EDGE_AT - Math.min(x,100-x)) / EDGE_AT,
+  (EDGE_AT - Math.min(y,100-y)) / EDGE_AT);
+const insideBy = (x,y) => Math.min(x, 100-x, y, 100-y);
+
+/* Every mechanic gets its own little state bag and returns actors. `fire(st)`
+   is the shared payoff — the whole chain drops to the next of the five — and
+   the arm/re-arm gap is what stops a held pointer from ripping through all
+   five stages in half a second. */
+const fire = st => { st.stage = (st.stage + 1) % 5; st.armed = false; st.flash = 4; };
+
+const MECH = [
+{ id:'reach', name:'reach', hero:true,
+  note:'שרשרת מהאופק שנגררת אחרי הסמן. הראש נוגע בגבול — כולה עוברת שלב.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t,N=15)=>{
+    const head = m.in ? { x:clamp(m.x,1,99), y:clamp(m.y,1,99) } : { x:50, y:34 };
+    /* "touching" has to be a band, not a point. edgeProx only reaches 1.0 at
+       exactly 0 or 100, and the head is clamped to 1..99 — so the original
+       `>= 1` was a trigger that could never fire. */
+    if (m.in && insideBy(head.x,head.y) <= 2 && st.armed) fire(st);
+    if (m.in && insideBy(head.x,head.y) > REARM_AT) st.armed = true;
+    return Array.from({length:N},(_,k)=>{ const p=k/(N-1), e=p*p;
+      return { x:VAN.x+(head.x-VAN.x)*e, y:VAN.y+(head.y-VAN.y)*e, h:5+e*52, r:S(k,3)*7, z:k }; });
+  }},
+
+{ id:'fill', name:'fill the row',
+  note:'שורה שמתארכת ככל שאת מושכת ימינה. כשהיא ממלאת את כל הרוחב — עוברת שלב.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const reach = m.in ? clamp(m.x,4,100) : 40;
+    const N = Math.max(2, Math.round(reach/6));
+    if (reach >= 96 && st.armed) fire(st);
+    if (reach < 70) st.armed = true;
+    return Array.from({length:N},(_,k)=>({ x:4+k*(reach-4)/Math.max(1,N-1),
+      y:64, h:34, r:S(k,4)*8, z:k }));
+  }},
+
+{ id:'tower', name:'tower',
+  note:'מגדל שנבנה כלפי מעלה לפי הסמן. כשהראש חורג מעל הפריים — עובר שלב.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const top = m.in ? clamp(m.y,-6,92) : 40;
+    const N = Math.max(2, Math.round((92-top)/9));
+    if (top <= 8 && st.armed) fire(st);   // a band, not a single pixel row
+    if (top > 26) st.armed = true;
+    return Array.from({length:N},(_,k)=>({ x:50+S(k,5)*9, y:92-k*(92-top)/Math.max(1,N-1),
+      h:30, r:S(k,6)*10, z:N-k }));
+  }},
+
+{ id:'pinch', name:'pinch',
+  note:'שתי שרשרות נכנסות משני הצדדים אל הסמן. כשהן נוגעות זו בזו — שתיהן עוברות שלב.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const c = m.in ? clamp(m.x,8,92) : 50;
+    const gap = Math.min(c-8, 92-c);
+    if (gap > 36 && st.armed) fire(st);            // both arms fully extended, they meet
+    if (gap < 22) st.armed = true;
+    const out=[];
+    for (let k=0;k<5;k++){ const p=k/4;
+      out.push({ x:8+(c-8)*p, y:58, h:26+p*16, r:S(k,7)*8, z:k });
+      out.push({ x:92-(92-c)*p, y:58, h:26+p*16, r:-S(k,8)*8, z:k, flip:true }); }
+    return out;
+  }},
+
+{ id:'cross', name:'cross the line',
+  note:'אחת גדולה נגררת אחרי הסמן. כל פעם שהיא חוצה את קו האמצע — היא עוברת שלב.',
+  init:()=>({ stage:0, side:0, flash:0, armed:true }),
+  step:(st,m,t)=>{
+    const x = m.in ? clamp(m.x,6,94) : 50;
+    const side = x > 50 ? 1 : -1;
+    if (st.side !== 0 && side !== st.side) { fire(st); st.armed = true; }
+    st.side = side;
+    return [{ x, y: m.in?clamp(m.y,20,80):50, h:76, r:(x-50)*0.25, z:1 }];
+  }},
+
+{ id:'corners', name:'corners',
+  note:'ארבע בפינות ואחת במרכז. נגיעה בפינה שולחת אותה למרכז — וכל הסט עובר שלב.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const cs = [[14,26],[86,26],[14,80],[86,80]];
+    let hot = -1;
+    if (m.in) cs.forEach((c,i)=>{ if (Math.hypot(c[0]-m.x,c[1]-m.y) < 16) hot = i; });
+    if (hot >= 0 && st.armed) fire(st);
+    if (hot < 0) st.armed = true;
+    const out = cs.map((c,i)=>{ const pull = i===hot ? .55 : 0;
+      return { x:c[0]+(50-c[0])*pull, y:c[1]+(53-c[1])*pull, h:i===hot?40:30, r:S(i,9)*12, z:i }; });
+    out.push({ x:50, y:53, h:46, r:0, z:9 });
+    return out;
+  }},
+
+{ id:'lap', name:'lap',
+  note:'שרשרת חגה סביב הסמן בכיוון שאת מסובבת אותו. הקפה שלמה — כולה עוברת שלב.',
+  init:()=>({ stage:0, ang:0, lastA:null, wound:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    if (m.in) { const a = Math.atan2(m.y-53, m.x-50);
+      if (st.lastA !== null) { let d=a-st.lastA;
+        while(d>Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2;
+        st.wound += d; st.ang += d; }
+      st.lastA = a; } else st.lastA = null;
+    if (Math.abs(st.wound) >= Math.PI*2) { fire(st); st.wound = 0; st.armed = true; }
+    return Array.from({length:5},(_,k)=>{ const a=st.ang + k*(Math.PI*2/5);
+      return { x:50+Math.cos(a)*30, y:53+Math.sin(a)*20, h:36, r:S(k,10)*10, z:Math.round(Math.sin(a)*5)+5 }; });
+  }},
+
+{ id:'press', name:'press',
+  note:'לחיצה מכווצת את החמישה זו לתוך זו. כשהן חופפות לגמרי — כולן עוברות שלב.',
+  init:()=>({ stage:0, sq:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    st.sq = clamp(st.sq + (m.down ? .12 : -.16), 0, 1);
+    if (st.sq >= .98 && st.armed) fire(st);
+    if (st.sq < .3) st.armed = true;
+    return Array.from({length:5},(_,k)=>({ x:14+k*18 + (50-(14+k*18))*st.sq,
+      y:56, h:40, r:S(k,11)*10*(1-st.sq), z:k }));
+  }},
+
+{ id:'ladder', name:'ladder',
+  note:'חמש מטפסות אל הסמן, אחת אחרי השנייה. כשהעליונה מגיעה אליו — כולן עוברות שלב.',
+  init:()=>({ stage:0, climb:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const goal = m.in ? clamp(m.y,6,90) : 50;
+    st.climb = clamp(st.climb + (m.in ? .07 : -.1), 0, 1);
+    if (st.climb >= .97 && st.armed) fire(st);
+    if (st.climb < .4) st.armed = true;
+    return Array.from({length:5},(_,k)=>{ const p=k/4;
+      return { x:(m.in?m.x:50)+S(k,12)*10, y:92-(92-goal)*st.climb*(0.45+p*0.55),
+               h:24+p*18, r:S(k,13)*9, z:k }; });
+  }},
+
+{ id:'sweep', name:'sweep out',
+  note:'חמש עומדות בשורה והסמן מטאטא אותן החוצה. כשהאחרונה יוצאת מהפריים — כולן חוזרות בשלב הבא.',
+  init:()=>({ stage:0, armed:true, flash:0 }),
+  step:(st,m,t)=>{
+    const bx = m.in ? m.x : -50;
+    const out = Array.from({length:5},(_,k)=>{ const home=16+k*17;
+      const pushed = bx > home ? clamp((bx-home)*2.2, 0, 130) : 0;
+      return { x:home+pushed, y:62, h:38, r:S(k,14)*8+pushed*0.25, z:k }; });
+    if (out.every(a=>a.x > 104) && st.armed) fire(st);
+    if (bx < 20) st.armed = true;
+    return out;
+  }},
+];
+
+/* ── plumbing ─────────────────────────────────────────────────────────── */
+let seq = 0;
+function makeStage(mech) {
+  const st = document.createElement('div');
+  st.className = 'stage';
+  const n = ++seq;
+  st.innerHTML =
+    `<svg class="stage__bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+       <rect width="400" height="300" fill="var(--sky)"/>
+       <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#r${n})"/>
+       <defs><linearGradient id="r${n}" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+       </linearGradient></defs>
+     </svg>
+     <img class="stage__photo" alt="" hidden>
+     <div class="stage__actors"></div>
+     <div class="edge"></div>
+     <div class="readout"></div>`;
+  st._actors = st.querySelector('.stage__actors');
+  st._photo  = st.querySelector('.stage__photo');
+  st._edge   = st.querySelector('.edge');
+  st._read   = st.querySelector('.readout');
+  st._pool   = [];
+  st._mech   = mech;
+  st._st     = mech.init();
+  st._m      = { x:50, y:40, in:false, down:false };
+
+  const at = e => { const r = st.getBoundingClientRect();
+    return { x:(e.clientX-r.left)/r.width*100, y:(e.clientY-r.top)/r.height*100 }; };
+  st.addEventListener('pointermove', e=>{ const p=at(e); st._m.x=p.x; st._m.y=p.y; st._m.in=true; });
+  st.addEventListener('pointerenter', ()=>{ st._m.in=true; });
+  st.addEventListener('pointerleave', ()=>{ st._m.in=false; st._m.down=false; });
+  st.addEventListener('pointerdown', e=>{ st._m.down=true; const p=at(e); st._m.x=p.x; st._m.y=p.y; });
+  st.addEventListener('pointerup',   ()=>{ st._m.down=false; });
+  return st;
+}
+
+function draw(stage, t) {
+  const s = stage._st;
+  const list = stage._mech.step(s, stage._m, t) || [];
+  if (s.flash > 0) s.flash--;
+  stage._edge.classList.toggle('hot', s.flash > 0);
+
+  const pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className='actor'; img.alt='';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img,k)=>{
+    const a = list[k];
+    if (!a) { img.style.display='none'; return; }
+    img.style.display='';
+    /* one stage index for the WHOLE chain: the payoff is that they all turn
+       together, so an actor never carries its own frame here */
+    if (img._i !== s.stage) { img.src = POPS[s.stage]; img._i = s.stage; }
+    img.style.height = a.h + '%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transform = `translate(${a.x}cqw, ${a.y}cqh) translate(-50%,-50%) rotate(${a.r||0}deg)`
+                        + (a.flip ? ' scale(-1,1)' : '');
+  });
+  stage._read.textContent = `${s.stage+1}/5 · ${s.armed ? 'דרוך' : 'שוחרר'}`;
+}
+
+const stages = [];
+const hero = MECH.find(x=>x.hero);
+const heroStage = makeStage(hero);
+document.getElementById('heroSlot').appendChild(heroStage);
+stages.push(heroStage);
+
+const grid = document.getElementById('grid');
+MECH.filter(x=>!x.hero).forEach((mech,n)=>{
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+2).padStart(2,'0')}</span>
+                    <span class="card__name">${mech.name}</span></div>`;
+  const s = makeStage(mech);
+  card.appendChild(s);
+  card.insertAdjacentHTML('beforeend', `<p class="card__note">${mech.note}</p>`);
+  grid.appendChild(card);
+  stages.push(s);
+});
+
+/* ── set + background ── */
+const setWrap = document.getElementById('sets');
+Object.entries(SETS).forEach(([k,cfg],i)=>{
+  const b = document.createElement('button');
+  b.textContent = cfg.label; b.className = i===0?'on':''; b.style.marginInlineEnd='6px';
+  b.onclick = ()=>{ SET=cfg; POPS=[1,2,3,4,5].map(cfg.src);
+    for (const s of stages) for (const img of s._pool) img._i = undefined;
+    setWrap.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
+  setWrap.appendChild(b);
+});
+let bgOn = true;
+function applyBg(){ for (const s of stages) { const p=s._photo;
+  if (bgOn) { p.onerror=()=>{p.hidden=true;}; p.onload=()=>{p.hidden=false;}; p.src=DEFAULT_BG; }
+  else p.hidden=true; } }
+document.getElementById('bgBtn').onclick = e => { bgOn=!bgOn; e.target.classList.toggle('on',bgOn); applyBg(); };
+applyBg();
+
+/* the pointer is sampled on the beat, not tracked continuously — that is what
+   keeps every one of these stepping instead of gliding */
+const fpsEl = document.getElementById('fps'), tickEl = document.getElementById('tick');
+let tick = 0, last = 0;
+function frame(now) {
+  if (now - last >= 1000/+fpsEl.value) { last = now; tick++;
+    for (const s of stages) draw(s, tick);
+    tickEl.textContent = 't '+tick; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+fpsEl.oninput = ()=> document.getElementById('fpsVal').textContent = fpsEl.value+' fps';
+for (const s of stages) draw(s, 0);
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Brigitte Breaux – Panorama Fails</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:#f5f5f0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+
+h1{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:16px;font-family:system-ui,sans-serif}
+
+/* ─── Diptych ─── */
+.diptych{
+  width:100%;max-width:1100px;height:560px;
+  display:flex;position:relative;
+  overflow:hidden;cursor:none;user-select:none;
+  border:1px solid #ddd;
+}
+.side{position:relative;overflow:hidden;flex:1}
+.side--left{flex:2.4;background:pink}
+.side--right{background:pink}
+
+.side img.bg{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  display:block;pointer-events:none;
+}
+.word{
+  position:absolute;bottom:14px;left:14px;
+  color:rgb(57,170,36);font-size:13px;font-weight:bold;
+  pointer-events:none;
+}
+
+/* ─── Drop zone overlay ─── */
+.dropzone{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  opacity:0;transition:opacity .15s;cursor:pointer;z-index:30;
+  background:rgba(255,255,255,.6);
+}
+.dropzone:hover,.dropzone.over{opacity:1}
+.dropzone i{font-size:32px;color:#888}
+.dropzone span{font-size:12px;color:#777;font-family:system-ui,sans-serif}
+
+/* ─── Cursor elements ─── */
+.cur{
+  position:absolute;pointer-events:none;z-index:40;
+  transform:translate(-50%,-50%);will-change:left,top;
+}
+.cur img{display:block;max-width:80px;max-height:80px;object-fit:contain}
+
+/* ─── Controls ─── */
+.controls{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-top:14px;width:100%;max-width:1100px;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border:1px solid #ccc;border-radius:6px;
+  background:#fff;color:#333;font-size:13px;
+  font-family:system-ui,sans-serif;cursor:pointer;transition:background .12s;
+}
+.btn:hover{background:#f0f0f0}
+.btn i{font-size:16px}
+.hint{font-size:12px;color:#aaa;font-family:system-ui,sans-serif}
+
+/* ─── Cut-out thumbnails ─── */
+.thumbs{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:8px;width:100%;max-width:1100px;
+}
+.thumb{
+  width:36px;height:36px;border:1px solid #e0e0e0;border-radius:4px;
+  object-fit:contain;background:#fafafa;opacity:.4;transition:opacity .2s;
+}
+.thumb.loaded{opacity:1}
+</style>
+</head>
+<body>
+
+<h1>Brigitte Breaux — Hyperreality / Panorama Fails</h1>
+
+<div class="diptych" id="diptych">
+  <!-- Left: panorama photo -->
+  <div class="side side--left" id="leftPanel">
+    <img class="bg" id="panoImg"
+      src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/funny-panoramic-photo-fails-18.jpg"
+      alt="panorama fail">
+    <div class="word"><b>hyperreality</b></div>
+    <div class="dropzone" id="dropLeft">
+      <i class="ti ti-photo-up"></i>
+      <span>drop panorama photo</span>
+    </div>
+  </div>
+
+  <!-- Right: panel -->
+  <div class="side side--right" id="rightPanel">
+    <img class="bg" id="rightImg"
+      src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/grass4.jpg"
+      alt="" aria-hidden="true" onerror="this.style.display='none'">
+    <div class="dropzone" id="dropRight">
+      <i class="ti ti-scissors"></i>
+      <span>drop cut-out images (up to 6)</span>
+    </div>
+  </div>
+
+  <!-- 6 cursor followers -->
+  <div class="cur" id="C0"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/6.png" alt=""></div>
+  <div class="cur" id="C1"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/5.png" alt=""></div>
+  <div class="cur" id="C2"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/4.png" alt=""></div>
+  <div class="cur" id="C3"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/3.png" alt=""></div>
+  <div class="cur" id="C4"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/2.png" alt=""></div>
+  <div class="cur" id="C5"><img src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/1.png" alt=""></div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn" id="btnPano"><i class="ti ti-photo"></i> Upload panorama</button>
+  <button class="btn" id="btnCuts"><i class="ti ti-scissors"></i> Upload cut-outs</button>
+  <span class="hint">or drag images directly onto the panels above</span>
+</div>
+
+<!-- Thumbnail strip -->
+<div class="thumbs" id="thumbRow">
+  <img class="thumb" id="th0" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/6.png" alt="" onerror="this.style.display='none'">
+  <img class="thumb" id="th1" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/5.png" alt="" onerror="this.style.display='none'">
+  <img class="thumb" id="th2" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/4.png" alt="" onerror="this.style.display='none'">
+  <img class="thumb" id="th3" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/3.png" alt="" onerror="this.style.display='none'">
+  <img class="thumb" id="th4" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/2.png" alt="" onerror="this.style.display='none'">
+  <img class="thumb" id="th5" src="https://aaa.designforthe.net/content/projects/0-brigitte-breaux/1.png" alt="" onerror="this.style.display='none'">
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="panoInput" accept="image/*" style="display:none">
+<input type="file" id="cutsInput" accept="image/*" multiple style="display:none">
+
+<script>
+(function(){
+  const diptych = document.getElementById('diptych');
+  const N = 6;
+  const curs   = Array.from({length:N}, (_,i) => document.getElementById('C'+i));
+  const thumbs = Array.from({length:N}, (_,i) => document.getElementById('th'+i));
+  const pos    = Array.from({length:N}, () => ({x:-300, y:-300}));
+  const lf     = [0.38, 0.20, 0.15, 0.12, 0.09, 0.07];
+  let mx = -300, my = -300;
+
+  diptych.addEventListener('mousemove', e => {
+    const r = diptych.getBoundingClientRect();
+    mx = e.clientX - r.left;
+    my = e.clientY - r.top;
+  });
+  diptych.addEventListener('mouseleave', () => { mx = my = -300; });
+
+  (function loop(){
+    pos[0].x += (mx - pos[0].x) * lf[0];
+    pos[0].y += (my - pos[0].y) * lf[0];
+    for(let i=1;i<N;i++){
+      pos[i].x += (pos[i-1].x - pos[i].x) * lf[i];
+      pos[i].y += (pos[i-1].y - pos[i].y) * lf[i];
+    }
+    curs.forEach((c,i) => {
+      c.style.left = pos[i].x + 'px';
+      c.style.top  = pos[i].y + 'px';
+    });
+    requestAnimationFrame(loop);
+  })();
+
+  /* ── File reading ── */
+  function readDataURL(file, cb){
+    const r = new FileReader();
+    r.onload = e => cb(e.target.result);
+    r.readAsDataURL(file);
+  }
+
+  function applyPano(file){
+    readDataURL(file, url => {
+      document.getElementById('panoImg').src = url;
+    });
+  }
+
+  function applyCuts(files){
+    Array.from(files).slice(0,6).forEach((file, i) => {
+      readDataURL(file, url => {
+        curs[i].querySelector('img').src = url;
+        thumbs[i].src = url;
+        thumbs[i].classList.add('loaded');
+        thumbs[i].style.display = '';
+      });
+    });
+  }
+
+  /* ── Button clicks ── */
+  document.getElementById('btnPano').onclick = () => document.getElementById('panoInput').click();
+  document.getElementById('btnCuts').onclick = () => document.getElementById('cutsInput').click();
+  document.getElementById('panoInput').onchange = e => { if(e.target.files[0]) applyPano(e.target.files[0]); e.target.value=''; };
+  document.getElementById('cutsInput').onchange = e => { if(e.target.files.length) applyCuts(e.target.files); e.target.value=''; };
+
+  /* ── Drop zone clicks ── */
+  document.getElementById('dropLeft').onclick  = () => document.getElementById('panoInput').click();
+  document.getElementById('dropRight').onclick = () => document.getElementById('cutsInput').click();
+
+  /* ── Drag & drop ── */
+  function makeDrop(zoneId, isCuts){
+    const zone = document.getElementById(zoneId);
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('over');
+      const files = e.dataTransfer.files;
+      if(!files.length) return;
+      isCuts ? applyCuts(files) : applyPano(files[0]);
+    });
+  }
+  makeDrop('dropLeft',  false);
+  makeDrop('dropRight', true);
+})();
+</script>
+</body>
+</html>

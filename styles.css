@@ -1,0 +1,2149 @@
+/* ─────────────────────────────────────────────────────────────────────
+   TOOOL — Midpoint Generator
+   Implementation of Figma frame "Noa – WPA 2026" (node 2394-511),
+   source frame 1728 × 3625. Left column is a FIXED sidebar; the content
+   column scrolls. Every length is a design unit × --s so the whole thing
+   keeps its 1:1 proportions at any width.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  --red:    #FE0000;
+  --yellow: #FFFF01;   /* type yellow — badges numerals / "mix" (Figma #FFFF01) */
+  --panel:  #FFFFFF;   /* baked-in per user's colour-panel pick (was #FFFF00) */
+  --gray:   #8A8A8A;
+  --purple: #B700FF;
+  --black:  #000000;
+
+  --frame-w: 1728;
+  --sidebar: 352;      /* left column width, design units (Figma 2682-581) */
+  --content-w: 1288;   /* content column width, design units       */
+
+  /* sidebar master unit: FIT-TO-HEIGHT to the sidebar frame height (1080, Figma
+     node 2778:331 — unified with the 1080 content-section unit) so the sidebar
+     always fills the viewport top-to-bottom (edge to edge), everything stays
+     visible, and the width follows responsively. (mobile block redefines --s below) */
+  --s: calc(100dvh / 1080);
+
+  /* sidebar width in px, and the content column's own width-based unit */
+  --sbw: calc(var(--sidebar) * var(--s));
+  --sc: calc((100vw - var(--sbw)) / var(--content-w));
+}
+
+/* the logo typeface (@font-face lives in assets/fonts/spikes-font.css,
+   embedded as base64 so it also works when opened via file://) */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* overflow-y:scroll reserves the scrollbar gutter permanently so the page
+   never shifts width when content height crosses the scrollable threshold —
+   but the scrollbar itself isn't part of the Figma design, so it's hidden
+   visually (scrolling still works) on every engine. */
+html {
+  background: #fff;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar { display: none; }
+
+body {
+  margin: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  color: var(--black);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; }
+
+/* ══ fixed sidebar — Figma node 2778:331, 352×1080 yellow "make something"
+   panel. Every element ABSOLUTELY placed at its measured design coord × --s ═ */
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;                 /* pin top/left/bottom */
+  width: var(--sbw);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;                  /* never scrolls — always fits the screen */
+  background: var(--panel);          /* full-height yellow, edge to edge */
+  z-index: 10;
+}
+
+.panel { position: absolute; inset: 0; }
+
+/* title — centred (Figma node 2949:132: 28,35, 294×91). The two text lines
+   flattened straight from Figma as assets/panel-title.png — the type has a
+   DASHED "outside" stroke (dash 2, gap 2) that CSS text-stroke cannot
+   reproduce (no dasharray support on text), so the exact exported glyph is
+   used instead of recreated type. Box centred exactly like the logo. */
+.sb-title {
+  position: absolute;
+  left: calc(28 * var(--s));
+  top: calc(35 * var(--s));
+  width: calc(294 * var(--s));
+  height: calc(91 * var(--s));
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sb-title img {
+  width: calc(287 * var(--s));
+  height: calc(86 * var(--s));
+  display: block;
+}
+
+/* upload slots — white boxes, corner radius 11, exact dashed border
+   (1px line, 5px dash, 5px gap) */
+.slot {
+  position: absolute;
+  left: calc(24 * var(--s));
+  width: calc(305 * var(--s));
+  border-radius: calc(11 * var(--s));  /* clips the preview to the frame */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #FFFF00;   /* baked-in per user's colour-panel pick (was #fff) */
+  font: inherit;
+  color: var(--black);
+  cursor: pointer;
+  overflow: hidden;
+}
+/* Figma: slot 1 = 2778:339 (24,139, 305×325); slot 2 = 2778:343 (24,474, 305×313) */
+#slot-a { top: calc(139 * var(--s)); height: calc(325 * var(--s)); }
+#slot-b { top: calc(474 * var(--s)); height: calc(313 * var(--s)); }
+
+/* exact dashed frame: black stroke only (fill:none — the white box now comes
+   from .slot's own background), dash 5/5, corner radius 11 (SVG viewBox =
+   slot design size → uniform --s scale, no distortion). Sits ABOVE the
+   preview (z-index 5 > .slot__preview's 4) so the border stays visible,
+   drawn over an uploaded photo, instead of being hidden underneath it;
+   pointer-events:none so it never intercepts clicks/drag-drop. */
+.slot__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  display: block;
+}
+
+/* purple numbered badge — Figma ⌀36 at abs (157,238) / (161,566), circle has
+   a 1px black outline. The numeral is live text (not an exported glyph),
+   centred with flexbox. */
+.slot__num {
+  position: absolute;
+  width: calc(36 * var(--s));
+  height: calc(36 * var(--s));
+  background: #560476;
+  border: calc(1 * var(--s)) solid var(--black);
+  border-radius: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  /* sized so the rendered figure height matches the original Figma glyph
+     export exactly (21 design units tall — measured off badge-1/2.png ink
+     bbox). Helvetica Neue Bold figures render ≈0.70× the font-size, so
+     30u font-size → ~21u figures; verified live against a canvas ink scan. */
+  font-size: calc(30 * var(--s));
+  line-height: 1;
+}
+/* offsets relative to each slot's own top-left (24, 139) / (24, 474) */
+#slot-a .slot__num { left: calc(133 * var(--s)); top: calc(99 * var(--s)); }
+#slot-b .slot__num { left: calc(137 * var(--s)); top: calc(92 * var(--s)); }
+
+/* OPTICAL centring of the live numeral inside the circle. Flexbox centres the
+   glyph's LAYOUT box (its advance width and its line box), which is not where
+   the eye reads the digit's centre:
+   - vertically, line-height:1 leaves the font's descender space unused below
+     the baseline, so the ink sits ~0.02–0.03em BELOW the box centre → nudge up;
+   - horizontally, a bold "1" carries a top-left flag whose ink pulls the full
+     bounding box left of the STEM; a type designer centres the stem and lets
+     the flag overhang, so the "1" needs a ~0.04em left nudge to sit its stem on
+     centre. "2" is symmetric enough that its ink centre already matches the
+     advance centre (measured offset ~0), so it gets vertical-only.
+   Values measured directly off this exact font at this exact size via an
+   offscreen-canvas ink scan (stem centre taken from the flag-free bottom 40%
+   of the glyph); expressed in em so they scale with --s. */
+.slot__num-d { display: block; }
+#slot-a .slot__num-d { transform: translate(-0.041em, -0.026em); }
+#slot-b .slot__num-d { transform: translate(0, -0.021em); }
+
+/* ── call-to-action nudge (driven by cta.js) ──────────────────────────────
+   A short sequential hop guides the eye through the flow: badge 1 bounces,
+   a beat, then badge 2, a long rest, repeat. cta.js toggles .is-cta on the
+   TARGET element for exactly one pulse; the badge circle (.slot__num) hops,
+   carrying its numeral with it (the optical-centring transform lives on the
+   inner .slot__num-d, so it is untouched). Once a slot is filled its hop
+   stops; when both are filled the same hop moves to the MIX button (.run).
+   A single soft rise-and-settle — no springy overshoot, no double hop — so
+   it reads as a gentle "here" rather than a jumpy loop (the user found the
+   springier version odd on the real page). Hop distance is in --s units so
+   it scales with the layout. The long rest between cycles lives in cta.js. */
+@keyframes cta-bounce {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(calc(-3.5 * var(--s))); }
+  100% { transform: translateY(0); }
+}
+.slot.is-cta .slot__num,
+.run.is-cta { animation: cta-bounce 600ms ease-in-out both; }
+
+/* reduced-motion: no hop; a steady ring marks the current "start here" target
+   instead (cta.js sets .is-cta-static on it). */
+@media (prefers-reduced-motion: reduce) {
+  .slot.is-cta .slot__num,
+  .run.is-cta { animation: none; }
+  .slot.is-cta-static .slot__num {
+    box-shadow: 0 0 0 calc(3 * var(--s)) rgba(86, 4, 118, .35);
+  }
+  .run.is-cta-static {
+    box-shadow: 0 0 0 calc(3 * var(--s)) rgba(86, 4, 118, .35);
+  }
+}
+
+.slot__label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: calc(30 * var(--s));
+  line-height: calc(29 * var(--s));
+  letter-spacing: calc(-0.3 * var(--s));
+  z-index: 3;
+}
+/* offsets relative to each slot's own top (139) / (474) — no upload icon
+   below the label anymore, so the badge+label cluster sits centred alone */
+#slot-a .slot__label { top: calc(141 * var(--s)); }
+#slot-b .slot__label { top: calc(136 * var(--s)); }
+
+/* label copy — flattened straight from Figma (2949:121 "Upload the first
+   image." / 2949:128 "Upload the second image."): sub-pixel stem-width
+   forensics turned up no reliable evidence of a hidden stroke, but Figma's
+   own rasterizer renders this weight/tracking measurably heavier than any
+   live-CSS reproduction managed to match — so, same reasoning as the
+   title/mix/badges, the exact exported glyphs are used instead of
+   recreated type. Unlike those purely decorative elements, this <span>
+   keeps double-duty as the post-upload filename container (app.js sets
+   .textContent on it once a file is chosen, which destroys the <img> and
+   replaces it with plain text — intended), so its own box/position is
+   left completely untouched; only the <img> itself is centred, via the
+   same box-centre math (raw Figma text-box centre → img top-left =
+   centre − img-size/2), computed relative to the span's own top-left
+   (0, its `top` above) since the span is itself the positioned ancestor.
+   Figma boxes: 2949:121 = local (60,141) 186×87; 2949:128 = local
+   (53,136) 200×87 — centres (153,184.5) / (153,179.5). Native exported
+   sizes: 155×82 / 197×82. */
+#slot-a .slot__label img {
+  position: absolute;
+  left: calc(75.5 * var(--s));
+  top: calc(2.5 * var(--s));
+  width: calc(155 * var(--s));
+  height: calc(82 * var(--s));
+  display: block;
+}
+#slot-b .slot__label img {
+  position: absolute;
+  left: calc(54.5 * var(--s));
+  top: calc(2.5 * var(--s));
+  width: calc(197 * var(--s));
+  height: calc(82 * var(--s));
+  display: block;
+}
+
+/* preview of a chosen file fills the slot */
+.slot__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  z-index: 4;
+  transition: opacity .18s ease;
+}
+.slot.is-filled .slot__preview { opacity: 1; }
+/* Asymmetric on purpose. Coming IN, .18s is right — the photo should land the
+   instant the file is chosen, as feedback. Going OUT it is the tool clearing
+   itself after the result, which nobody asked for, so it gets to be gentle:
+   .42s, cross-fading against the upload label underneath. A transition is read
+   from the END state, so this rule (specificity 0,3,0 over the base 0,1,0)
+   applies only while the slot is being emptied. Keep in step with SLOT_FADE_MS
+   in app.js, which holds the image's src until this has finished. */
+.slot:not(.is-filled) .slot__preview { transition: opacity .42s ease; }
+.slot.is-over { filter: brightness(.97); }
+
+/* .spoon-rig — the hand+spoon, wrist cap, and MIX button are one rigid
+   assembly (the button is physically attached to the spoon, per design),
+   so ONE rotation on this wrapper carries all three together. Resting
+   (rig unrotated) reproduces the original layout: spoon pointing sideways
+   at an upright, fully-visible MIX pill. Clicking MIX rotates the whole
+   rig +90.53deg around this same pivot, which — solved algebraically from
+   the resting vs. Figma-sourced (node 3056:66/47/48/49/50) apparent-box
+   centres of .hand and .run, cross-checked against .hand-tip — lands the
+   assembly exactly on the Figma "spoon dipped in the bowl" composition
+   with NO change to any child's own rotation (see below). Pivot solved at
+   design-unit (146.03, 867.16). Zero-size + transform-origin:0 0 so the
+   rotation happens exactly at that point without affecting layout. */
+.spoon-rig {
+  position: absolute;
+  left: calc(146.03 * var(--s));
+  /* 867.16 + 5.30. The assembly is centred in the gap between #slot-b's bottom
+     (787) and the bowl's top (910.16), whose middle is 848.58. Measured at the
+     RESTING pose with rig-idle pinned to 0%: hand 807→880.56, wrist cap
+     839.01→880.01, pill 806→878 → union 806→880.56, centre 843.28, so +5.30.
+     (Measuring without pinning the idle first gave 5.95 — the sample landed
+     mid-twitch.) The same +5.30 is applied to .run so the rigid unit stays
+     locked; see the note there. */
+  top: calc(872.46 * var(--s));
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  /* REQUIRED: this element is transformed, which makes it a stacking context,
+     so its children's z-indexes are scoped inside it and no longer compete
+     with .bowl__body/.slot__frame directly — the rig as a whole is what gets
+     ordered against them. Without an explicit z-index here the rig would sit
+     at z-auto (~0) and paint UNDER .bowl__body(3), hiding the spoon's scoop
+     behind the bowl wall (looked like the spoon was cut off before its head)
+     and under .slot__frame(5). 20 puts the whole assembly in front of both,
+     matching .run's own 20 so the spoon and the pill read as one unit. */
+  z-index: 20;
+  animation: rig-idle 2400ms infinite;   /* must match .run's exactly */
+}
+
+/* hand holding a spoon (Figma group 3056:47/3056:48) — same raw photo,
+   unchanged crop, unchanged own rotation (rotate(90deg), baked into the
+   raw photo's own vertical "spoon up, hand down" framing). Position is
+   now relative to .spoon-rig's pivot instead of the page: original
+   absolute (135.67,717.87) minus the pivot (146.03,867.16) — this is the
+   TRUE original resting position, unchanged. The rise onto #slot-b's
+   square is part of the click MOTION only (see rig-descend's 0%->12%),
+   not the resting pose. z-index:20 makes sure the hand unambiguously
+   paints in front of #slot-b's square during that rise (.slot__frame is
+   5; a tie would fall back to fragile DOM-order resolution). */
+.hand {
+  position: absolute;
+  display: block;
+  left: calc(-10.36 * var(--s));
+  top: calc(-149.29 * var(--s));
+  width: calc(73.57 * var(--s));
+  height: calc(251.82 * var(--s));
+  overflow: hidden;
+  transform: rotate(90deg);
+  transform-origin: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 20;
+}
+.hand img {
+  position: absolute;
+  left: -43.59%;
+  top: -0.21%;
+  width: 196.15%;
+  height: 123.88%;
+  max-width: none;
+  /* The colour grade from Figma node 3172:2, reproduced as a filter instead of
+     swapping in that node's PNG. That export is framed differently — its spoon
+     bowl measures 218×157 where this file's is 199×228 — so it is not the same
+     image re-exported and cannot reuse the crop above.
+     Values were measured, not guessed: comparing the two files over SKIN pixels
+     only (the spoon is a mirror and would swamp any colour comparison) gave
+     median luminance 164 → 148, p10–p90 spread 78 → 86, mean saturation
+     .428 → .545, i.e. brightness .90 / contrast 1.10 / saturate 1.27.
+     filter never affects layout, so every verified position stays put. */
+  filter: brightness(90%) contrast(110%) saturate(127%);
+}
+
+/* small skin-tone cap (Figma 3056:49, 15×41 raw) rounding off the forearm's
+   cut edge — unrotated on its own (the rig's rotation carries it), same as
+   before. Position relative to the pivot: original absolute (39,839) minus
+   (146.03,867.16). */
+.hand-tip {
+  position: absolute;
+  left: calc(-107.03 * var(--s));
+  top: calc(-28.16 * var(--s));
+  width: calc(15 * var(--s));
+  height: calc(41 * var(--s));
+  pointer-events: none;
+  user-select: none;
+  z-index: 20;
+}
+
+/* MIX button — purple pill, rigidly attached to the spoon (Figma 3056:50
+   shows it at the spoon's business end once the rig is rotated into the
+   bowl). NOT nested inside .spoon-rig: .spoon-rig's transform creates its
+   own stacking context, which would trap .run's z-index inside it,
+   making it impossible for .run to paint BELOW .bowl__body while .hand
+   (also in the rig) paints ABOVE it — the two need to sandwich the bowl
+   from opposite sides, which only works if .run stays in the same
+   (page-level) stacking context .bowl__body is in. So .run animates
+   independently: it keeps its ORIGINAL absolute position (200,806,
+   unrotated) and reaches the exact same rigid-rotation result via
+   transform-origin alone, set to the shared pivot (146.03,867.16)
+   expressed in .run's own local box coordinates (pivot minus .run's own
+   position: -53.97,61.16) — driving it with the same @keyframes as the
+   rig (see below) reproduces an identical rotation around the identical
+   pivot, just without the parent/child nesting. The "mix" label is real
+   text (not a flattened image) so it reads correctly at either angle
+   (same convention as .slot__label elsewhere in this file). */
+.run {
+  position: absolute;
+  left: calc(200 * var(--s));
+  /* 806 + 5.30 — the SAME shift .spoon-rig got, so the pill stays welded to the
+     spoon. transform-origin below is deliberately NOT touched: it is expressed
+     as the pivot MINUS this element's own position, and since both moved by the
+     same amount that difference is unchanged. Adjusting it too would move the
+     pivot twice and break the dipped pose. */
+  top: calc(811.30 * var(--s));
+  width: calc(121 * var(--s));
+  height: calc(72 * var(--s));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #560476;
+  border: calc(1 * var(--s)) solid var(--black);
+  border-radius: 50%;
+  transform-origin: calc(-53.97 * var(--s)) calc(61.16 * var(--s));
+  animation: rig-idle 2400ms infinite;   /* must match .spoon-rig's exactly */
+  cursor: pointer;
+  z-index: 21;   /* the spoon+button unit sits between the bowl's two halves:
+                    .bowl__rim(1) behind → rig(20)/.run(21) → .bowl__body(22)
+                    in front. Above .hand(20) so at rest the "mix" label
+                    reads over the spoon's scoop, matching the original
+                    design where the button sits over the spoon's tip and
+                    the full label reads unobscured */
+}
+#run.is-mixing {
+  animation: rig-descend 800ms 1 forwards, rig-stir 640ms infinite 800ms;
+  /* no z-index change: the base 21 already sits under .bowl__body(22), so the
+     button is behind the bowl's front wall in both states.
+     border-color goes transparent while dipped: the wide ±9deg stir swings the
+     pill far enough that a big arc of its top clears the notch in the bowl's
+     top edge, and the 1u black border showed up there as a stray ring arcing
+     around the dome. The dome itself still reads (it's in the Figma pose) —
+     only the outline is dropped. border-WIDTH is deliberately left alone so the
+     pill's box is unchanged and the verified bottom-clearance/.bowl-floor
+     geometry still holds. */
+  border-color: transparent;
+}
+.run__label {
+  color: var(--yellow);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: calc(41 * var(--s));
+  line-height: calc(44 * var(--s));
+  pointer-events: none;
+}
+
+/* red bowl — the exact exported Figma shapes (3056:43 rim ellipse, 3056:44
+   body "Subtract"), stacked at their measured relative offsets inside the
+   union bounding box, instead of an approximated CSS shape.
+
+   PAINT ORDER (back to front) — the spoon must be sandwiched INSIDE the bowl:
+     .bowl__rim(1)  — the bowl's back/opening ellipse
+     .spoon-rig(20) — hand + spoon
+     .run(21)       — the MIX pill, rigidly part of the spoon
+     .bowl__body(22)— the bowl's big front wall, drawn OVER the spoon so it
+                      reads as dipped in, not laid on top of the bowl
+   The body's top edge is a shallow scalloped curve (sags ~16 units at its
+   centre) — that notch is what the spoon's scoop and the purple pill peek
+   through together. The numbers are above the slot layers (.slot__frame is 5)
+   because .spoon-rig is transformed, hence its own stacking context: the rig
+   is ordered as one unit against everything else, and it has to clear the
+   upload squares while still passing under the bowl's front wall.
+
+   pointer-events:none is required here: .bowl__body is an <img>, which always
+   hit-tests as its full opaque box regardless of alpha, so without this,
+   clicks on .run (sitting underneath it) would be silently swallowed. Do not
+   "clean up" pointer-events:none later. */
+.bowl {
+  position: absolute;
+  left: calc(57 * var(--s));
+  top: calc(910.16 * var(--s));
+  width: calc(240 * var(--s));
+  height: calc(132.69 * var(--s));
+  pointer-events: none;
+  color: var(--bowl-color, #cc0000);
+  /* the bowl's fill — both SVG pieces use currentColor, so this one property
+     recolours the whole bowl. It reads --bowl-color rather than a literal so
+     that .bowl-wave can be driven by the SAME value: the wave's shape is a
+     data-URI SVG, and a data-URI cannot see currentColor, so before this the
+     wave kept a hardcoded red and was left behind whenever the bowl was
+     recoloured. The colour panel now sets --bowl-color. */
+}
+.bowl img, .bowl svg { position: absolute; display: block; width: auto; }
+.bowl__body {                        /* Subtract, offset (0, 15.55), 239.64×117.14 */
+  left: 0;
+  top: calc(15.55 * var(--s));
+  width: calc(239.64 * var(--s));
+  height: calc(117.14 * var(--s));
+  z-index: 22;
+}
+.bowl__rim {                         /* Ellipse 64, offset (1, 0), 239×33 */
+  left: calc(1 * var(--s));
+  top: 0;
+  width: calc(239 * var(--s));
+  height: calc(33 * var(--s));
+  z-index: 1;
+}
+
+/* the bowl fills with purple like a loading gauge, so the wait has a visible
+   "how much longer" read-out. .bowl__body is an OPAQUE red SVG, so the level
+   cannot sit behind it — it is painted on top (z-index 23) and clipped to the
+   bowl's inner shape instead.
+   clip-path, not mask-image: masking with bowl-body.svg would include that
+   file's black outline stroke in the masked region, so the rising purple would
+   paint over the bowl's own edge and the bowl would visibly lose its outline as
+   it filled. This polygon is the bowl's TRUE silhouette (body local box
+   239.639×117.143, corners (0,0) (239.639,0) (177.039,117.143) (63.913,117.143)
+   → 0%/100%/73.88%/26.67%) inset by just the outline's own 1-unit stroke
+   (0.42% across, 0.85% down), so the purple reaches the drawing's inner edge
+   with no red sliver showing, and only the black outline stays uncovered.
+   Do NOT inset this further — an earlier ~2.5-unit inset left a visible red
+   margin down both slanted sides (measured 5.7px at the top, 3px at the
+   bottom, and far more obvious when the bowl is viewed zoomed in).
+   The TOP of the polygon follows the bowl's real contour rather than cutting
+   straight across. The body's top edge is two cubic beziers (from the SVG:
+   (1.9043,0) → (121.429,16.1904) → (239.639,2.40625)), which sag ~16 units at
+   centre. With a straight-topped clip the level had to stop short (85%) or it
+   would poke over the bowl's inner surface mid-span, and that left a red
+   crescent — thick at the sides, thin in the middle — permanently unfilled.
+   Sampling those beziers at t=0/.25/.5/.75/1 gives the points below (as % of
+   the 239.639×117.143 box, nudged in by one stroke), so the purple is bounded
+   by the bowl's own curve and can now fill to a true 100%.
+   Duration comes from --fill-ms, which app.js derives from its own MIX_MS, so
+   the gauge cannot silently desync from when the result actually appears. */
+.bowl-fill {
+  position: absolute;
+  left: calc(57 * var(--s));
+  top: calc(925.71 * var(--s));       /* .bowl top 910.16 + body offset 15.55 */
+  width: calc(239.64 * var(--s));
+  height: calc(117.14 * var(--s));
+  overflow: hidden;
+  clip-path: polygon(
+    1.2% 0.9%,  4.7% 6.3%,  15.4% 10.7%, 31.3% 13.6%, 50.7% 14.7%,
+    68.4% 13.8%, 83.4% 11.3%, 94.3% 7.6%, 99.4% 3.0%,
+    73.5% 99.1%, 27.05% 99.1%
+  );
+  z-index: 23;
+  pointer-events: none;
+}
+.bowl-fill__level {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: #560476;   /* fallback, and what shows before the blend loads */
+  overflow: hidden;      /* required: this is what clips the blend to the level */
+  display: block;
+}
+
+/* ══ what the bowl fills WITH ═════════════════════════════════════════
+   A churning blend of the two uploads, not a flat colour — the bowl fills
+   with the very thing the site is making.
+
+   Two things make it read as contents rather than as a progress bar:
+   · it is pinned to the BOWL (fixed size, anchored to the level's fixed
+     bottom), so the rising level REVEALS it. Sizing it to the level would
+     stretch the picture as it filled, which looks like a loading bar.
+   · it is much larger than the bowl. #bowl-marble's displacement peaks at
+     scale 110, i.e. ±55 units of push, and a rotating/warping layer that
+     is only bowl-sized gets dragged inward and lets the red show at the
+     sides. 380×240 against the bowl's 239.64×117.14 leaves 70 units of
+     horizontal and 61 of vertical margin — both clear of that ±55.
+     Do not shrink these numbers without re-checking against the scale. */
+.bowl-mix {
+  position: absolute;
+  left: calc(-80.18 * var(--s));
+  bottom: calc(-86.43 * var(--s));
+  width: calc(400 * var(--s));
+  height: calc(290 * var(--s));
+  isolation: isolate;          /* keeps the blend mode inside this layer */
+  background: #000;
+  filter: url(#bowl-marble);
+  display: none;               /* app.js reveals it once both uploads are set */
+}
+.bowl-mix img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* hard-light genuinely combines the two images' light. Plain opacity would
+   only average them, which is a dissolve, not a mix. */
+.bowl-mix__b { mix-blend-mode: hard-light; }
+
+/* ── why a third layer exists ────────────────────────────────────────
+   hard-light is NOT symmetric. Where the top image sits near mid-grey the
+   result is the bottom image, but at either extreme the top image drives the
+   result to black or white — so the top layer ends up owning the palette and
+   the bottom one survives only as light and shade. Measured on the two sample
+   objects: the blended pixel's hue was nearer the TOP image's in 83.4% of the
+   pixels where both were colourful. That is why the bowl reads as one picture
+   with the other as texture, rather than as a mix of two.
+
+   The fix is not another blend mode — every separable mode has the same
+   problem in one direction or the other. It is to bring the bottom image's
+   OWN colour back on top, in patches, the way real marbling shows veins of
+   each colour rather than an average of them.
+
+   So this is image 1 again, unblended, masked down to stripes. The stripes are
+   straight here on purpose: .bowl-mix carries #bowl-marble, whose displacement
+   map already swings between 45 and 110, and it warps these hard edges into
+   moving veins for free. Straight stripes in, marbling out — no second filter,
+   no extra cost. It shares bowl-drift-a exactly so it stays in register with
+   the image 1 underneath it; if that ever diverges the veins would ghost. */
+.bowl-mix__vein {
+  --veins: repeating-linear-gradient(72deg,
+            #000 0 11%, rgba(0,0,0,.45) 11% 15%, transparent 15% 33%);
+  -webkit-mask-image: var(--veins);
+          mask-image: var(--veins);
+  animation: bowl-drift-a 1920ms ease-in-out infinite alternate;
+}
+/* The two photos travel across each other so it never settles.
+
+   TEMPO: 1920ms is exactly 3 stir cycles (rig-stir and bowl-jiggle are both
+   640ms). At the old 7000ms the liquid drifted lazily while the spoon stirred
+   briskly, and the contents read as belonging to a different scene. Locking it
+   to a multiple of the stir means the churn answers the spoon.
+
+   COVERAGE: scale 1.7 with only ±3%/2% of travel and 3deg of tilt is not a
+   look choice, it is a requirement. #bowl-marble displaces pixels by up to ±55
+   units, so the images have to overhang .bowl-mix by more than that at EVERY
+   phase or the filter drags transparency inward and the bowl's red shows at
+   the sides. These values overhang by ~73 units; the previous scale 1.3 with
+   ±7%/5% and 6deg actually fell 6 units SHORT of even covering the box, which
+   is exactly why the red appeared intermittently rather than constantly. */
+.bowl-mix__a { animation: bowl-drift-a 1920ms ease-in-out infinite alternate; }
+.bowl-mix__b { animation: bowl-drift-b 1920ms ease-in-out infinite alternate; }
+@keyframes bowl-drift-a {
+  from { transform: scale(1.7) translate(-3%, 2%) rotate(-3deg); }
+  to   { transform: scale(1.7) translate(3%, -2%) rotate(3deg); }
+}
+@keyframes bowl-drift-b {
+  from { transform: scale(1.7) translate(3%, -2%) rotate(3deg); }
+  to   { transform: scale(1.7) translate(-3%, 2%) rotate(-3deg); }
+}
+/* NOTE: do NOT slow the drift or the wave by overriding animation-duration on
+   is-done. A running CSS animation's progress is localTime / duration, so
+   changing the duration mid-flight recomputes it and the element jumps to a
+   completely different point in its own cycle — at ~1200ms elapsed the drift
+   went from 62.5% of its cycle to 17% in a single frame. That override was
+   added to soften the ending and was in fact producing a hard snap in it.
+   The calming is carried by the displacement settle in app.js instead, and by
+   the -calm variants below, which are separate keyframes whose 0% matches the
+   pose already on screen. */
+.bowl.is-mixing ~ .bowl-fill .bowl-mix,
+.bowl.is-done ~ .bowl-fill .bowl-mix,
+.bowl.is-draining ~ .bowl-fill .bowl-mix { display: block; }
+
+/* the waterline. Drawn in the bowl's own red so it carves INTO the liquid
+   rather than sitting on top of it, and scrolls exactly one tile width so
+   the loop is seamless. */
+.bowl-wave {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200%;
+  height: calc(13 * var(--s));
+  /* SHAPE and COLOUR are separated on purpose. The wave silhouette is a mask,
+     and the colour is a normal background reading the same --bowl-color the
+     bowl uses — so recolouring the bowl moves the wave with it. Putting the
+     colour inside the data-URI (as it was) makes it unreachable from CSS. */
+  background: var(--bowl-color, #cc0000);
+  --wave-shape: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='13' viewBox='0 0 60 13' preserveAspectRatio='none'><path d='M0 7 Q 7.5 1 15 7 T 30 7 T 45 7 T 60 7 L60 0 L0 0 Z' fill='black'/></svg>");
+  -webkit-mask-image: var(--wave-shape);
+          mask-image: var(--wave-shape);
+  -webkit-mask-repeat: repeat-x;
+          mask-repeat: repeat-x;
+  -webkit-mask-size: calc(60 * var(--s)) 100%;
+          mask-size: calc(60 * var(--s)) 100%;
+  animation: bowl-wave-scroll 2600ms linear infinite;
+  z-index: 3;
+  pointer-events: none;
+  display: none;
+}
+@keyframes bowl-wave-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-60 * var(--s))); }
+}
+.bowl.is-mixing ~ .bowl-fill .bowl-wave,
+.bowl.is-done ~ .bowl-fill .bowl-wave,
+.bowl.is-draining ~ .bowl-fill .bowl-wave { display: block; }
+/* the 800ms delay matches rig-descend exactly: the gauge should start when the
+   spoon actually lands in the bowl, not the instant the button is pressed —
+   otherwise the bowl appears to start filling before anything is stirring it.
+   linear so the rate is constant and the remaining time is honestly readable,
+   the way a loading bar behaves. */
+.bowl.is-mixing ~ .bowl-fill .bowl-fill__level {
+  animation: bowl-load var(--fill-ms, 8200ms) linear 800ms forwards;
+}
+/* The level EASES into full instead of hitting the top at constant speed.
+   The deceleration lives in the keyframe stops rather than in a timing
+   function, deliberately: the timing function stays `linear` for the whole
+   run, so nothing about the animation is ever swapped mid-flight (doing that
+   makes a running animation jump — see the note by .bowl-mix). Increments per
+   equal slice of time: 66 → 19 → 10 → 3.5 → 1.5, i.e. steadily slowing. */
+@keyframes bowl-load {
+  0%   { height: 0; }
+  60%  { height: 66%; }
+  80%  { height: 85%; }
+  92%  { height: 95%; }
+  97%  { height: 98.5%; }
+  100% { height: 100%; }   /* safe: the clip's curved top bounds it */
+}
+
+/* ══ the wind-DOWN, which is the part that was missing ════════════════
+   These run for the last 6 stir cycles of the fill, so the scene is already
+   slowing well before it stops. Each one's 0% is exactly the pose the full-
+   speed version sits at on a cycle boundary (rig-stir → rotate(90.53deg),
+   bowl-jiggle → translateX(0)), and app.js only switches them in ON such a
+   boundary — that is what lets a differently-timed animation take over with
+   no jump. */
+@keyframes rig-stir-calm {
+  0%   { transform: rotate(90.53deg); animation-timing-function: steps(1); }
+  14%  { transform: rotate(95deg);    animation-timing-function: steps(1); }
+  30%  { transform: rotate(96.5deg);  animation-timing-function: steps(1); }
+  48%  { transform: rotate(90deg);    animation-timing-function: steps(1); }
+  64%  { transform: rotate(86.5deg);  animation-timing-function: steps(1); }
+  82%  { transform: rotate(88.5deg);  animation-timing-function: steps(1); }
+  100% { transform: rotate(90.53deg); }
+}
+@keyframes bowl-jiggle-calm {
+  0%   { transform: translateX(0);                     animation-timing-function: steps(1); }
+  26%  { transform: translateX(calc(-1.1 * var(--s))); animation-timing-function: steps(1); }
+  54%  { transform: translateX(calc(1 * var(--s)));    animation-timing-function: steps(1); }
+  80%  { transform: translateX(calc(-0.6 * var(--s))); animation-timing-function: steps(1); }
+  100% { transform: translateX(0); }
+}
+/* the bowl empties again once the result window is dismissed — gradually, so
+   it reads as "clearing up", not as the level vanishing. */
+@keyframes bowl-drain {
+  from { height: 100%; }
+  to   { height: 0; }
+}
+.bowl.is-done ~ .bowl-fill .bowl-fill__level     { height: 100%; }   /* holds full */
+.bowl.is-draining ~ .bowl-fill .bowl-fill__level { height: 0; animation: bowl-drain 520ms linear forwards; }
+
+/* ══ visible loading read-out ═════════════════════════════════════════
+   Reviewers said the rising level alone did not read as "loading / ready".
+   A number does, so the drawn level gets a caption: it counts while the bowl
+   fills and flips to "ready" the moment it is full. It is the twin of the
+   screen-reader-only #status line, never a replacement for it. */
+.bowl-gauge {
+  position: absolute;
+  left: calc(57 * var(--s));
+  top: calc(972 * var(--s));
+  width: calc(240 * var(--s));
+  text-align: center;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: calc(40 * var(--s));
+  line-height: 1;
+  color: var(--yellow);
+  /* NO text-stroke here. A 1u stroke also outlines each glyph's counter, and on
+     the small triangular counter of "A" the two outlines nearly meet and the
+     letter reads as broken. Yellow on the purple fill is already high contrast,
+     and plain yellow-on-purple type is exactly what .run__label does. */
+  z-index: 26;                 /* over .bowl__body(22) and .bowl-fill(23) */
+  pointer-events: none;
+  opacity: 0;                  /* nothing to say until MIX is pressed */
+  transition: opacity .15s;
+}
+/* black outline on the DIGITS only. It is not on .bowl-gauge as a whole
+   because a text-stroke also outlines each glyph's counter, and on the small
+   triangular counter of "A" in READY the two outlines nearly meet and the
+   letter reads as broken. Digits and "%" have rounder, roomier counters, so
+   they take the stroke cleanly. paint-order puts the fill over the inner half
+   of the stroke, which keeps the strokes off the letterforms' insides. */
+.bowl-gauge__num {
+  -webkit-text-stroke: calc(1 * var(--s)) var(--black);
+  paint-order: stroke fill;
+}
+.bowl-gauge__ready { display: none; }
+.bowl.is-mixing ~ .bowl-gauge,
+.bowl.is-done ~ .bowl-gauge,
+.bowl.is-draining ~ .bowl-gauge { opacity: 1; }
+/* The number and the word CROSS-FADE rather than swapping in one frame. They
+   are stacked on top of each other so neither reflows the other, and the word
+   carries no text-stroke while the digits do, so an instant swap also changed
+   the visual weight abruptly — the fade covers that too. */
+.bowl-gauge { display: grid; }
+.bowl-gauge__num,
+.bowl-gauge__ready {
+  grid-area: 1 / 1;
+  display: block;
+  transition: opacity .28s ease;
+}
+.bowl-gauge__ready { opacity: 0; }
+.bowl.is-done ~ .bowl-gauge .bowl-gauge__num,
+.bowl.is-draining ~ .bowl-gauge .bowl-gauge__num { opacity: 0; }
+.bowl.is-done ~ .bowl-gauge .bowl-gauge__ready,
+.bowl.is-draining ~ .bowl-gauge .bowl-gauge__ready { opacity: 1; }
+
+/* ══ the ending beat ══════════════════════════════════════════════════
+   rig-lift is rig-descend run backwards: the spoon rises out of the bowl along
+   the same up-and-over arc, in the same stepped stop-motion language, and lands
+   on exactly rotate(0deg) — the idle base — so rig-idle can pick up with no
+   snap. This replaces the old ending, where dropping .is-mixing teleported the
+   hand 90deg out of the bowl and emptied the bowl in the same single frame. */
+@keyframes rig-lift {
+  0%   { transform: rotate(90.53deg);                                     animation-timing-function: steps(1); }
+  16%  { transform: translateY(calc(-40 * var(--s))) rotate(88deg);       animation-timing-function: steps(1); }
+  32%  { transform: translateY(calc(-78 * var(--s))) rotate(78deg);       animation-timing-function: steps(1); }
+  50%  { transform: translateY(calc(-88 * var(--s))) rotate(55deg);       animation-timing-function: steps(1); }
+  70%  { transform: translateY(calc(-62 * var(--s))) rotate(25deg);       animation-timing-function: steps(1); }
+  86%  { transform: translateY(calc(-22 * var(--s))) rotate(-7deg);       animation-timing-function: steps(1); }
+  100% { transform: rotate(0deg); }
+}
+/* the pill's outline is suppressed while it sits down in the bowl (it showed as
+   a stray ring through the bowl's notch); it returns once the lift has carried
+   it clear. Deliberate exception to the "both elements get byte-identical
+   animation values" rule in this file: the shared rig-lift part IS identical on
+   both, and this extra one touches only border-color — never a transform — so
+   the rig and the pill stay geometrically locked. */
+@keyframes run-border-return {
+  0%, 35%   { border-color: transparent; }
+  36%, 100% { border-color: var(--black); }
+}
+.spoon-rig.is-done { animation: rig-lift 600ms 1 forwards; }
+#run.is-done       { animation: rig-lift 600ms 1 forwards, run-border-return 600ms 1 forwards; }
+
+/* invisible yellow mask starting exactly at .bowl__body's bottom edge
+   (910.16 + 15.55 + 117.14 = 1042.85). A rotated box's bounding box grows as
+   it turns away from its minimal angle, so at the stir's 88/93deg extremes
+   the purple pill dips a couple of units past the bowl's narrow bottom tip.
+   Masking it here keeps the pill's motion honest (no page-space nudging of
+   the rig, which would lift the whole assembly out of the bowl and break
+   the spoon→pill junction). z-index 24 puts it above the whole bowl+spoon+fill
+   stack; it only covers the strip BELOW the bowl, so nothing else is hidden. */
+.bowl-floor {
+  position: absolute;
+  left: 0;
+  top: calc(1042.85 * var(--s));
+  width: 100%;
+  height: calc(40 * var(--s));
+  background: var(--panel);
+  z-index: 24;
+  pointer-events: none;
+}
+
+/* two shared keyframe timelines drive BOTH .spoon-rig (hand+hand-tip) and
+   .run independently: MIX click rotates the rig from resting (0deg) down
+   through the bowl (90.53deg, matching Figma exactly) ONCE (rig-descend),
+   then stirs FOREVER with a small stepped wobble around that angle
+   (rig-stir, seamlessly loopable: its first and last keyframe are
+   identical). Stepped (not eased) keyframes give a stop-motion feel: each
+   transform snaps straight to the next pose instead of tweening between
+   them. Both keyframe sets are applied with IDENTICAL timing on both
+   .spoon-rig and .run (see .spoon-rig.is-mixing / #run.is-mixing below) —
+   this must stay byte-for-byte in sync, since they are two separate
+   elements animating independently (see the .run comment above for why);
+   any drift between them would make the spoon and button visibly
+   separate over many loop iterations. */
+/* The descent is NOT a pure rotation. A pure rotation about the rig's pivot
+   (146.03, 867.16) swings the spoon tip along a circle of radius ~117: by 45deg
+   the tip is already at y≈950, i.e. BELOW the rim's 910–943 band while still far
+   out to the right, so it entered by slicing sideways through the rim's edge
+   instead of being lowered into the mouth — which read as the spoon passing
+   THROUGH the bowl's side. So the rotation is combined with a temporary lift
+   that carries the assembly up and over the bowl first, then sets it down
+   through the opening: at the 55% apex the tip sits at y≈891, clear of the rim.
+   The lift is back to exactly 0 at 100%, so the landing pose is the untouched,
+   Figma-verified rotate(90.53deg) that rig-stir starts from — no jump, and none
+   of the "pill hoisted out of the bowl" trouble a lift during the STIR caused. */
+@keyframes rig-descend {
+  0%   { transform: rotate(0deg);                                          animation-timing-function: steps(1); }
+  15%  { transform: translateY(calc(-22 * var(--s))) rotate(-7deg);        animation-timing-function: steps(1); } /* wind-up: lifts and tilts back */
+  35%  { transform: translateY(calc(-62 * var(--s))) rotate(25deg);        animation-timing-function: steps(1); }
+  55%  { transform: translateY(calc(-88 * var(--s))) rotate(55deg);        animation-timing-function: steps(1); } /* apex — held high, clear of the rim */
+  72%  { transform: translateY(calc(-78 * var(--s))) rotate(78deg);        animation-timing-function: steps(1); } /* poised over the mouth */
+  86%  { transform: translateY(calc(-40 * var(--s))) rotate(88deg);        animation-timing-function: steps(1); } /* dropping in, near centred */
+  100% { transform: rotate(90.53deg); }
+}
+
+/* idle "press me" twitch, running whenever the rig is NOT mixing: mostly
+   still, then a quick stepped double-shake. A constant wobble would just be
+   noise; an occasional flick reads as an invitation. Rotating about the shared
+   pivot means the hand, spoon AND the MIX pill all flick together — the pill
+   moving is the actual click cue. Both .spoon-rig and .run get this with
+   identical timing, same as every other animation here, so they never detach.
+   The .is-mixing rules outrank these on specificity, so pressing MIX replaces
+   the idle automatically, and it resumes when app.js clears the class. */
+@keyframes rig-idle {
+  0%, 70% { transform: rotate(0deg);      animation-timing-function: steps(1); }
+  74%     { transform: rotate(-2.5deg);   animation-timing-function: steps(1); }
+  78%     { transform: rotate(2.5deg);    animation-timing-function: steps(1); }
+  82%     { transform: rotate(-2deg);     animation-timing-function: steps(1); }
+  86%     { transform: rotate(1.5deg);    animation-timing-function: steps(1); }
+  90%     { transform: rotate(-1deg);     animation-timing-function: steps(1); }
+  94%, 100% { transform: rotate(0deg); }
+}
+/* pure rotation only — never add a translate here. A page-space vertical
+   nudge lifts the assembly out of the bowl mid-wobble, which exposes the
+   whole outlined edge of the purple pill above the rim (reads as a detached,
+   growing outline) and breaks the spoon→pill junction. The purple pill
+   dipping a hair below the bowl's bottom tip at these angles (a rotated
+   box's bbox grows as it leaves its minimal angle) is masked by
+   .bowl-floor instead. */
+/* a wide, uneven double swing — fast sweeps with a held frame at each far
+   side, which is what sells a hand-cranked stop-motion stir rather than a
+   metronome. Amplitude is ~±9deg (vs the earlier ±2.5), the widest the pill
+   can swing while .bowl-floor still catches its dip below the bowl. */
+@keyframes rig-stir {
+  0%    { transform: rotate(90.53deg); animation-timing-function: steps(1); }
+  10%   { transform: rotate(98deg);    animation-timing-function: steps(1); }
+  22%   { transform: rotate(100deg);   animation-timing-function: steps(1); }
+  34%   { transform: rotate(95deg);    animation-timing-function: steps(1); }
+  46%   { transform: rotate(85deg);    animation-timing-function: steps(1); }
+  58%   { transform: rotate(82deg);    animation-timing-function: steps(1); }
+  70%   { transform: rotate(86deg);    animation-timing-function: steps(1); }
+  82%   { transform: rotate(97deg);    animation-timing-function: steps(1); }
+  92%   { transform: rotate(93deg);    animation-timing-function: steps(1); }
+  100%  { transform: rotate(90.53deg); }
+}
+
+/* the bowl gets shoved around by the stirring — pure horizontal steps, no
+   rotation and no vertical move: the bowl's bottom edge has to stay exactly
+   on .bowl-floor's top edge, or the mask would clip a corner off the bowl
+   (or open a gap the pill shows through). Applied to .bowl__rim and
+   .bowl__body separately, NOT to .bowl itself — transforming .bowl would
+   make it a stacking context and trap the rim/body z-indexes inside it,
+   collapsing the rim(1) → spoon(20/21) → body(22) sandwich. */
+@keyframes bowl-jiggle {
+  0%   { transform: translateX(0);                     animation-timing-function: steps(1); }
+  22%  { transform: translateX(calc(-2.5 * var(--s))); animation-timing-function: steps(1); }
+  46%  { transform: translateX(calc(1 * var(--s)));    animation-timing-function: steps(1); }
+  58%  { transform: translateX(calc(2.5 * var(--s)));  animation-timing-function: steps(1); }
+  82%  { transform: translateX(calc(-1.5 * var(--s))); animation-timing-function: steps(1); }
+  100% { transform: translateX(0); }
+}
+/* .bowl-fill rides the SAME jiggle, with identical timing. It is a separate
+   element from the rim/body, so if it stayed put while the bowl shifted
+   sideways the two would fall out of register — leaving a red sliver down one
+   slanted edge and purple spilling past the black outline on the other. The
+   clip-path lives on .bowl-fill itself, so transforming it carries the clip
+   along and the fill stays locked to the bowl's shape. Keep these three
+   byte-identical. */
+.bowl.is-mixing .bowl__rim,
+.bowl.is-mixing .bowl__body,
+.bowl.is-mixing ~ .bowl-fill { animation: bowl-jiggle 640ms infinite 800ms; }
+.spoon-rig.is-mixing { animation: rig-descend 800ms 1 forwards, rig-stir 640ms infinite 800ms; }
+
+/* These MUST come after the .is-mixing rules above: same specificity, so the
+   later rule wins. is-finishing is applied ON TOP of is-mixing (never instead
+   of it) so the fill keeps running underneath — only the stir and the jiggle
+   are swapped for their calmer variants. */
+.spoon-rig.is-finishing,
+#run.is-finishing { animation: rig-stir-calm 1080ms infinite; }
+#run.is-finishing { border-color: transparent; }
+.bowl.is-finishing .bowl__rim,
+.bowl.is-finishing .bowl__body,
+.bowl.is-finishing ~ .bowl-fill { animation: bowl-jiggle-calm 1080ms infinite; }
+
+.slot:hover, .run:hover { filter: brightness(1.04); }
+.slot:active, .run:active { filter: brightness(.96); }
+.run:focus-visible {
+  outline: calc(3 * var(--s)) solid #560476;
+  outline-offset: calc(2 * var(--s));
+}
+
+/* nudge for an empty slot when MIX is pressed too early */
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(calc(-9 * var(--s))); }
+  75%      { transform: translateX(calc(9 * var(--s))); }
+}
+.slot.is-missing { animation: nudge .3s ease 2; }
+
+/* ══ scrolling content column ═════════════════════════════════════════ */
+
+.content {
+  margin-left: var(--sbw);
+  border-left: 1px solid var(--black);   /* thin rule between the panel and the rest */
+}
+
+/* thin black rule between each stacked section in the scroll */
+/* the separator between stacked sections. In sideways mode the sections are
+   grandchildren under the reel wrappers, so match them there too (render-
+   identical in normal mode, where the wrappers are display:contents). */
+.content > *, .content .reel__vstage > *, .content .reel__row > * { border-bottom: 1px solid var(--black); }
+
+/* logo banner — the Figma header lockup (frame 2769:2): dark-purple #560476
+   band, live-animated "toool" wordmark (was a static PNG). The real Figma
+   typeface ("rings", a bespoke rounded font) isn't embedded in this project —
+   only the spiky "ABC Helveesti Spikes Mono Trial" is (spikes-font.css) — so
+   animating per-letter trades exact typeface fidelity for motion a flat PNG
+   can't do. Deliberate, reviewed tradeoff — see anim-gallery.html variation 5
+   ("domino push"), which this reproduces at the site's real scale. */
+
+.logo-banner {
+  position: relative;
+  height: calc(396 * var(--sc));       /* 482/1568 of the content column */
+  background: #1a6fff;   /* baked-in per user's colour-panel pick (was #560476) */
+  overflow: hidden;
+  /* centre the wordmark by layout, not by translate(-50%): a percentage
+     translate is computed from the UNSCALED box, so once the width-pin adds a
+     scaleX the word drifts off-centre and runs past the edge. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Built as 5 letters stacked VERTICALLY then rotated -90deg — the trick that
+   lets each letter open/close independently (Figma's own node is a single
+   text run, "toool" on one line, which this reproduces visually but splits
+   into 5 spans for animation). Pre-rotation width/height swap into the
+   post-rotation visual height/width. Numbers pulled directly from the live
+   Figma node (file tSaRHddsSfY6M8JL1HgbpN, node 2949:14, fetched via the
+   Figma MCP): outer lockup box 1280×509, inner pre-rotation text box
+   509×1280, font-size 582, line-height 245 — scaled by F = 1288/1568 =
+   0.8214 (the project's --content-w unit is that fraction of Figma's raw
+   1568px content-column width; same F the .logo-banner height above already
+   uses: 482×F ≈ 396). This lands the logo at the exact same size/position
+   Figma shows, not an approximation. */
+/* ── the wordmark: an upright line of type whose letters morph continuously ──
+   Chosen from the gallery (option 1). The letters are NOT swapped between
+   static font files — that always reads as a hard cut. Instead the axes of a
+   variable font are animated, so every frame is a real interpolated state and
+   the motion never jumps. All five letters share one duration and a pure sine
+   cycle, with delays spaced exactly 1/5 apart: five equally-phased sines sum
+   to zero, so as one letter widens another narrows and the word's width barely
+   moves. The timing must stay `linear` — easing would distort the phases and
+   break that cancellation. logo.js then pins the width exactly. */
+.logo {
+  position: static;
+  margin: 0;
+  width: max-content;          /* one line — never let the letters stack */
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -.055em;      /* the letters touch, as one mass */
+  transform-origin: 50% 50%;
+  will-change: transform;
+  /* Hidden until logo.js has sized and placed it. Without this the <h1> paints
+     at its own default size for the moment before document.fonts.ready
+     resolves — a tiny "toool" flashing in the band before the real one opens.
+     It still has layout while hidden, which is what the measuring needs; a
+     timer in logo.js reveals it regardless, so a font that never loads cannot
+     leave the mark invisible. */
+  visibility: hidden;
+}
+.logo.is-ready { visibility: visible; }
+/* While it flies it cannot stay inside the band: an in-flow element is clipped
+   by the banner's overflow and scrolls away with it, and this mark has to leave
+   the band and end up in the corner. logo.js computes the whole journey as one
+   transform, so the element only needs a stable anchor — the viewport's
+   top-left. The class is added by JS, so with motion reduced the wordmark stays
+   exactly where it always was, inside the band. */
+.logo.is-flying {
+  position: fixed; left: 0; top: 0; z-index: 60;
+  /* the mark is the picture, .to-top underneath it is the button — without
+     this the letters swallow the click that is meant for it */
+  pointer-events: none;
+}
+.logo .bl { display:inline-block; width:0; height:0; overflow:hidden; vertical-align:baseline; }
+.logo .ltr {
+  display: inline-block;
+  vertical-align: baseline;
+  /* the o's grow into place off the baseline as the word opens (logo.js
+     scales them), so the origin sits near the line, not at the box centre */
+  transform-origin: 50% 88%;
+  font-family: "ABC Helveesti Spikes Trial", "Helvetica Neue", sans-serif;  /* logo.js swaps this per letter */
+  font-size: 1em;              /* logo.js sizes the container; letters follow */
+  text-transform: lowercase;
+  color: #cc0000;         /* baked-in per colour-panel pick (was var(--red)) —
+                              intentionally not the shared --red variable, so
+                              the unrelated .mixwin__x close button (also on
+                              --red) is untouched */
+  -webkit-text-stroke: calc(2.46 * var(--sc)) var(--black);
+  paint-order: stroke fill;
+}
+
+
+/* The old rotated-stack lockup (per-letter translateY for the scroll-driven
+   "stretch open", plus its load-in keyframes) has been removed: the wordmark
+   is now an upright line whose letters morph on variable-font axes, so those
+   transforms only fought it — they were stacking the letters vertically. */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .logo .bl { display:inline-block; width:0; height:0; overflow:hidden; vertical-align:baseline; }
+.logo .ltr { animation: none !important; }
+}
+
+/* intro video band — full content-column width, edge to edge, looping
+   muted; sits right before the hero. Height follows the clip's own aspect
+   (block video). */
+.intro-video {
+  margin: 0;
+  line-height: 0;
+  background: #000;
+  position: relative;        /* containing block for the second copy below */
+}
+.intro-video__el {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* The loop's cross-fade (intro-loop.js). Only ONE property on ONE element is
+   ever animated: copy B's opacity. B on top at 1 means B is showing, at 0 means
+   A is showing — so the same transition covers the hand-off in both directions
+   and the two can never fight each other. A stays in normal flow so the band
+   keeps taking its height from the clip's own aspect ratio.
+   linear, and exactly as long as FADE in intro-loop.js: the dissolve has to
+   match the overlap or the two would drift apart. */
+.intro-video__el--b {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.intro-video__el--b { transition: opacity .7s linear; }
+
+/* hero — horizontal spectrum band. Vertical scroll is hijacked into a
+   sideways sweep: the band is pinned (position:fixed, set in hero.js) and
+   fills the screen while the cow→tomato row slides across; only once the
+   whole spectrum has been swept does normal scrolling resume. */
+
+.hero { position: relative; --band: calc(1150 * var(--sc)); }
+
+.hero__sticky {
+  position: relative;
+  height: var(--band);
+  overflow: hidden;
+  background: #00961C;               /* the exact Figma green (2949:71) */
+}
+
+.hero__track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  will-change: transform;
+}
+
+.hero__track img {
+  height: 100%;
+  width: auto;                        /* ≈ 3.48× the height → overflows to the right */
+  max-width: none;
+  display: block;
+}
+
+/* cut-outs trailing the cursor — full-bleed, same frame as the green cow band */
+.hero-chase {
+  position: relative;
+  width: 100%;
+  height: calc(1150 * var(--sc));      /* = the hero band height */
+  background: #000 url(assets/chase-bg.jpg) center / cover no-repeat;  /* the uploaded starfield */
+  overflow: hidden;
+  cursor: none;
+  touch-action: pan-y;
+}
+.hero-chase .hc-cur {
+  position: absolute;
+  top: 0; left: 0;
+  transform: translate(-50%, -50%) scale(var(--hc-zoom, 1));
+  transform-origin: center;
+  object-fit: contain;
+  will-change: left, top;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.hc-controls {
+  position: absolute;
+  left: calc(16 * var(--sc));
+  bottom: calc(16 * var(--sc));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: calc(5 * var(--sc));
+  padding: calc(8 * var(--sc)) calc(11 * var(--sc));
+  background: rgba(0, 0, 0, .38);
+  border-radius: calc(6 * var(--sc));
+  pointer-events: auto;
+}
+.hc-controls label {
+  display: flex;
+  align-items: center;
+  gap: calc(7 * var(--sc));
+  font-size: calc(12 * var(--sc));
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.hc-controls input[type=range] {
+  width: calc(120 * var(--sc));
+  accent-color: #fff;
+  cursor: pointer;
+}
+.hc-controls .hc-btn {
+  margin-top: calc(3 * var(--sc));
+  font: inherit;
+  font-size: calc(11 * var(--sc));
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: calc(4 * var(--sc));
+  padding: calc(5 * var(--sc)) calc(9 * var(--sc));
+  cursor: pointer;
+}
+.hc-controls .hc-btn:hover { filter: brightness(.94); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-chase { cursor: default; }
+}
+
+/* generated output */
+
+.stage {
+  position: relative;
+  height: calc(1068 * var(--sc));
+  background: var(--purple);
+  overflow: hidden;
+}
+
+.cascade { position: absolute; inset: 0; }
+
+.cascade img {
+  position: absolute;
+  left: var(--l);
+  top: var(--t);
+  width: var(--w);
+  aspect-ratio: 412 / 497;
+  height: auto;
+  object-fit: cover;
+}
+
+.stage.is-working .cascade { opacity: .35; }
+.cascade { transition: opacity .2s ease; }
+
+/* source objects */
+
+.objects {
+  display: flex;
+  height: calc(1076 * var(--sc));
+}
+
+.objects figure { margin: 0; height: 100%; }
+.objects__a { width: calc(529 * var(--sc)); }
+.objects__b { width: calc(759 * var(--sc)); }
+.objects img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ══ the game — Figma frame "משחק" (node 2444-626), 1288×1083 ═══════════
+   Move the printer horizontally to catch the ladybugs falling from the top.
+   Same purple stage + --sc unit system, so it maps 1:1 to the content column. */
+
+.game {
+  position: relative;
+  height: calc(1080 * var(--sc));
+  background: var(--purple);
+  overflow: hidden;
+  touch-action: none;                /* let us drive the printer with touch */
+  cursor: none;                      /* the printer IS the cursor here */
+  outline: none;
+}
+
+.game__field { position: absolute; inset: 0; }
+
+/* printer paddle — flush at the bottom, driven horizontally via --px (px) */
+.game__printer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: calc(517 * var(--sc));
+  height: auto;
+  transform: translateX(var(--px, 0px));
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  z-index: 3;
+}
+
+/* a falling ladybug — placed via --lx / --ly (px from the field's top-left) */
+.ladybug {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(220 * var(--sc));
+  aspect-ratio: 220 / 147;
+  height: auto;
+  transform: translate(var(--lx, 0px), var(--ly, 0px));
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* quick "gulp" when the printer eats one */
+.ladybug--caught {
+  transition: transform .18s ease-in, opacity .18s ease-in;
+  transform: translate(var(--lx, 0px), var(--ly, 0px)) scale(0);
+  opacity: 0;
+}
+
+/* small score, top-right corner */
+.game__score {
+  position: absolute;
+  top: calc(28 * var(--sc));
+  right: calc(36 * var(--sc));
+  margin: 0;
+  z-index: 4;
+  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
+  font-weight: 400;
+  font-size: calc(64 * var(--sc));
+  line-height: 1;
+  color: var(--yellow);
+  -webkit-text-stroke: calc(1.5 * var(--sc)) var(--black);
+  user-select: none;
+  pointer-events: none;
+}
+
+.game:focus-visible { outline: calc(4 * var(--sc)) solid var(--yellow); outline-offset: calc(-8 * var(--sc)); }
+
+/* reduced motion: no falling loop — the printer + scattered ladybugs stay put */
+@media (prefers-reduced-motion: reduce) {
+  .game { cursor: default; }
+  .ladybug--caught { transition: none; }
+}
+
+/* ══ the toys — five scroll sections below the game ═══════════════════
+   Same --sc unit system + purple stage language, so they read as more
+   panels of the one site. No score, no goal — just things to fiddle with. */
+
+.toy {
+  position: relative;
+  height: calc(1080 * var(--sc));
+  overflow: hidden;
+  background: var(--purple);
+}
+
+/* the little corner caption, in the same spikes-mono as the game score */
+.toy__label {
+  position: absolute;
+  top: calc(28 * var(--sc));
+  right: calc(36 * var(--sc));
+  margin: 0;
+  z-index: 6;
+  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
+  font-weight: 400;
+  font-size: calc(40 * var(--sc));
+  line-height: 1;
+  color: var(--yellow);
+  -webkit-text-stroke: calc(1.5 * var(--sc)) var(--black);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 1 · reveal ───────────────────────────────────────────────────────── */
+.toy--reveal { background: #560476; cursor: crosshair; }
+.reveal-bg { position: absolute; inset: 0; display: flex; }
+.reveal-a, .reveal-b { width: 50%; height: 100%; object-fit: cover; }
+
+.reveal-tiles {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 8), 1fr);
+  grid-template-rows: repeat(var(--rows, 6), 1fr);
+  touch-action: pan-y;              /* keep the page scrollable on touch */
+}
+.reveal-tile {
+  background: var(--yellow);
+  border: calc(1 * var(--sc)) solid var(--black);
+  transition: opacity .28s ease, transform .28s ease;
+}
+.reveal-tile.is-bare { opacity: 0; transform: scale(.55); pointer-events: none; }
+
+/* 2 · morph ────────────────────────────────────────────────────────── */
+.toy--morph { cursor: ew-resize; touch-action: pan-y; }
+.morph-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#morph-b { will-change: opacity; }
+.morph-handle {
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: calc(4 * var(--sc));
+  transform: translateX(-50%);
+  background: var(--yellow);
+  box-shadow: 0 0 0 calc(1 * var(--sc)) var(--black);
+  z-index: 5;
+  pointer-events: none;
+}
+.morph-handle::after {
+  content: "";
+  position: absolute; top: 50%; left: 50%;
+  width: calc(54 * var(--sc)); height: calc(54 * var(--sc));
+  transform: translate(-50%, -50%);
+  background: var(--yellow);
+  border: calc(2 * var(--sc)) solid var(--black);
+  border-radius: 50%;
+}
+.toy--morph:focus-visible { outline: calc(4 * var(--sc)) solid var(--yellow); outline-offset: calc(-8 * var(--sc)); }
+
+/* 3 · jelly ────────────────────────────────────────────────────────── */
+.toy--jelly { background: #560476; cursor: grab; touch-action: none; }
+.toy--jelly:active { cursor: grabbing; }
+.jelly-blob {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: calc(430 * var(--sc)); height: calc(430 * var(--sc));
+  transform: translate(-50%, -50%);
+  background: url(assets/midpoint.jpg) center / cover;
+  border: calc(3 * var(--sc)) solid var(--black);
+  border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* 4 · particles ────────────────────────────────────────────────────── */
+.toy--particles { background: #06052e; cursor: crosshair; touch-action: pan-y; }
+.particles-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* 5 · swap ─────────────────────────────────────────────────────────── */
+.toy--swap { background: #560476; }
+.swap-grid {
+  position: absolute;
+  inset: calc(40 * var(--sc));
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  grid-template-rows: repeat(var(--rows, 4), 1fr);
+  gap: calc(6 * var(--sc));
+}
+.swap-tile {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  background-image: url(assets/midpoint.jpg);
+  background-size: calc(var(--cols, 5) * 100%) calc(var(--rows, 4) * 100%);
+  background-repeat: no-repeat;
+  outline: calc(1 * var(--sc)) solid var(--black);
+  outline-offset: calc(-1 * var(--sc));
+  transition: transform .18s ease, filter .18s ease;
+}
+.swap-tile:hover { filter: brightness(1.12); }
+.swap-tile.is-picked { outline: calc(5 * var(--sc)) solid var(--yellow); z-index: 2; transform: scale(.9); }
+.swap-tile.is-swapped { transform: scale(1.07); }
+.swap-tile:focus-visible { outline: calc(5 * var(--sc)) solid var(--yellow); z-index: 2; }
+
+/* 6 · wipe ─────────────────────────────────────────────────────────── */
+.toy--wipe { cursor: ew-resize; touch-action: pan-y; }
+.wipe-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#wipe-b { will-change: clip-path; }
+.wipe-seam {
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: calc(4 * var(--sc));
+  transform: translateX(-50%);
+  background: var(--yellow);
+  box-shadow: 0 0 0 calc(1 * var(--sc)) var(--black);
+  z-index: 5;
+  pointer-events: none;
+}
+.toy--wipe:focus-visible { outline: calc(4 * var(--sc)) solid var(--yellow); outline-offset: calc(-8 * var(--sc)); }
+
+/* 7 · dissolve ─────────────────────────────────────────────────────── */
+.toy--dissolve { cursor: ew-resize; touch-action: pan-y; }
+.dissolve-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 10), 1fr);
+  grid-template-rows: repeat(var(--rows, 8), 1fr);
+}
+.dissolve-cell {
+  position: relative;
+  background-image: url(assets/object-a.jpg);
+  background-size: calc(var(--cols, 10) * 100%) calc(var(--rows, 8) * 100%);
+  background-repeat: no-repeat;
+}
+.dissolve-over {
+  position: absolute;
+  inset: 0;
+  background-image: url(assets/object-b.jpg);
+  background-size: calc(var(--cols, 10) * 100%) calc(var(--rows, 8) * 100%);
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.toy--dissolve:focus-visible { outline: calc(4 * var(--sc)) solid var(--yellow); outline-offset: calc(-8 * var(--sc)); }
+
+/* 8 · flip ─────────────────────────────────────────────────────────── */
+.toy--flip {
+  background: #560476;
+  perspective: calc(1600 * var(--sc));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.toy--flip:active { cursor: grabbing; }
+.flip-card {
+  position: relative;
+  width: calc(760 * var(--sc));
+  height: calc(760 * var(--sc));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  backface-visibility: hidden;
+  border: calc(3 * var(--sc)) solid var(--black);
+}
+.flip-back { transform: rotateY(180deg); }
+.toy--flip:focus-visible { outline: calc(4 * var(--sc)) solid var(--yellow); outline-offset: calc(-8 * var(--sc)); }
+
+/* 9 · brush ────────────────────────────────────────────────────────── */
+.toy--brush { background: #06052e; cursor: crosshair; touch-action: pan-y; }
+.brush-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* 10 · tug of war ──────────────────────────────────────────────────── */
+.toy--tug { cursor: grab; touch-action: pan-y; }
+.toy--tug:active { cursor: grabbing; }
+.tug-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#tug-b { will-change: opacity; }
+.tug-rope {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: calc(3 * var(--sc));
+  transform: translateY(-50%);
+  background: var(--black);
+  z-index: 4; pointer-events: none;
+}
+.tug-puck {
+  position: absolute; top: 50%; left: 50%;
+  width: calc(96 * var(--sc)); height: calc(96 * var(--sc));
+  transform: translate(-50%, -50%);
+  background: var(--yellow);
+  border: calc(3 * var(--sc)) solid var(--black);
+  border-radius: 50%;
+  z-index: 5; pointer-events: none;
+}
+
+/* 11 · melt ────────────────────────────────────────────────────────── */
+.toy--melt { background: #06052e; cursor: pointer; touch-action: pan-y; }
+.melt-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* 12 · pop ─────────────────────────────────────────────────────────────
+   Three stop-motion bands built from five cut-outs of one object part-way
+   through becoming a lollipop. Two layers, always: the ground is an SVG
+   (.pop-bg) and the cut-outs sit above it (.pop-actors), so the ground can
+   be recoloured or replaced outright without touching the animation.
+
+   These four properties ARE the ground — change them and all three bands
+   follow. Defaults reproduce the light of the original plates. */
+/* The section is only the scroll runway now — toys.js sets its height and pins
+   .pop-stage inside it, so the composition holds still and full-screen while
+   you scroll past instead of flashing by in half a screen. No height and no
+   overflow here on purpose: the height is JS-owned, and clipping the section
+   would fight the fixed-positioned stage. */
+.toy--pop {
+  --pop-sky:    #000000;
+  --pop-table:  #9fb3ce;
+  --pop-table2: #7d93b8;
+
+  height: calc(1080 * var(--sc));   /* fallback only — JS overrides when pinning */
+  overflow: visible;
+  background: var(--pop-sky);
+}
+
+/* The pinned frame. Its height is the SAME 1080-unit band every other section
+   on the page uses, so it reads as one of the stack rather than a special
+   full-screen interruption — it just happens to hold still while you scroll
+   past it. Fixing the height this way also fixes the aspect ratio at
+   content-w/1080 on every viewport, which is what lets the composition below
+   be tuned to the edges once instead of per window shape.
+
+   It is the box the composition is composed for, so it is also the size
+   container the actors' cqw/cqh resolve against. */
+.pop-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* The 1080 band, but never taller than the window. On a window shorter than
+     the band the extra height could not be shown at all — it just cropped the
+     bottom of the frame, which is what buried the ends of the sticks. Capping
+     shrinks the frame to fit instead, and since the composition is sized in
+     per cent of this box it scales with it and stays whole. */
+  height: min(calc(1080 * var(--sc)), 100vh);
+  overflow: hidden;
+  background: var(--pop-sky);
+  container-type: size;
+}
+
+.pop-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* an uploaded ground covers the svg but stays a separate layer, so clearing
+   it reveals the painted one again rather than leaving an empty band */
+.pop-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.pop-actors { position: absolute; inset: 0; z-index: 1; }
+
+.pop-controls {
+  position: absolute;
+  left: calc(36 * var(--sc));
+  bottom: calc(30 * var(--sc));
+  z-index: 6;
+  display: flex;
+  gap: calc(10 * var(--sc));
+}
+/* Deliberately quiet: this is a utility sitting on top of the artwork, not
+   part of it. Translucent rather than a solid swatch so it stays legible
+   over whatever background gets uploaded underneath it. */
+.pop-btn {
+  /* WebKit paints <button> with its native control look, and that ignores a
+     custom background outright — the pill rendered as a grey system button
+     even with the colour set inline. Opting out of the native appearance is
+     what lets the background through. */
+  appearance: none;
+  -webkit-appearance: none;
+  font: 400 calc(15 * var(--sc))/1 -apple-system, "Helvetica Neue", Arial, sans-serif;
+  padding: calc(8 * var(--sc)) calc(14 * var(--sc));
+  color: rgba(255, 255, 255, .85);
+  background: rgba(0, 0, 0, .34);
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background .15s, border-color .15s;
+}
+.pop-btn:hover { background: rgba(0, 0, 0, .55); border-color: rgba(255, 255, 255, .55); }
+
+/* Deliberately no transition. Stop motion is a hard cut on every tick;
+   anything easing between ticks reads as CGI instead of hand work. */
+.pop-actor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 10%;
+  width: auto;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* the embedded pieces — each its own full document, isolated in an iframe.
+   Same 1080 band height as the other game/toy sections. */
+.toy--brigitte {
+  height: calc(1080 * var(--sc));
+  background: #f5f5f0;
+}
+.toy--game {
+  height: calc(1080 * var(--sc));
+  background: #ebebea;
+}
+.toy__frame { width: 100%; height: 100%; border: 0; display: block; }
+
+/* toys respect reduced motion — the loop toys already stop in JS */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-tile, .swap-tile, .morph-img, .dissolve-over { transition: none; }
+}
+
+/* ══ status line (screen-reader first, visible on small screens) ══════ */
+
+.status {
+  margin: 0;
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ── back to the top ───────────────────────────────────────────────────
+   The wordmark itself flies down here and stays (see .logo.is-flying), so
+   this is not a second mark any more — it is the CLICK TARGET underneath
+   it: same corner, same inset, its own hidden copy of the letters giving it
+   the right size without drawing anything. Keeping them as separate
+   elements is what lets the visible mark stay a heading while the thing you
+   press stays a real button.
+   With motion reduced nothing flies, and then this is all there is — so the
+   letters become visible again in that case, at the bottom of this block. */
+.to-top {
+  position: fixed;
+  right: clamp(14px, 2.2vw, 30px);
+  bottom: clamp(14px, 2.2vw, 30px);
+  z-index: 60;
+  margin: 0; border: 0; background: none;
+  /* the box is anchored by right/bottom, so padding grows it up and to the
+     LEFT — which is how it ends up covering the whole landed wordmark (whose
+     width changes with every typeface) without the corner inset moving */
+  padding: 14px 0 12px 96px;
+  cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -.055em;
+  font-size: clamp(30px, 4.2vw, 56px);
+  opacity: 0;
+  transform: translateY(12px) scale(.92);
+  pointer-events: none;                 /* unclickable until it's actually shown */
+  transition: opacity .34s ease, transform .34s cubic-bezier(.22,.9,.28,1);
+}
+.to-top.is-in { opacity: 1; transform: none; pointer-events: auto; }
+/* it floats above everything (z-index 60 against the site's highest, 6), so it
+   has to step aside for the mix window rather than sit on top of it */
+body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
+.to-top .ltr {
+  display: inline-block;
+  vertical-align: baseline;
+  font-family: "ABC Helveesti Spikes Trial", "Helvetica Neue", sans-serif;
+  text-transform: lowercase;
+  color: #cc0000;
+  -webkit-text-stroke: 2px var(--black);
+  paint-order: stroke fill;
+  visibility: hidden;          /* the real mark flies here — this only sizes the hit area */
+}
+.to-top .bl { display:inline-block; width:0; height:0; overflow:hidden; vertical-align:baseline; }
+.to-top:focus-visible { outline: 2px solid var(--black); outline-offset: 5px; }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: opacity .2s linear; }
+  .to-top .ltr { visibility: visible; }   /* nothing flew down — this IS the mark */
+}
+
+/* visually-hidden but screen-reader-visible text (e.g. the logo's real
+   word, standing in for the 5 separate animated letter spans) */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ══ stacked layout for narrow viewports ══════════════════════════════ */
+
+@media (max-width: 860px) {
+
+  /* the whole exact sidebar layout scales to the phone width (440 → 100vw),
+     stacks on top, and the content column follows below */
+  :root { --s: calc(100vw / var(--sidebar)); --sc: calc(100vw / var(--content-w)); }
+
+  .sidebar {
+    position: static;
+    width: 100vw;
+    height: calc(1080 * var(--s));
+    overflow: hidden;
+  }
+
+  .content { margin-left: 0; border-left: 0; }
+  .logo-banner { height: calc(396 * var(--sc)); }
+
+  /* on phones: always pan by touch, never hijack vertical scroll */
+  .hero { height: auto !important; }
+  .hero__sticky { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .hero__track { animation: none !important; transform: none !important; }
+}
+
+/* ══ mix result popup — Figma frame "Frame 37" (node 3062:4) ══════════════
+   Pops up ~10s after MIX. A white, dashed-border, rounded card centred in the
+   RIGHT half of the site (right of the fixed sidebar), floating over the page
+   with no dark backdrop. All inner sizes are container-query units (cqw = 1%
+   of the card width) so text + geometry scale with the card at any size.
+   Design card is 1207 × 975; 1 design-px ≈ 0.0828cqw.                       */
+
+.mixwin {
+  position: fixed;
+  inset: 0;
+  z-index: 100;                 /* over sidebar (z10) and .run (z21) */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5vh 2.5vw;
+  padding-left: var(--sbw);     /* centre the card in the right half */
+}
+.mixwin.is-open { display: flex; }
+
+.mixwin__card {
+  container-type: size;
+  position: relative;
+  aspect-ratio: 1207 / 975;
+  width: min(92%, calc(92vh * 1207 / 975));
+  max-height: 92vh;
+  background: #fff;
+  border: 1px dashed #000;
+  border-radius: 0.9cqw;
+  box-shadow: 0 1.6cqw 5cqw rgba(0, 0, 0, .28);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center;
+  /* the card no longer pops in place — it flies out of the bowl. See the
+     "the result window comes OUT of the bowl" block at the end of this file.
+     mixpop is kept below as the narrow-viewport fallback. */
+  animation: card-fly-smooth 1150ms cubic-bezier(.22, 1, .36, 1) both;
+}
+.mixwin__card:focus { outline: none; }
+@keyframes mixpop {
+  0%   { transform: scale(.8);  opacity: 0; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* hero — light-grey stage, big result image on the right, article overlaid left */
+.mixwin__hero {
+  position: relative;
+  flex: 0 0 71.2%;
+  background: #f1f1f1;          /* matches the composed large-03 backdrop */
+  overflow: hidden;
+}
+/* pieces sliced from a prepared grid sit on white → white hero so they blend */
+.mixwin.is-generated .mixwin__hero { background: #fff; }
+.mixwin__big {
+  position: absolute;
+  left: 2%; top: 3%;
+  width: 96%; height: 94%;      /* explicit box (auto+insets would use the img's intrinsic size) */
+  object-fit: contain;          /* whole object, centred in the hero, never cropped */
+  object-position: center;
+}
+/* little pop when the big image swaps to a chosen step */
+.mixwin__big.is-swapping { animation: mixswap .26s cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes mixswap {
+  0%   { transform: scale(.9);  opacity: .35; }
+  60%  { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.mixwin__article {
+  position: absolute;
+  top: 1cqw;
+  left: 1.4cqw;
+  width: 24cqw;
+  color: #000;
+}
+.mixwin__title {
+  margin: 0 0 1cqw;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 2.07cqw;
+  line-height: .9;
+  text-transform: uppercase;
+}
+.mixwin__body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 1.33cqw;
+  line-height: 1.3cqw;
+}
+.mixwin__body p { margin: 0 0 1.24cqw; }
+.mixwin__body .u { text-decoration: underline; }
+
+/* actions — green DOWNLOAD pill + red ✕ close (recreated in CSS, live text) */
+.mixwin__actions {
+  position: absolute;
+  top: 1cqw;
+  right: 1.2cqw;
+  display: flex;
+  align-items: center;
+  gap: .8cqw;
+  z-index: 3;
+}
+.mixwin__dl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.98cqw;              /* same height as the ✕ circle → aligned row */
+  padding: 0 1.2cqw;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 2.07cqw;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .05cqw;
+  color: #000;
+  background: #11B32E;          /* sampled from the Figma pill SVG */
+  border: 1px solid #000;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mixwin__dl:hover { filter: brightness(1.06); }
+.mixwin__dl:active { transform: translateY(1px); }
+.mixwin__x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.98cqw;
+  height: 2.98cqw;
+  padding: 0;
+  border: 1px solid #000;       /* Figma Ellipse 65 has a black stroke */
+  border-radius: 50%;
+  background: var(--red);
+  color: #000;                  /* the ✕ is BLACK in the Figma (currentColor) */
+  cursor: pointer;
+}
+.mixwin__x svg {
+  width: 2.05cqw;
+  height: 2.05cqw;
+  display: block;
+}
+.mixwin__x:hover { filter: brightness(1.08); }
+
+/* strip — five equal bordered cells, number label + image, #03 selected */
+.mixwin__strip {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid #000;
+}
+.mixwin__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5cqw 6% .9cqw;
+  border: 0;
+  border-right: 1px solid #0a0000;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.mixwin__cell:last-child { border-right: 0; }
+.mixwin__cell.is-selected { background: var(--yellow); }
+/* responsive feedback: the object lifts on hover, presses on click, and the
+   chosen step gives a quick pop */
+.mixwin__cell { transition: background .16s ease; }
+.mixwin__cell img { transition: transform .16s cubic-bezier(.34, 1.56, .64, 1); }
+.mixwin__cell:hover img { transform: scale(1.09); }
+.mixwin__cell:active img { transform: scale(.93); }
+.mixwin__cell.is-selected img { animation: cellpop .28s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes cellpop {
+  0%   { transform: scale(.86); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+/* thin vertical tick centred above each number, flush to the strip's top line
+   (Figma Vector 21–25, ~9px, hanging off the top border) */
+.mixwin__tick {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: .8cqw;
+  background: #000;
+}
+.mixwin__num {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 1.16cqw;
+  line-height: 1;
+  margin-bottom: .6cqw;
+}
+.mixwin__cell img {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 860px) {
+  .mixwin { padding-left: 2.5vw; }          /* sidebar is stacked, not fixed */
+  .mixwin__card { width: min(94%, calc(80vh * 1207 / 975)); }
+}
+
+/* ══ the result window comes OUT of the bowl ══════════════════════════
+   The card used to appear with `mixpop` — scale .8 → 1, IN PLACE, over
+   340ms. That is what read as a hard cut through several rounds of trying
+   to soften it: the window had no ORIGIN. It was simply suddenly there,
+   over everything, with no relationship to the bowl the user had been
+   watching fill for thirty seconds. Easing cannot fix a missing cause.
+
+   So the card is born inside the bowl and flies to its place instead.
+
+   THE OCCLUSION PROBLEM, and why .mixwin-clone exists:
+   .mixwin is z-index 100 and .sidebar is 10, so NO z-index on the card can
+   put it behind .bowl__body(22). Without that, the card at its smallest sits
+   ON TOP of the liquid and reads as appearing over the bowl, not out of it.
+   The fix is a live clone of .bowl + .bowl-fill painted ABOVE the modal layer.
+   It is cloned at open time from the real nodes (mix-modal.js), never
+   hand-written, so it cannot drift from the bowl underneath it: same markup,
+   same classes, same uploaded images, same position, same filter. It exists
+   only for the ~1.15s of the flight, while the bowl is standing still
+   (is-done), so there is nothing to keep in sync.
+
+   --dx / --dy / --sc are measured at open time from the real boxes — where
+   the card must start (the bowl's liquid) and where it must land (exactly
+   where .mixwin's own centring puts it). No number here is guessed. The
+   fallbacks make the card degrade to a plain in-place pop if JS never runs. */
+.mixwin-clone {
+  position: fixed;
+  inset: 0;
+  z-index: 101;                 /* above .mixwin(100) — this is the whole point */
+  pointer-events: none;
+}
+
+@keyframes card-fly-smooth {
+  0%   { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(var(--sc, .8)); }
+  8%   { opacity: 1; transform: translate(calc(var(--dx, 0px) * .90), calc(var(--dy, 0px) * .68))
+                                scale(calc(var(--sc, .8) + (1 - var(--sc, .8)) * .12)); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ── the liquid leaves WITH the window; it does not "drain" ───────────
+   The difference is causal, not visual, and it is the whole point:
+   · draining = a separate event. The level goes down to somewhere, the user
+     has no idea where, and it happens NEXT TO the window rather than because
+     of it. Tried it — it read as unrelated.
+   · leaving with the window = the same motion. Same duration, same easing
+     curve as the card's flight, so the eye ties them together: what was in
+     the bowl is now in the window.
+   The first 18% is held at full deliberately — that is exactly while the card
+   is still inside the liquid. If the level started dropping immediately it
+   would uncover the tiny card too early and break the connection.
+   One animation from 0% to 100%, like the card. Nothing is ever swapped
+   mid-flight (see the note by .bowl-mix for why that matters here). */
+@keyframes level-carry {
+  0%, 18% { height: 100%; }
+  100%    { height: 0; }
+}
+.bowl.is-carrying ~ .bowl-fill .bowl-fill__level {
+  animation: level-carry 1150ms cubic-bezier(.22, 1, .36, 1) forwards;
+}
+/* READY has said its piece — the window itself is the message from here on */
+.bowl.is-carrying ~ .bowl-gauge { opacity: 0; }
+
+/* Narrow viewports fall back to the old in-place pop. Below 860px .sidebar is
+   `position: static` and scrolls with the page, so a position:fixed clone of
+   the bowl would land in the wrong place — and there is no "right half of the
+   screen" to fly to either, since the layout is stacked. mix-modal.js checks
+   the same breakpoint and skips the clone. */
+@media (max-width: 860px) {
+  .mixwin__card { animation: mixpop .34s cubic-bezier(.34, 1.56, .64, 1) both; }
+}
+
+/* ── sideways mode: continuous horizontal scroll that settles on sections ───
+   Toggled by sideways.js (body.sideways), desktop only (≥861px). JS owns ALL
+   motion — no native scroll. One fixed "camera" (.reel__pin) shows a vertical
+   stage (.reel__vstage) that stacks the logo panel (100dvh) above the reel row
+   (100dvh). sideways.js drives ONE position scalar into two transforms:
+   translateY on __vstage for the logo→first-slide step (scroll down, logo
+   leaves), then translateX on __row for the horizontal slides. Motion is
+   continuous with inertia and gently settles on the nearest section when input
+   goes idle — mirroring the vertical scroll's feel, sideways. The set-pieces
+   read window.reelMode.progress() (rect.left-derived) and are fed a synthetic
+   scroll each frame, so hero/pop/logo scrub with no changes to their files.
+   Normal mode keeps every wrapper display:contents → byte-identical page. */
+
+/* wrappers are invisible to layout in normal mode */
+.reel, .reel__pin, .reel__vstage, .reel__row { display: contents; }
+
+/* JS owns motion — kill native scroll entirely in this mode */
+html:has(body.sideways) { overflow: hidden; }
+body.sideways { overflow: hidden; height: 100dvh; }
+
+/* the fixed camera, right of the sidebar */
+body.sideways .reel__pin {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: var(--sbw);
+  width: calc(100vw - var(--sbw));
+  height: 100dvh;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* vertical stage: the logo banner (its NORMAL short height) stacked over the
+   reel viewport (100dvh) below it; sideways.js translateY's it up by the logo's
+   own height for the logo→slide-0 step. height:auto so it's exactly logo+row. */
+body.sideways .reel__vstage {
+  display: block;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: auto;
+  will-change: transform;
+}
+
+/* the logo stays EXACTLY as in normal scroll — its short banner (base height),
+   not a full-screen panel — so you scroll down a moment (it rises away, the
+   wordmark flies to the corner via logo.js) and then the sideways reel begins.
+   The "לוגו ארוך" toggle (sideways.js) adds body.logo-long for a tall band; the
+   wordmark then grows to fill it on its own (logo.js fits it to the banner). */
+body.sideways.logo-long .logo-banner { height: 85dvh; }
+
+/* the horizontal strip of slides, translateX'd by sideways.js. align-items:
+   center centres each slide so a section taller than the screen crops
+   symmetrically rather than being chopped at the bottom. */
+body.sideways .reel__row {
+  display: flex;
+  align-items: center;
+  height: 100dvh;
+  width: max-content;
+  will-change: transform;
+}
+
+/* each slide: uniform full width (the column right of the sidebar), full-bleed.
+   min-width:0 is essential — without it a flex item refuses to shrink below its
+   content's intrinsic width, so a slide holding wide content (e.g. the hero's
+   ~3.5×-wide spectrum image) would balloon to that width instead of one screen,
+   which also zeroed the hero's sweep travel (travel = stripW − slideW). */
+body.sideways .reel__row > * {
+  flex: 0 0 calc(100vw - var(--sbw));
+  min-width: 0;
+  border-bottom: 0;
+  border-right: 1px solid var(--black);
+}
+
+/* the intro video FILLS its slide edge-to-edge (cover, cropping the edges a
+   little) rather than letterboxing with black side-bars */
+body.sideways .intro-video { height: 100dvh; display: flex; align-items: center; }
+body.sideways .intro-video__el { width: 100%; height: 100%; object-fit: cover; }
+
+/* the two embedded iframe toys fill their slide */
+body.sideways .toy--brigitte .toy__frame,
+body.sideways .toy--game .toy__frame { height: 100dvh; }
+
+/* the pop band: no runway/pin in sideways mode — lay the stage in-flow so it
+   gives its slide a height and centres, instead of the fixed-pin it uses
+   vertically (toys.js returns early from place()/measure() in this mode). */
+body.sideways .toy--pop { position: relative; height: auto; overflow: hidden; }
+body.sideways .pop-stage { position: relative; top: auto; left: auto; width: 100%; }
+
+/* below the breakpoint the sidebar goes static and the units flip, so sideways
+   is desktop-only: fall back to the normal vertical stack. */
+@media (max-width: 860px) {
+  body.sideways .reel,
+  body.sideways .reel__pin,
+  body.sideways .reel__vstage,
+  body.sideways .reel__row { display: contents; }
+  body.sideways { overflow: visible; height: auto; }
+}
+
+/* ── the idle twitch stops once the tool has been used ────────────────
+   rig-idle is an invitation: the hand and the MIX pill give a small flick so a
+   first-time visitor sees where to press. After someone has run a mix that
+   invitation is answered, and the same flick becomes the sidebar fidgeting at
+   them. app.js marks <html class="has-mixed"> at the first run and restores it
+   from sessionStorage on reload; cta.js stops its badge hops off the same mark.
+
+   The :not() chain is not decoration — it is what makes this safe to put at the
+   END of the file. `.has-mixed .spoon-rig` and `.spoon-rig.is-mixing` have the
+   SAME specificity (0,2,0), so whichever comes later in the file would win; a
+   bare rule here would therefore kill rig-descend, rig-stir and rig-lift too and
+   the hand would never move again. Excluding the running states means this can
+   only ever silence the resting pose, wherever it sits. */
+.has-mixed .spoon-rig:not(.is-mixing):not(.is-finishing):not(.is-done),
+.has-mixed .run:not(.is-mixing):not(.is-finishing):not(.is-done) {
+  animation: none;
+}

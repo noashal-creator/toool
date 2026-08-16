@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — וריאציות תנועה</title>
+<style>
+:root{ --red:#CC0000; --blue:#1A6FFF; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px;direction:rtl}
+.sub{opacity:.6;margin:0 0 22px;font-size:14px;max-width:940px;line-height:1.6;direction:rtl}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:940px}
+figure{min-width:0;margin:0}
+figcaption{margin-top:9px;font-size:16px;font-weight:700;direction:rtl}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+.band{position:relative;width:100%;min-width:0;max-width:100%;aspect-ratio:1288/396;background:var(--blue);
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.word{width:max-content;white-space:nowrap;line-height:1;letter-spacing:-.055em;margin:0}
+.ltr{display:inline-block;vertical-align:baseline;font-family:system-ui;font-size:1em;
+  text-transform:lowercase;color:var(--red);-webkit-text-stroke:2px #000;paint-order:stroke fill}
+
+/* ── A · full-range wave (what's on the site now) ───────────────────── */
+.mA .ltr{animation:wA 2.4s linear infinite}
+.mA .ltr:nth-child(1){animation-delay:0s}      .mA .ltr:nth-child(2){animation-delay:-.48s}
+.mA .ltr:nth-child(3){animation-delay:-.96s}   .mA .ltr:nth-child(4){animation-delay:-1.44s}
+.mA .ltr:nth-child(5){animation-delay:-1.92s}
+@keyframes wA{
+  0%{font-variation-settings:'wght' 500,'wdth' 100} 12.5%{font-variation-settings:'wght' 830,'wdth' 132}
+  25%{font-variation-settings:'wght' 900,'wdth' 151} 37.5%{font-variation-settings:'wght' 830,'wdth' 132}
+  50%{font-variation-settings:'wght' 500,'wdth' 100} 62.5%{font-variation-settings:'wght' 170,'wdth' 68}
+  75%{font-variation-settings:'wght' 100,'wdth' 49}  87.5%{font-variation-settings:'wght' 170,'wdth' 68}
+  100%{font-variation-settings:'wght' 500,'wdth' 100}}
+
+/* ── B · weight only — the word pulses, width barely moves ──────────── */
+.mB .ltr{animation:wB 2s linear infinite}
+.mB .ltr:nth-child(1){animation-delay:0s}     .mB .ltr:nth-child(2){animation-delay:-.4s}
+.mB .ltr:nth-child(3){animation-delay:-.8s}   .mB .ltr:nth-child(4){animation-delay:-1.2s}
+.mB .ltr:nth-child(5){animation-delay:-1.6s}
+@keyframes wB{
+  0%{font-variation-settings:'wght' 500,'wdth' 100} 25%{font-variation-settings:'wght' 900,'wdth' 100}
+  50%{font-variation-settings:'wght' 500,'wdth' 100} 75%{font-variation-settings:'wght' 100,'wdth' 100}
+  100%{font-variation-settings:'wght' 500,'wdth' 100}}
+
+/* ── C · width only — it stretches and squeezes, weight constant ────── */
+.mC .ltr{animation:wC 2.6s linear infinite}
+.mC .ltr:nth-child(1){animation-delay:0s}      .mC .ltr:nth-child(2){animation-delay:-.52s}
+.mC .ltr:nth-child(3){animation-delay:-1.04s}  .mC .ltr:nth-child(4){animation-delay:-1.56s}
+.mC .ltr:nth-child(5){animation-delay:-2.08s}
+@keyframes wC{
+  0%{font-variation-settings:'wght' 700,'wdth' 100} 25%{font-variation-settings:'wght' 700,'wdth' 151}
+  50%{font-variation-settings:'wght' 700,'wdth' 100} 75%{font-variation-settings:'wght' 700,'wdth' 49}
+  100%{font-variation-settings:'wght' 700,'wdth' 100}}
+
+/* ── D · counter-motion — weight and width pull against each other ──── */
+.mD .ltr{animation:wD 2.4s linear infinite}
+.mD .ltr:nth-child(1){animation-delay:0s}      .mD .ltr:nth-child(2){animation-delay:-.48s}
+.mD .ltr:nth-child(3){animation-delay:-.96s}   .mD .ltr:nth-child(4){animation-delay:-1.44s}
+.mD .ltr:nth-child(5){animation-delay:-1.92s}
+@keyframes wD{
+  0%{font-variation-settings:'wght' 500,'wdth' 100} 25%{font-variation-settings:'wght' 900,'wdth' 55}
+  50%{font-variation-settings:'wght' 500,'wdth' 100} 75%{font-variation-settings:'wght' 120,'wdth' 148}
+  100%{font-variation-settings:'wght' 500,'wdth' 100}}
+
+/* ── E · slow & heavy — same range, half the speed ──────────────────── */
+.mE .ltr{animation:wA 5s linear infinite}
+.mE .ltr:nth-child(1){animation-delay:0s}   .mE .ltr:nth-child(2){animation-delay:-1s}
+.mE .ltr:nth-child(3){animation-delay:-2s}  .mE .ltr:nth-child(4){animation-delay:-3s}
+.mE .ltr:nth-child(5){animation-delay:-4s}
+
+/* ── F · fast ripple — quick, tight phase spacing ───────────────────── */
+.mF .ltr{animation:wA 1.4s linear infinite}
+.mF .ltr:nth-child(1){animation-delay:0s}     .mF .ltr:nth-child(2){animation-delay:-.28s}
+.mF .ltr:nth-child(3){animation-delay:-.56s}  .mF .ltr:nth-child(4){animation-delay:-.84s}
+.mF .ltr:nth-child(5){animation-delay:-1.12s}
+
+/* ── G · in unison — all five breathe together, no wave ─────────────── */
+.mG .ltr{animation:wA 2.4s linear infinite;animation-delay:0s}
+</style></head><body>
+<h2>TOOOL — וריאציות תנועה 👇</h2>
+<p class="sub">כולן מורף רציף על צירי הגופן (אפס קפיצות) ורוחב נעול. מה שמשתנה זה <b>אופי התנועה</b>: אילו צירים זזים, כמה חזק, באיזה קצב, ואיך הגל עובר בין האותיות.</p>
+<div class="grid" id="grid"></div>
+<script>
+const V=[
+ ['mA','A · גל מלא (מה שבאתר עכשיו)','משקל ורוחב יחד בטווח מלא — הכי דרמטי'],
+ ['mB','B · משקל בלבד','המילה פועמת מדק לשמן, הרוחב כמעט לא זז — רגוע ונקי'],
+ ['mC','C · רוחב בלבד','נמתחת ונדחסת, העובי קבוע — תחושת נשימה'],
+ ['mD','D · תנועה נגדית','כשמתעבה היא מצטמצמת ולהפך — הכי "חי", האותיות מתחלפות באופי'],
+ ['mE','E · איטי וכבד','אותו טווח, חצי מהמהירות — מהודר'],
+ ['mF','F · אדווה מהירה','מהיר וקצבי, הגל רץ מהר בין האותיות'],
+ ['mG','G · באוניסון','כל האותיות יחד בלי גל — פעימה אחת של כל המילה'],
+];
+const grid=document.getElementById('grid');
+V.forEach(([cls,name,desc])=>{
+  const f=document.createElement('figure');
+  f.innerHTML=`<div class="band"><h1 class="word ${cls}">`+
+    [...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+
+    `</h1></div><figcaption>${name}<span>${desc}</span></figcaption>`;
+  grid.appendChild(f);
+  const band=f.querySelector('.band'), word=f.querySelector('.word');
+  const relock=()=>{word.style.fontSize=(band.clientWidth*0.275)+'px';};
+  relock(); new ResizeObserver(relock).observe(band);
+  (function pin(){
+    word.style.transform='none';
+    const w=word.getBoundingClientRect().width, t=band.clientWidth*0.88;
+    if(w>0) word.style.transform=`scaleX(${(t/w).toFixed(4)})`;
+    requestAnimationFrame(pin);
+  })();
+});
+</script>
+</body></html>

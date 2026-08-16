@@ -1,0 +1,294 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — exact unwise replica</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<style>
+:root{ --red:#FC0001; --purple:#560476; --ref:#2F245C; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px}
+h2{font-weight:700;margin:0 0 6px;direction:rtl}
+.sub{opacity:.62;margin:0 0 8px;font-size:14px;max-width:960px;line-height:1.6;direction:rtl}
+.meas{opacity:.45;margin:0 0 22px;font-size:12.5px;direction:rtl;font-family:ui-monospace,Menlo,monospace}
+.grid{display:grid;grid-template-columns:1fr;gap:26px;max-width:960px}
+figcaption{margin-top:10px;font-size:15px;font-weight:700;direction:rtl}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+.band{position:relative;width:100%;aspect-ratio:1288/396;overflow:hidden;
+  container-type:inline-size;display:flex;align-items:center;justify-content:center}
+.band.brand{background:var(--purple)}
+.band.ref{background:var(--ref)}
+
+/* measured from the reference: the letters form ONE continuous mass —
+   97–99% of the columns carry ink, i.e. they never separate. */
+.word{white-space:pre;line-height:1;letter-spacing:-.055em;
+  transform-origin:50% 50%;will-change:transform}
+.ltr{display:inline-block;vertical-align:baseline;
+  font-family:"ABC Helveesti Spikes Mono Trial","Helvetica Neue",sans-serif;
+  text-transform:lowercase;color:var(--red);
+  transition:font-size .16s linear}
+/* the brand lockup carries a thin black outline (Figma: 2.46 units on a 1288
+   band ≈ .19cqw). The reference itself has none — both are shown below. */
+.band.brand .ltr{-webkit-text-stroke:.19cqw #000;paint-order:stroke fill}
+
+/* ── TRUE variable-font morph, at CONSTANT word width ─────────────────────
+   The axes are animated continuously, so every frame is a real interpolated
+   state — that is the reference's flow.
+
+   Keeping the word's width fixed is done with phase cancellation: all five
+   letters share ONE duration and a pure sine-shaped cycle, and their delays
+   are spaced exactly 1/5 of a cycle apart. The sum of five equally-phased
+   sines is identically zero, so as one letter widens another narrows by the
+   same amount and the total width stays put. The timing MUST be linear —
+   any easing distorts the phases and the cancellation breaks. */
+.vf .ltr{font-family:system-ui;-webkit-text-stroke:.19cqw #000;paint-order:stroke fill;
+  font-size:1em;animation:morph 4s linear infinite}
+.vf .ltr:nth-child(1){animation-delay:0s}
+.vf .ltr:nth-child(2){animation-delay:-0.8s}
+.vf .ltr:nth-child(3){animation-delay:-1.6s}
+.vf .ltr:nth-child(4){animation-delay:-2.4s}
+.vf .ltr:nth-child(5){animation-delay:-3.2s}
+/* ── option 2 · same smooth morph, but a DIFFERENT variable typeface per
+   letter. Only three families on this machine expose live axes (SF via
+   system-ui with weight+width, STIX Two Text — a serif — and Kefa, both
+   weight-only), so the variety is spatial: each letter keeps its own face and
+   morphs continuously, which preserves the flow while the word reads as mixed
+   typography. */
+.vf2 .ltr{-webkit-text-stroke:.19cqw #000;paint-order:stroke fill;font-size:1em;
+  animation:morph 4s linear infinite}
+.vf2 .ltr:nth-child(1){font-family:system-ui;        animation-delay:0s}
+.vf2 .ltr:nth-child(2){font-family:"STIX Two Text";  animation-delay:-0.8s; animation-name:morphW}
+.vf2 .ltr:nth-child(3){font-family:system-ui;        animation-delay:-1.6s}
+.vf2 .ltr:nth-child(4){font-family:Kefa;             animation-delay:-2.4s; animation-name:morphW}
+.vf2 .ltr:nth-child(5){font-family:system-ui;        animation-delay:-3.2s}
+/* weight-only cycle, for the families without a width axis */
+@keyframes morphW{
+  0%    { font-variation-settings:'wght' 550; }
+  12.5% { font-variation-settings:'wght' 797; }
+  25%   { font-variation-settings:'wght' 900; }
+  37.5% { font-variation-settings:'wght' 797; }
+  50%   { font-variation-settings:'wght' 550; }
+  62.5% { font-variation-settings:'wght' 303; }
+  75%   { font-variation-settings:'wght' 200; }
+  87.5% { font-variation-settings:'wght' 303; }
+  100%  { font-variation-settings:'wght' 550; }
+}
+@keyframes morph{
+  0%    { font-variation-settings:'wght' 550,'wdth' 100; }
+  12.5% { font-variation-settings:'wght' 797,'wdth' 127; }
+  25%   { font-variation-settings:'wght' 900,'wdth' 138; }
+  37.5% { font-variation-settings:'wght' 797,'wdth' 127; }
+  50%   { font-variation-settings:'wght' 550,'wdth' 100; }
+  62.5% { font-variation-settings:'wght' 303,'wdth' 73;  }
+  75%   { font-variation-settings:'wght' 200,'wdth' 62;  }
+  87.5% { font-variation-settings:'wght' 303,'wdth' 73;  }
+  100%  { font-variation-settings:'wght' 550,'wdth' 100; }
+}
+</style></head><body>
+<h2>TOOOL — שחזור מדויק של ההשראה 👇</h2>
+<p class="sub">הפעם לא ניחשתי: הורדתי את הווידאו, פירקתי לפריימים ומדדתי אותו בפיקסלים. כל מספר כאן נגזר מהמדידה.</p>
+<p class="meas">
+מדידות הרפרנס · רוחב המילה: <b>86.7%–92.1%</b> מהמסגרת (יציב) · גובה: <b>56%–76%</b>, ממורכז אנכית ·
+רציפות: <b>97–99%</b> מהעמודות עם דיו → האותיות נוגעות תמיד · דיו: <b>#FC0001</b> · רקע הרפרנס: <b>#2F245C</b> · קצב: פוזה חדשה כל <b>~0.15 שנ׳</b>
+</p>
+<div class="grid" id="grid"></div>
+
+<script>
+const FONTS = [
+  '"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"',
+  '"ABC Gravity Trial"','"ABC Gravity Wide Trial"','"ABC Gravity Expanded Trial"',
+  '"ABC Gravity Compressed Trial"','"ABC Gravity Extra Condensed Trial"',
+  '"ABC Ginto Nord Trial"','"ABC Ginto Condensed Trial"','"ABC Ginto Rounded Nord Trial"',
+  '"ABC Arizona Serif Trial"','"ABC Arizona Flare Trial"','"ABC Arizona Mix Trial"',
+  '"ABC Gramercy Display Trial"','"ABC Gramercy Fine Trial"',
+  '"ABC Diatype Extended Trial"','"ABC Diatype Compressed Trial"','"ABC Diatype Rounded Trial"',
+  '"ABC Favorit Expanded Trial"','"ABC Favorit Compressed Trial"',
+  '"ABC Camera Rounded Trial"','"ABC Ikarus Contrast Trial"','"ABC Ikarus Flair Trial"',
+  '"ABC Daily Slab Trial"','"ABC Daily Scotch Trial"','"ABC Estragon Trial"',
+  '"ABC Asfalt Expanded Trial"','"ABC Bingo Trial"'
+];
+const WEIGHTS = ['200','300','400','500','700','800','900'];
+const XH = 0.52, MAX_H = 0.78;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const cx = document.createElement('canvas').getContext('2d');
+
+/* ── metrics table, built ONCE ────────────────────────────────────────────
+   Measuring inside the animation loop was hammering measureText thousands of
+   times a frame and freezing the page. Every family × weight × style × char is
+   measured a single time here; the loop then only does array lookups. */
+const CAND = {};                 // char -> [{fam,w,st,adv,h,ascR,descR,sizeEm}]
+function buildMetrics(){
+  for (const ch of 'tol'){
+    const list = [];
+    for (const fam of FONTS) for (const w of WEIGHTS) for (const st of ['normal','italic']){
+      cx.font = `${st} ${w} 200px ${fam}`;
+      const mo = cx.measureText('o');
+      const xh = (mo.actualBoundingBoxAscent + mo.actualBoundingBoxDescent)/200;
+      if (!(xh > 0.05)) continue;
+      const sizeEm = XH / xh;                       // normalise every face to one x-height
+      const m = cx.measureText(ch);
+      const ascR  = m.actualBoundingBoxAscent /200;
+      const descR = m.actualBoundingBoxDescent/200;
+      /* how far the ink spills past the glyph's own advance box — an italic
+         'l' leans out to the right, which is what was getting clipped */
+      const blR = (m.actualBoundingBoxLeft  || 0)/200;   // ink extending LEFT of the origin
+      const brR = (m.actualBoundingBoxRight || 0)/200;   // ink extending RIGHT of it
+      const h = (ascR + descR) * sizeEm;
+      if (h > MAX_H) continue;                      // skip freakishly tall cuts
+      list.push({ fam, w, st, sizeEm, ascR, descR, blR, brR, h, adv: (m.width/200)*sizeEm });
+    }
+    CAND[ch] = list;
+  }
+}
+
+/* variants of the same face, so a weight step keeps the typeface */
+function sameFace(ch, fam, st){ return CAND[ch].filter(c => c.fam===fam && c.st===st); }
+function nearestWeight(list, target){
+  const ti = WEIGHTS.indexOf(target);
+  let best = list[0], bd = 99;
+  for (const c of list){ const d = Math.abs(WEIGHTS.indexOf(c.w) - ti); if (d < bd){ bd = d; best = c; } }
+  return best;
+}
+
+function apply(el, p){
+  el.style.fontFamily = p.fam + ', "Helvetica Neue", sans-serif';
+  el.style.fontWeight = p.w;
+  el.style.fontStyle  = p.st;
+  el.style.fontSize   = p.sizeEm.toFixed(3) + 'em';
+  el.dataset.asc  = p.ascR  * p.sizeEm;
+  el.dataset.desc = p.descR * p.sizeEm;
+  el.dataset.bl   = (p.blR||0) * p.sizeEm;
+  el.dataset.br   = (p.brR||0) * p.sizeEm;
+}
+
+/* keep the word's total width steady → it always fills the frame */
+const TARGET = 2.55, TOL = 0.10;
+function balance(chars, p){
+  for (let i=0;i<24;i++){
+    const t = p.reduce((s,x)=>s+x.adv,0);
+    if (Math.abs(t-TARGET) <= TOL) break;
+    const wide = t < TARGET;
+    const j = p.reduce((m,x,k)=> (wide ? x.adv < p[m].adv : x.adv > p[m].adv) ? k : m, 0);
+    let best = p[j];
+    for (let a=0;a<8;a++){
+      const c = pick(CAND[chars[j]]);
+      if (wide ? c.adv > best.adv : c.adv < best.adv) best = c;
+    }
+    p[j] = { ...best };
+  }
+  return p;
+}
+
+/* ── continuous morph ─────────────────────────────────────────────────────
+   The reference glides (its height waved 65→63→56→72→74→76→74→68…) rather
+   than cutting between unrelated states. With static fonts the same read is
+   achieved by walking each letter smoothly along its own family's weights,
+   and only swapping typeface occasionally, staggered per letter. */
+function makeWalker(letters){
+  const chars = letters.map(el => el.textContent);
+  let p = balance(chars, chars.map(ch => ({ ...pick(CAND[ch]) })));
+  letters.forEach((el,k)=>apply(el,p[k]));
+  const st = letters.map(()=>({
+    phase: Math.random()*Math.PI*2,
+    speed: 0.16 + Math.random()*0.10,
+    life:  4 + Math.floor(Math.random()*8)   // a new face every ~0.4–1.3s, per letter
+  }));
+  return () => {
+    let changed = false, faceChanged = false;
+    st.forEach((s,k)=>{
+      s.phase += s.speed;
+      const want = WEIGHTS[Math.round((Math.sin(s.phase)*0.5+0.5)*(WEIGHTS.length-1))];
+      if (--s.life <= 0){                                  // new typeface, now and then
+        s.life = 4 + Math.floor(Math.random()*8);
+        const c = pick(CAND[chars[k]]);
+        p[k] = { ...c };
+        faceChanged = changed = true;
+      } else if (want !== p[k].w){                          // smooth weight step
+        const fam = sameFace(chars[k], p[k].fam, p[k].st);
+        if (fam.length){
+          const c = nearestWeight(fam, want);
+          if (c.w !== p[k].w){ p[k] = { ...c }; changed = true; }
+        }
+      }
+    });
+    if (!changed) return false;
+    const drift = Math.abs(p.reduce((s,x)=>s+x.adv,0) - TARGET);
+    if (faceChanged || drift > TOL) p = balance(chars, p);
+    letters.forEach((el,k)=>apply(el,p[k]));
+    return true;
+  };
+}
+
+/* Fit and centre on the REAL INK box.
+   Measuring the layout box let a leaning glyph (notably an italic 'l') spill
+   past the frame and get clipped, and it also made the lockup sit off-centre —
+   a visible gap before the 't'. Side bearings are taken from the metrics table
+   so the true ink is what gets fitted and centred. */
+function fit(word, band, letters){
+  word.style.transform='none';
+  const b=band.getBoundingClientRect();
+  let inkL=Infinity, inkR=-Infinity, asc=0, desc=0;
+  letters.forEach(el=>{
+    const q  = el.getBoundingClientRect();
+    const fs = parseFloat(getComputedStyle(el).fontSize);
+    inkL = Math.min(inkL, q.left  - (+el.dataset.bl || 0) * fs);
+    inkR = Math.max(inkR, q.left  + (+el.dataset.br || 0) * fs, q.right);
+    asc  = Math.max(asc,  (+el.dataset.asc  || .7)  * fs);
+    desc = Math.max(desc, (+el.dataset.desc || .05) * fs);
+  });
+  const w = inkR - inkL, inkH = asc + desc;
+  if(!(w>0 && inkH>0)) return;
+  const k = Math.min((b.width*0.88)/w, (b.height*0.94)/inkH);
+  /* centre the ink: scaling happens about the word's own centre, so shift by
+     the difference between where the ink centre lands and the frame centre */
+  const wr = word.getBoundingClientRect(), wc = wr.left + wr.width/2;
+  const inkC = (inkL + inkR)/2;
+  const tx = (b.left + b.width/2) - wc - (inkC - wc)*k;
+  word.style.transform = `translateX(${tx.toFixed(1)}px) scale(${k.toFixed(3)})`;
+}
+
+const VARS = [
+  { cls:'brand vf', name:'⭐ מורף אמיתי — גופן משתנה', vf:true,
+    desc:'הצירים מונפשים ברציפות — ורוחב המילה נשאר קבוע: הפאזות מרווחות שווה כך שהגלים מתאפסים (אות מתרחבת ⇄ אחרת מצטמצמת).' },
+  { cls:'brand vf vf2', name:'⭐ אופציה 2 — מורף רציף + גיוון גופנים', vf:true,
+    desc:'אותו flow חלק ורוחב נעול, אבל כל אות בגופן משתנה אחר (SF · STIX סריף · Kefa) — טיפוגרפיה מעורבת בלי אף קפיצה.' },
+  { cls:'brand', name:'המותג — סגול #560476', desc:'המכניקה של הרפרנס — בסגול שלך ועם קו המתאר השחור של הלוגו', beat:110 },
+  { cls:'ref',   name:'צבעי הרפרנס — #2F245C', desc:'כמו ההשראה בדיוק — בלי קו מתאר, אדום נקי על אינדיגו', beat:110 },
+];
+
+const grid=document.getElementById('grid');
+document.fonts.ready.then(()=>{
+  buildMetrics();
+  VARS.forEach(v=>{
+    const fig=document.createElement('figure');
+    fig.innerHTML=`<div class="band ${v.cls}"><div class="word">`+
+      [...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+
+      `</div></div><figcaption>${v.name}<span>${v.desc}</span></figcaption>`;
+    grid.appendChild(fig);
+    const band=fig.querySelector('.band'), word=fig.querySelector('.word');
+    const letters=[...fig.querySelectorAll('.ltr')];
+    const base=()=>{word.style.fontSize=(band.clientWidth*(v.vf?0.30:0.34))+'px';};
+    base();
+    if (v.vf){
+      /* The axes are animated in CSS (continuous, no jumps). Phase-spacing
+         cancels most of the width swing, but the weight axis also widens the
+         glyph and neither axis maps perfectly linearly, leaving ~9%. So pin it:
+         measure the word once a frame and apply the tiny counter-scale needed
+         to hold an exact width. One rect read + one style write — cheap. */
+      let target = 0;
+      const relock = () => { target = band.clientWidth * 0.88; };
+      relock(); new ResizeObserver(()=>{ base(); relock(); }).observe(band);
+      (function pin(){
+        word.style.transform = 'none';
+        const w = word.getBoundingClientRect().width;
+        if (w > 0 && target > 0) word.style.transform = `scaleX(${(target/w).toFixed(4)})`;
+        requestAnimationFrame(pin);
+      })();
+      return;
+    }
+    const walk = makeWalker(letters);
+    fit(word,band,letters);
+    new ResizeObserver(()=>{base();fit(word,band,letters);}).observe(band);
+    setInterval(()=>{ if (walk()) fit(word,band,letters); }, v.beat);
+  });
+});
+</script>
+</body></html>

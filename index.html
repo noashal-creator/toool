@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — Midpoint Generator</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<link rel="stylesheet" href="styles.css?v=vloop1">
+</head>
+<body>
+
+<!-- ══ fixed left sidebar ═══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="panel">
+
+    <!-- flattened straight from Figma (node 2949:132): the type has a dashed
+         "outside" stroke that CSS text-stroke cannot reproduce (no dasharray
+         support), so this is the exact exported glyph, not recreated type -->
+    <p class="sb-title"><img src="assets/panel-title.png" alt="Let's make something"></p>
+
+    <button type="button" class="slot" id="slot-a" aria-describedby="slot-a-label">
+      <svg class="slot__frame" viewBox="0 0 305 325" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="304" height="324" rx="10.5" ry="10.5"
+              fill="none" stroke="#000" stroke-width="1" stroke-dasharray="5 5"/>
+      </svg>
+      <span class="slot__num" aria-hidden="true"><span class="slot__num-d">1</span></span>
+      <span class="slot__label" id="slot-a-label"><img src="assets/slot-label-1.png" alt="Upload the first image."></span>
+      <img class="slot__preview" alt="">
+    </button>
+
+    <button type="button" class="slot" id="slot-b" aria-describedby="slot-b-label">
+      <svg class="slot__frame" viewBox="0 0 305 313" preserveAspectRatio="none" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="304" height="312" rx="10.5" ry="10.5"
+              fill="none" stroke="#000" stroke-width="1" stroke-dasharray="5 5"/>
+      </svg>
+      <span class="slot__num" aria-hidden="true"><span class="slot__num-d">2</span></span>
+      <span class="slot__label" id="slot-b-label"><img src="assets/slot-label-2.png" alt="Upload the second image."></span>
+      <img class="slot__preview" alt="">
+    </button>
+
+    <div class="spoon-rig" id="spoon-rig">
+      <span class="hand" aria-hidden="true">
+        <!-- Stays on the ORIGINAL export. The re-export in Figma node 3172:2 is
+             framed differently — its spoon bowl measures 218×157 against this
+             file's 199×228 — so it is not a drop-in swap: reusing this crop on it
+             showed the wrong part of the photo. The look from that node is
+             reproduced as a colour filter instead (see .hand img in styles.css),
+             which leaves all the verified geometry untouched. -->
+        <img src="assets/hand-spoon-raw.png" alt="">
+      </span>
+      <img class="hand-tip" src="assets/hand-tip.svg?v=2" alt="" aria-hidden="true">
+    </div>
+    <button type="button" class="run" id="run" aria-label="MIX"><span class="run__label" aria-hidden="true">mix</span></button>
+
+    <div class="bowl" aria-hidden="true">
+      <!-- inlined (not <img>) so .bowl's `color` can drive the fill via
+           currentColor — the colour panel's "bowl" swatch needs a real CSS
+           colour to target, which an externally-referenced SVG can't expose -->
+      <svg class="bowl__body" preserveAspectRatio="none" overflow="visible" width="239.639" height="117.143" viewBox="0 0 239.639 117.143" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g id="Subtract">
+          <mask id="path-1-inside-1_0_4" fill="white">
+            <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z"/>
+          </mask>
+          <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z" fill="currentColor"/>
+          <path d="M1.9043 0L2.9043 -0.000103812L2.90419 -1H1.9043V0ZM121.429 16.1904V17.1904V17.1904V16.1904ZM239.639 2.40625L240.517 2.8852L238.966 1.66612L239.639 2.40625ZM177.039 117.143V118.143H177.633L177.917 117.622L177.039 117.143ZM63.9131 117.143L63.0352 117.622L63.3195 118.143H63.9131V117.143ZM0 0V-1H-1.68476L-0.877842 0.478951L0 0ZM1.9043 0L0.904297 0.000103812C0.904468 1.64816 2.1244 3.00028 3.78095 4.09678C5.48534 5.22496 7.9342 6.2749 10.9926 7.25437C17.1235 9.21777 25.9427 10.9715 36.7786 12.4393C58.4652 15.3769 88.393 17.1904 121.429 17.1904V16.1904V15.1904C88.4538 15.1904 58.6199 13.3796 37.0471 10.4574C26.2534 8.99529 17.5685 7.26024 11.6026 5.34966C8.6127 4.39213 6.365 3.40877 4.88487 2.42904C3.3569 1.41764 2.90436 0.587255 2.9043 -0.000103812L1.9043 0ZM121.429 16.1904V17.1904C151.443 17.1904 178.89 15.6931 199.921 13.2164C210.434 11.9783 219.363 10.4933 226.217 8.82213C229.643 7.98668 232.569 7.10038 234.923 6.16761C237.259 5.24166 239.106 4.24176 240.311 3.14638L239.639 2.40625L238.966 1.66612C238.026 2.52071 236.442 3.41403 234.186 4.3083C231.947 5.19573 229.116 6.05662 225.743 6.87906C218.998 8.52368 210.157 9.99716 199.687 11.2301C178.751 13.6956 151.385 15.1904 121.429 15.1904V16.1904ZM239.639 2.40625L238.761 1.9273L176.161 116.664L177.039 117.143L177.917 117.622L240.517 2.8852L239.639 2.40625ZM177.039 117.143V116.143H63.9131V117.143V118.143H177.039V117.143ZM63.9131 117.143L64.7909 116.664L0.877842 -0.478951L0 0L-0.877842 0.478951L63.0352 117.622L63.9131 117.143ZM0 0V1H1.9043V0V-1H0V0Z" fill="black" mask="url(#path-1-inside-1_0_4)"/>
+        </g>
+      </svg>
+      <svg class="bowl__rim" preserveAspectRatio="none" overflow="visible" width="239" height="33" viewBox="0 0 239 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path id="Ellipse 64" d="M119.5 0.5C152.483 0.5 182.334 2.34623 203.931 5.32812C214.733 6.8196 223.449 8.59236 229.454 10.5527C232.46 11.534 234.757 12.5528 236.293 13.5889C237.85 14.6396 238.5 15.6216 238.5 16.5C238.5 17.3784 237.85 18.3604 236.293 19.4111C234.757 20.4472 232.46 21.466 229.454 22.4473C223.449 24.4076 214.733 26.1804 203.931 27.6719C182.334 30.6538 152.483 32.5 119.5 32.5C86.5166 32.5 56.6656 30.6538 35.0693 27.6719C24.2675 26.1804 15.5511 24.4076 9.5459 22.4473C6.53996 21.466 4.24256 20.4472 2.70703 19.4111C1.14985 18.3604 0.5 17.3784 0.5 16.5C0.5 15.6216 1.14985 14.6396 2.70703 13.5889C4.24256 12.5528 6.53996 11.534 9.5459 10.5527C15.5511 8.59236 24.2675 6.8196 35.0693 5.32812C56.6656 2.34623 86.5166 0.5 119.5 0.5Z" fill="currentColor" stroke="black"/>
+      </svg>
+    </div>
+    <!-- The bowl fills with a churning blend of the two uploads rather than a
+         flat colour. .bowl-mix is pinned to the BOWL, not to the level, so the
+         rising level reveals it like liquid instead of stretching it. It is
+         deliberately much larger than the bowl (380×240 against 239.64×117.14):
+         the displacement filter below peaks at scale 110, i.e. it shoves pixels
+         up to ±55 units, and anything smaller lets the red show at the sides.
+         app.js points the two <img>s at the user's own uploads on MIX. -->
+    <div class="bowl-fill" aria-hidden="true">
+      <span class="bowl-fill__level">
+        <span class="bowl-mix">
+          <img class="bowl-mix__a" alt="">
+          <img class="bowl-mix__b" alt="">
+          <!-- image 1 again, on top, showing only through stripes. The bowl's
+               displacement filter warps those stripes into swirling veins, so
+               image 1's own COLOURS come back into the mix instead of only its
+               light. hard-light alone let the top layer own the palette —
+               measured at 83% of pixels — which is why the bowl read as one
+               image. See .bowl-mix__vein in styles.css. -->
+          <img class="bowl-mix__vein" alt="">
+        </span>
+        <span class="bowl-wave"></span>
+      </span>
+    </div>
+    <!-- feTurbulence builds a noise field; feDisplacementMap pushes every pixel
+         of the blend by it. Animating baseFrequency, seed AND the scale is what
+         keeps it churning instead of sitting as a frozen distortion. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="bowl-marble" x="-40%" y="-40%" width="180%" height="180%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.006 0.012" numOctaves="4" seed="5" result="noise">
+          <animate attributeName="baseFrequency" dur="6s" repeatCount="indefinite"
+                   values="0.006 0.012; 0.014 0.006; 0.006 0.012"/>
+          <animate attributeName="seed" dur="6s" repeatCount="indefinite" values="5;13;5"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G" scale="60">
+          <animate attributeName="scale" dur="6s" repeatCount="indefinite" values="45;110;45"/>
+        </feDisplacementMap>
+      </filter>
+    </svg>
+    <!-- visible loading read-out. The spoken version lives in #status, which is
+         screen-reader-only — this is the sighted equivalent, and the two say the
+         same thing. app.js drives the number off the DRAWN level, never off a
+         second timer, so it can't disagree with the bowl. -->
+    <div class="bowl-gauge" aria-hidden="true">
+      <span class="bowl-gauge__num">0%</span>
+      <span class="bowl-gauge__ready">ready</span>
+    </div>
+    <div class="bowl-floor" aria-hidden="true"></div>
+
+  </div>
+</aside>
+
+<!-- ══ scrolling content ════════════════════════════════════════════════ -->
+<main class="content">
+
+  <!-- The whole experience is wrapped in the reel. In normal (vertical) mode
+       every reel wrapper is display:contents — invisible to layout, so the page
+       is byte-identical (logo banner, then the sections, stacked). In sideways
+       mode (body.sideways) .reel__pin becomes one fixed "camera"; .reel__vstage
+       holds the logo (a full-screen panel) stacked above .reel__row, and
+       sideways.js drives a single position scalar into two transforms: a
+       translateY on __vstage for the logo→first-slide step (you scroll DOWN
+       past the logo first), then a translateX on __row for the horizontal
+       slides. Motion is continuous with inertia and settles gently on a
+       section, mirroring the vertical scroll. See sideways.js / styles.css. -->
+  <div class="reel"><div class="reel__pin"><div class="reel__vstage">
+
+  <div class="logo-banner">
+    <h1 class="logo" id="site-logo">
+      <span class="ltr lt-t" aria-hidden="true">t</span><span class="ltr lt-o1" aria-hidden="true">o</span><span class="ltr lt-o2" aria-hidden="true">o</span><span class="ltr lt-o3" aria-hidden="true">o</span><span class="ltr lt-l" aria-hidden="true">l</span>
+      <span class="sr-only">toool</span>
+    </h1>
+  </div>
+
+  <div class="reel__row">
+
+  <div class="hero" id="hero">
+    <div class="hero__sticky">
+      <div class="hero__track" id="hero-track">
+        <img src="assets/spectrum-row.png"
+             alt="A spectrum of objects morphing from a cow into a tomato">
+      </div>
+    </div>
+  </div>
+
+  <!-- intro video — plays muted, loops forever, sits right after the hero,
+       full content-column width edge to edge, no overlay. -->
+  <!-- TWO copies of the same clip, stacked. The file's last frame and its first
+       are the two most different frames in it, so `loop` restarts on a visible
+       cut; intro-loop.js cross-fades the second copy in over the last 0.7s
+       instead. `loop` stays in the markup on purpose — if the script never runs,
+       this degrades to exactly the old behaviour rather than stopping dead. -->
+  <section class="intro-video" id="intro-video" aria-label="Intro video">
+    <video class="intro-video__el" src="assets/intro-video.mp4"
+           autoplay loop muted playsinline preload="auto"></video>
+    <video class="intro-video__el intro-video__el--b" src="assets/intro-video.mp4"
+           muted playsinline preload="auto" aria-hidden="true"></video>
+  </section>
+
+  <!-- ══ pop — one stop-motion band: converge ═══════════════════════════
+       Eight cut-outs of a face-on-a-stick becoming a lollipop are pulled into
+       the centre of the frame until they overlap, then flung back out. At the
+       bottom of that pull one resolved frame sits on top — the photographed
+       face, then the finished green pop, alternating — so the pile arrives at
+       a readable answer instead of turning to mush.
+
+       TWO layers, always: .pop-bg carries the ground, .pop-actors the cut-outs.
+       The ground is driven by --pop-sky / --pop-table below and can be
+       recoloured, or covered by assets/pop-bg-default.jpg, or replaced by an
+       upload, without the animation noticing.
+
+       Cranked by scrolling, not by a timer — see toys.js · 12 · POP.
+       toys.js fills .pop-actors; the markup ships empty. -->
+  <section class="toy toy--pop" id="toy-pop-converge" data-pop="converge"
+           aria-label="Lollipops gathering into the centre of the frame and scattering again as you scroll">
+    <!-- Everything the eye sees lives in .pop-stage, which toys.js pins with
+         position:fixed while you scroll past. The <section> is only the scroll
+         runway; its height is set in JS. The controls belong in here too, or
+         they would sit at the bottom of a very tall section and scroll away. -->
+    <div class="pop-stage">
+    <svg class="pop-bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+      <rect width="400" height="300" fill="var(--pop-sky)"/>
+      <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#pop-g-converge)"/>
+      <defs><linearGradient id="pop-g-converge" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--pop-table)"/>
+        <stop offset="1" stop-color="var(--pop-table2)"/>
+      </linearGradient></defs>
+    </svg>
+    <!-- uploaded ground sits on its own layer ABOVE the svg, never replacing
+         it — "clear" returns to the default photo, or to the painted ground -->
+    <img class="pop-photo" alt="" aria-hidden="true" hidden>
+    <div class="pop-actors" aria-hidden="true"></div>
+    <div class="pop-controls" aria-hidden="true">
+      <button type="button" class="pop-btn" data-pop-upload>upload background</button>
+      <button type="button" class="pop-btn" data-pop-clear hidden>clear</button>
+      <input type="file" accept="image/*" data-pop-file hidden>
+    </div>
+    </div><!-- /.pop-stage -->
+  </section>
+
+  <!-- cut-outs trailing the cursor — same frame as the green cow band (live-tunable) -->
+  <section class="hero-chase" id="hero-chase" aria-label="Cut-outs chasing the cursor">
+    <img class="hc-cur" src="assets/chase-1.png" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-2.png" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-3.png" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-4.png" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-5.png" alt="" aria-hidden="true">
+    <div class="hc-controls" aria-hidden="true">
+      <label>size <input type="range" id="hc-size" min="3" max="45" value="45"></label>
+      <label>zoom <input type="range" id="hc-zoom" min="100" max="320" value="160"></label>
+      <label>follow <input type="range" id="hc-follow" min="15" max="140" value="26"></label>
+      <button type="button" id="hc-bg-btn" class="hc-btn">upload background</button>
+      <input type="file" id="hc-bg-file" accept="image/*" hidden>
+    </div>
+  </section>
+
+  <!-- generated midpoint object, cascaded -->
+  <section class="stage" id="stage" aria-label="Generated midpoint object">
+    <div class="cascade">
+      <img style="--l:10.170%; --t:58.052%; --w:20.807%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:11.180%; --t:53.745%; --w:22.120%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:13.432%; --t:49.438%; --w:23.510%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:17.003%; --t:45.131%; --w:24.984%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:17.857%; --t:24.064%; --w:26.560%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:29.814%; --t:19.850%; --w:28.238%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:43.012%; --t:15.730%; --w:30.016%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:57.764%; --t:10.393%; --w:31.910%"
+           src="assets/midpoint.jpg" alt="The generated midpoint object">
+    </div>
+  </section>
+
+  <!-- the two source objects -->
+  <section class="objects" aria-label="Source objects">
+    <figure class="objects__a">
+      <img id="out-a" src="assets/object-a.jpg" alt="Object 1">
+    </figure>
+    <figure class="objects__b">
+      <img id="out-b" src="assets/object-b.jpg" alt="Object 2">
+    </figure>
+  </section>
+
+  <!-- the game: move the printer left/right to catch falling ladybugs -->
+  <section class="game" id="game" tabindex="0"
+           aria-label="Ladybug catcher — move the printer to catch falling ladybugs">
+    <p class="game__score" id="game-score" aria-live="polite">0</p>
+    <div class="game__field" id="game-field" aria-hidden="true"></div>
+    <img class="game__printer" id="game-printer" src="assets/printer.png"
+         alt="" draggable="false" aria-hidden="true">
+  </section>
+
+  <!-- ══ toys: short things to play with while a midpoint is found ══════ -->
+
+  <!-- 1 · reveal — scratch tiles away to uncover A meeting B -->
+  <section class="toy toy--reveal" id="toy-reveal"
+           aria-label="Reveal toy — wipe the tiles to uncover the objects beneath">
+    <div class="reveal-bg" aria-hidden="true">
+      <img class="reveal-a" src="assets/object-a.jpg" alt="">
+      <img class="reveal-b" src="assets/object-b.jpg" alt="">
+    </div>
+    <div class="reveal-tiles" id="reveal-tiles" aria-hidden="true"></div>
+    <p class="toy__label">scratch to reveal</p>
+  </section>
+
+  <!-- 2 · morph — a slider that cross-fades A into B -->
+  <section class="toy toy--morph" id="toy-morph" tabindex="0"
+           role="slider" aria-label="Blend slider — drag to morph between the two objects"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <img class="morph-img" id="morph-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="morph-img" id="morph-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="morph-handle" id="morph-handle" aria-hidden="true"></span>
+    <p class="toy__label">drag to blend</p>
+  </section>
+
+  <!-- 3 · jelly — a blob you drag and that springs back -->
+  <section class="toy toy--jelly" id="toy-jelly"
+           aria-label="Jelly toy — drag the blob and let it spring back">
+    <span class="jelly-blob" id="jelly-blob" aria-hidden="true"></span>
+    <p class="toy__label">pull me</p>
+  </section>
+
+  <!-- 4 · particles — the midpoint shattered into dots that scatter + regroup -->
+  <section class="toy toy--particles" id="toy-particles"
+           aria-label="Particle toy — scatter the dots and watch them regroup">
+    <canvas class="particles-canvas" id="particles-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">scatter · regroup</p>
+  </section>
+
+  <!-- 5 · swap — click two tiles to trade their place in the picture -->
+  <section class="toy toy--swap" id="toy-swap"
+           aria-label="Swap toy — click two tiles to trade their place">
+    <div class="swap-grid" id="swap-grid"></div>
+    <p class="toy__label">swap two tiles</p>
+  </section>
+
+  <!-- 6 · wipe — a spatial curtain that sweeps A across into B -->
+  <section class="toy toy--wipe" id="toy-wipe" tabindex="0"
+           role="slider" aria-label="Wipe transition — drag to sweep from A to B"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <img class="wipe-img" id="wipe-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="wipe-img" id="wipe-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="wipe-seam" id="wipe-seam" aria-hidden="true"></span>
+    <p class="toy__label">wipe A → B</p>
+  </section>
+
+  <!-- 7 · dissolve — A melts into B tile by random tile as you drag -->
+  <section class="toy toy--dissolve" id="toy-dissolve" tabindex="0"
+           role="slider" aria-label="Dissolve transition — drag to melt A into B"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <div class="dissolve-grid" id="dissolve-grid" aria-hidden="true"></div>
+    <p class="toy__label">dissolve</p>
+  </section>
+
+  <!-- 8 · flip — a 3D card turning from A through its edge to B -->
+  <section class="toy toy--flip" id="toy-flip"
+           aria-label="Flip transition — drag to turn the card from A to B">
+    <div class="flip-card" id="flip-card" aria-hidden="true">
+      <img class="flip-face flip-front" src="assets/object-a.jpg" alt="">
+      <img class="flip-face flip-back"  src="assets/object-b.jpg" alt="">
+    </div>
+    <p class="toy__label">flip through</p>
+  </section>
+
+  <!-- 9 · brush — smear B into A with your hand -->
+  <section class="toy toy--brush" id="toy-brush"
+           aria-label="Paint the morph — drag to smear one image into the other">
+    <canvas class="brush-canvas" id="brush-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">paint the morph</p>
+  </section>
+
+  <!-- 10 · tug — flick the puck along the spectrum; it springs to the midpoint -->
+  <section class="toy toy--tug" id="toy-tug"
+           aria-label="Tug of war — drag the puck; it springs back to the midpoint">
+    <img class="tug-img" id="tug-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="tug-img" id="tug-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="tug-rope" aria-hidden="true"></span>
+    <span class="tug-puck" id="tug-puck" aria-hidden="true"></span>
+    <p class="toy__label">tug of war</p>
+  </section>
+
+  <!-- 11 · melt — hold to melt A down and reveal B -->
+  <section class="toy toy--melt" id="toy-melt"
+           aria-label="Melt — hold to melt the top image down and reveal the one beneath">
+    <canvas class="melt-canvas" id="melt-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">melt</p>
+  </section>
+
+  <!-- chase toy — upload a background + 5 cursor-chasing cut-outs (embedded) -->
+  <section class="toy toy--brigitte" id="toy-brigitte" aria-label="Chase toy — upload a background and five cut-outs that chase the cursor">
+    <iframe class="toy__frame" src="chase.html"
+            title="Chase toy — cut-outs that follow the cursor" loading="lazy"></iframe>
+  </section>
+
+  <!-- the game: alien object decoder (self-contained, embedded) -->
+  <section class="toy toy--game" id="toy-game" aria-label="Alien object decoder game">
+    <iframe class="toy__frame" src="alien-decoder.html"
+            title="Alien object decoder" loading="lazy"></iframe>
+  </section>
+
+  </div></div></div></div><!-- /.reel__row /.reel__vstage /.reel__pin /.reel -->
+
+</main>
+
+<!-- ══ mix result popup — pops up ~10s after MIX (Figma node 3062:4) ═════ -->
+<div class="mixwin" id="mixwin" hidden>
+  <div class="mixwin__card" role="dialog" aria-modal="true" tabindex="-1"
+       aria-label="Generated midpoint result">
+
+    <div class="mixwin__hero">
+      <img class="mixwin__big" id="mixwin-big" src="assets/mix/thumb-03.png"
+           alt="The generated midpoint object">
+
+      <div class="mixwin__article">
+        <h2 class="mixwin__title">Perforated metal penguin</h2>
+        <div class="mixwin__body">
+          <p>Perforated metal bird figure</p>
+          <p>The perforated metal bird figure is a small pressed-metal object,
+             approximately 9&nbsp;cm in height, pierced on the front by a circular
+             perforated panel. The species depicted has not been identified.</p>
+          <p><span class="u">Description</span></p>
+          <p>The body is hollow and ovoid. Eleven hemispherical studs are
+             distributed across it. Two are where the eyes would be. Nine are not.</p>
+          <p><span class="u">Function</span></p>
+          <p>Not documented.[1]</p>
+          <p><span class="u">References</span></p>
+          <p>1. ↑ Species undetermined.</p>
+          <p>[[Category:Metal objects]]</p>
+          <p>This article is a stub.</p>
+        </div>
+      </div>
+
+      <div class="mixwin__actions">
+        <button type="button" class="mixwin__dl" id="mixwin-dl">download</button>
+        <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
+          <svg viewBox="0 0 26 26" aria-hidden="true">
+            <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
+            <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="mixwin__strip" id="mixwin-strip">
+      <button type="button" class="mixwin__cell" data-i="0">
+        <span class="mixwin__tick" aria-hidden="true"></span>
+        <span class="mixwin__num">01</span>
+        <img src="assets/mix/thumb-01.png" alt="Spectrum step 1">
+      </button>
+      <button type="button" class="mixwin__cell" data-i="1">
+        <span class="mixwin__tick" aria-hidden="true"></span>
+        <span class="mixwin__num">02</span>
+        <img src="assets/mix/thumb-02.png" alt="Spectrum step 2">
+      </button>
+      <button type="button" class="mixwin__cell is-selected" data-i="2">
+        <span class="mixwin__tick" aria-hidden="true"></span>
+        <span class="mixwin__num">03</span>
+        <img src="assets/mix/thumb-03.png" alt="Spectrum step 3 — the midpoint">
+      </button>
+      <button type="button" class="mixwin__cell" data-i="3">
+        <span class="mixwin__tick" aria-hidden="true"></span>
+        <span class="mixwin__num">04</span>
+        <img src="assets/mix/thumb-04.png" alt="Spectrum step 4">
+      </button>
+      <button type="button" class="mixwin__cell" data-i="4">
+        <span class="mixwin__tick" aria-hidden="true"></span>
+        <span class="mixwin__num">05</span>
+        <img src="assets/mix/thumb-05.png" alt="Spectrum step 5">
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- the wordmark again, small, bottom-right — it fades in only once the banner
+     logo has finished closing and scrolled away, and takes you back to the top.
+     No background: it sits straight on the page. -->
+<button class="to-top" id="mini-logo" type="button" aria-label="חזרה לראש הדף"><span class="ltr" aria-hidden="true">t</span><span class="ltr" aria-hidden="true">o</span><span class="ltr" aria-hidden="true">o</span><span class="ltr" aria-hidden="true">o</span><span class="ltr" aria-hidden="true">l</span><span class="bl" aria-hidden="true"></span></button>
+
+<p class="status" id="status" role="status" aria-live="polite"></p>
+
+<input type="file" id="picker" accept="image/*" hidden>
+
+<script src="app.js?v=13"></script>
+<script src="hero.js?v=reel1"></script>
+<script src="logo.js?v=v22"></script>
+<script src="game.js?v=1"></script>
+<script src="toys.js?v=spin1"></script>
+<script src="hero-chase.js?v=1"></script>
+<script src="grid-crop.js"></script>
+<script src="mix-modal.js?v=2"></script>
+<script src="color-edit.js?v=4"></script>
+<!-- call-to-action nudge: sequential badge hop → hands off to MIX (cta.js) -->
+<script src="cta.js?v=3"></script>
+
+<!-- seamless loop for the intro clip: its last and first frames are the two
+     most different in the file, so `loop` cuts. Cross-faded instead. -->
+<script src="intro-loop.js?v=2"></script>
+<!-- optional endless sideways-scroll mode, toggled by a button (sideways.js) -->
+<script src="sideways.js?v=13"></script>
+</body>
+</html>

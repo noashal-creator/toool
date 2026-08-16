@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — מה ממלא את הקערה?</title>
+<style>
+/* ─────────────────────────────────────────────────────────────────────
+   BOWL FILL COMPARISON — "maybe the fill isn't flat colour but a blend
+   of the two images".
+
+   The one thing that makes this work: the media is pinned to the BOWL,
+   not to the growing level. .bowl-fill__level grows upward from a fixed
+   bottom and clips; .mixmedia sits inside it at a fixed full-bowl height
+   anchored to that same bottom, so it never moves — the rising level
+   REVEALS it, exactly like liquid filling a glass in front of a picture.
+   If the media were sized to the level it would stretch as it filled,
+   which reads as a progress bar, not as contents.
+   ───────────────────────────────────────────────────────────────────── */
+:root{--red:#FE0000;--yellow:#FFFF01;--panel:#FFFF00;--black:#000;--purple:#560476;
+  --bg:#141414;--card:#1e1e1e;--line:#333;}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:#eee;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;padding:26px 22px 70px;}
+header{max-width:1300px;margin:0 auto 18px;}
+h1{margin:0 0 6px;font-size:21px;}
+header p{margin:0;color:#8a8a8a;font-size:13.5px;line-height:1.5;}
+.controls{max-width:1300px;margin:0 auto 22px;display:flex;gap:10px;align-items:center;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
+.controls .lbl{font-size:12px;color:#8a8a8a;}
+button.ctl{font:inherit;font-size:13px;font-weight:600;color:#ddd;cursor:pointer;
+  background:#2a2a2a;border:1px solid #3a3a3a;border-radius:8px;padding:7px 12px;}
+button.ctl.on{background:#560476;border-color:#7b1aa3;color:#fff;}
+.grid{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;}
+.cell{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;}
+.cap{margin:10px 2px 0;font-size:13.5px;font-weight:700;}
+.cap small{display:block;font-weight:400;color:#8a8a8a;font-size:12px;margin-top:3px;line-height:1.4;}
+
+/* a window onto design-y 760→1080 — just the spoon and the bowl */
+.stage{--s:calc(258px / 352);position:relative;
+  width:calc(352 * var(--s));height:calc(320 * var(--s));
+  margin:0 auto;overflow:hidden;background:var(--panel);border-radius:8px;}
+.panel{position:absolute;left:0;top:calc(-760 * var(--s));width:calc(352 * var(--s));height:calc(1080 * var(--s));}
+
+/* copied from styles.css */
+.spoon-rig{position:absolute;left:calc(146.03 * var(--s));top:calc(867.16 * var(--s));
+  width:0;height:0;transform-origin:0 0;z-index:20;transform:rotate(90.53deg);}
+.hand{position:absolute;display:block;left:calc(-10.36 * var(--s));top:calc(-149.29 * var(--s));
+  width:calc(73.57 * var(--s));height:calc(251.82 * var(--s));overflow:hidden;
+  transform:rotate(90deg);transform-origin:center;z-index:20;}
+.hand img{position:absolute;left:-43.59%;top:-0.21%;width:196.15%;height:123.88%;max-width:none;display:block;
+  filter:brightness(90%) contrast(110%) saturate(127%);}
+.hand-tip{position:absolute;left:calc(-107.03 * var(--s));top:calc(-28.16 * var(--s));
+  width:calc(15 * var(--s));height:calc(41 * var(--s));z-index:20;}
+.run{position:absolute;left:calc(200 * var(--s));top:calc(806 * var(--s));
+  width:calc(121 * var(--s));height:calc(72 * var(--s));
+  background:#560476;border:calc(1 * var(--s)) solid transparent;border-radius:50%;
+  transform-origin:calc(-53.97 * var(--s)) calc(61.16 * var(--s));transform:rotate(90.53deg);z-index:21;}
+.bowl{position:absolute;left:calc(57 * var(--s));top:calc(910.16 * var(--s));
+  width:calc(240 * var(--s));height:calc(132.69 * var(--s));color:#FE0000;}
+.bowl svg{position:absolute;display:block;width:auto;}
+.bowl__body{left:0;top:calc(15.55 * var(--s));width:calc(239.64 * var(--s));height:calc(117.14 * var(--s));z-index:22;}
+.bowl__rim{left:calc(1 * var(--s));top:0;width:calc(239 * var(--s));height:calc(33 * var(--s));z-index:1;}
+.bowl-fill{position:absolute;left:calc(57 * var(--s));top:calc(925.71 * var(--s));
+  width:calc(239.64 * var(--s));height:calc(117.14 * var(--s));overflow:hidden;z-index:23;
+  clip-path:polygon(1.2% 0.9%,4.7% 6.3%,15.4% 10.7%,31.3% 13.6%,50.7% 14.7%,
+    68.4% 13.8%,83.4% 11.3%,94.3% 7.6%,99.4% 3.0%,73.5% 99.1%,27.05% 99.1%);}
+.bowl-fill__level{position:absolute;left:0;right:0;bottom:0;height:0;overflow:hidden;display:block;
+  background:var(--purple);animation:fill 4200ms linear infinite;}
+.bowl-floor{position:absolute;left:0;top:calc(1042.85 * var(--s));width:100%;height:calc(40 * var(--s));
+  background:var(--panel);z-index:24;}
+@keyframes fill{
+  0%   {height:0;}
+  76%  {height:100%;}
+  92%  {height:100%;}      /* holds full so the result is readable */
+  100% {height:0;}
+}
+@keyframes stir{
+  0%{transform:rotate(90.53deg);animation-timing-function:steps(1);}
+  22%{transform:rotate(100deg);animation-timing-function:steps(1);}
+  46%{transform:rotate(85deg);animation-timing-function:steps(1);}
+  58%{transform:rotate(82deg);animation-timing-function:steps(1);}
+  82%{transform:rotate(97deg);animation-timing-function:steps(1);}
+  100%{transform:rotate(90.53deg);}
+}
+.spoon-rig,.run{animation:stir 640ms infinite;}
+
+/* ══ the contents — pinned to the bowl, revealed by the level ═════════ */
+.mixmedia{position:absolute;left:0;bottom:0;width:100%;
+  height:calc(117.14 * var(--s));   /* the FULL bowl, so it never stretches */
+  display:none;}
+.mm{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+.mm--b{opacity:.5;}                 /* the 50/50 midpoint of the two uploads */
+
+/* ══ THE ONLY DIFFERENCE BETWEEN CELLS ════════════════════════════════ */
+.v-blend .mixmedia,
+.v-tint  .mixmedia,
+.v-duo   .mixmedia,
+.v-swirl .mixmedia{display:block;}
+.v-blend .bowl-fill__level,
+.v-tint  .bowl-fill__level,
+.v-duo   .bowl-fill__level,
+.v-swirl .bowl-fill__level{background:#000;}   /* only shows through gaps */
+
+/* purple wash kept over the blend, so the panel's colour language survives */
+.v-tint .mixmedia::after{content:'';position:absolute;inset:0;background:var(--purple);opacity:.45;}
+/* pushed all the way into the brand purple */
+.v-duo .mixmedia{filter:grayscale(1) contrast(1.15) sepia(1) hue-rotate(228deg) saturate(5.5) brightness(.85);}
+/* the two images slowly drift against each other — reads as still mixing */
+.v-swirl .mm--a{animation:drift-a 5200ms ease-in-out infinite alternate;}
+.v-swirl .mm--b{animation:drift-b 5200ms ease-in-out infinite alternate;}
+@keyframes drift-a{from{transform:scale(1.12) translate(-2%,1%) rotate(-2deg);} to{transform:scale(1.12) translate(3%,-2%) rotate(2deg);}}
+@keyframes drift-b{from{transform:scale(1.12) translate(3%,-1%) rotate(2deg);}  to{transform:scale(1.12) translate(-2%,2%) rotate(-2deg);}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>מה ממלא את הקערה?</h1>
+  <p>
+    כל התאים ממלאים באותו קצב בדיוק — ההבדל היחיד הוא <b>מה</b> ממלא.
+    התוכן מעוגן <b>לקערה</b> ולא למפלס, ולכן המפלס <b>חושף</b> אותו כמו נוזל שעולה,
+    במקום שהתמונה תימתח תוך כדי.
+  </p>
+</header>
+
+<div class="controls">
+  <span class="lbl">מהירות המילוי:</span>
+  <button class="ctl on" data-speed="4200">רגיל</button>
+  <button class="ctl" data-speed="8000">איטי</button>
+  <button class="ctl" id="replay" style="margin-inline-start:auto">הרץ מחדש</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<template id="scene">
+  <div class="panel">
+    <div class="spoon-rig">
+      <span class="hand"><img src="assets/hand-spoon-raw.png" alt=""></span>
+      <img class="hand-tip" src="assets/hand-tip.svg" alt="">
+    </div>
+    <span class="run"></span>
+    <div class="bowl">
+      <svg class="bowl__body" preserveAspectRatio="none" overflow="visible" width="239.639" height="117.143" viewBox="0 0 239.639 117.143" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <mask id="m" fill="white"><path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z"/></mask>
+        <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z" fill="currentColor"/>
+        <path d="M1.9043 0L2.9043 -0.000103812L2.90419 -1H1.9043V0ZM121.429 16.1904V17.1904V17.1904V16.1904ZM239.639 2.40625L240.517 2.8852L238.966 1.66612L239.639 2.40625ZM177.039 117.143V118.143H177.633L177.917 117.622L177.039 117.143ZM63.9131 117.143L63.0352 117.622L63.3195 118.143H63.9131V117.143ZM0 0V-1H-1.68476L-0.877842 0.478951L0 0ZM1.9043 0L0.904297 0.000103812C0.904468 1.64816 2.1244 3.00028 3.78095 4.09678C5.48534 5.22496 7.9342 6.2749 10.9926 7.25437C17.1235 9.21777 25.9427 10.9715 36.7786 12.4393C58.4652 15.3769 88.393 17.1904 121.429 17.1904V16.1904V15.1904C88.4538 15.1904 58.6199 13.3796 37.0471 10.4574C26.2534 8.99529 17.5685 7.26024 11.6026 5.34966C8.6127 4.39213 6.365 3.40877 4.88487 2.42904C3.3569 1.41764 2.90436 0.587255 2.9043 -0.000103812L1.9043 0ZM121.429 16.1904V17.1904C151.443 17.1904 178.89 15.6931 199.921 13.2164C210.434 11.9783 219.363 10.4933 226.217 8.82213C229.643 7.98668 232.569 7.10038 234.923 6.16761C237.259 5.24166 239.106 4.24176 240.311 3.14638L239.639 2.40625L238.966 1.66612C238.026 2.52071 236.442 3.41403 234.186 4.3083C231.947 5.19573 229.116 6.05662 225.743 6.87906C218.998 8.52368 210.157 9.99716 199.687 11.2301C178.751 13.6956 151.385 15.1904 121.429 15.1904V16.1904ZM239.639 2.40625L238.761 1.9273L176.161 116.664L177.039 117.143L177.917 117.622L240.517 2.8852L239.639 2.40625ZM177.039 117.143V116.143H63.9131V117.143V118.143H177.039V117.143ZM63.9131 117.143L64.7909 116.664L0.877842 -0.478951L0 0L-0.877842 0.478951L63.0352 117.622L63.9131 117.143ZM0 0V1H1.9043V0V-1H0V0Z" fill="black" mask="url(#m)"/>
+      </svg>
+      <svg class="bowl__rim" preserveAspectRatio="none" overflow="visible" width="239" height="33" viewBox="0 0 239 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M119.5 0.5C152.483 0.5 182.334 2.34623 203.931 5.32812C214.733 6.8196 223.449 8.59236 229.454 10.5527C232.46 11.534 234.757 12.5528 236.293 13.5889C237.85 14.6396 238.5 15.6216 238.5 16.5C238.5 17.3784 237.85 18.3604 236.293 19.4111C234.757 20.4472 232.46 21.466 229.454 22.4473C223.449 24.4076 214.733 26.1804 203.931 27.6719C182.334 30.6538 152.483 32.5 119.5 32.5C86.5166 32.5 56.6656 30.6538 35.0693 27.6719C24.2675 26.1804 15.5511 24.4076 9.5459 22.4473C6.53996 21.466 4.24256 20.4472 2.70703 19.4111C1.14985 18.3604 0.5 17.3784 0.5 16.5C0.5 15.6216 1.14985 14.6396 2.70703 13.5889C4.24256 12.5528 6.53996 11.534 9.5459 10.5527C15.5511 8.59236 24.2675 6.8196 35.0693 5.32812C56.6656 2.34623 86.5166 0.5 119.5 0.5Z" fill="currentColor" stroke="black"/>
+      </svg>
+    </div>
+    <div class="bowl-fill">
+      <span class="bowl-fill__level">
+        <span class="mixmedia">
+          <img class="mm mm--a" src="assets/object-a.jpg" alt="">
+          <img class="mm mm--b" src="assets/object-b.jpg" alt="">
+        </span>
+      </span>
+    </div>
+    <div class="bowl-floor"></div>
+  </div>
+</template>
+
+<script>
+const FILLS = [
+  { cls:'v-flat',  title:'א · סגול חלק (הנוכחי)',
+    note:'צבע אחיד. הכי ברור כמד־טעינה, אבל לא אומר כלום על מה מתערבב.' },
+  { cls:'v-blend', title:'ב · בלנד של 2 התמונות',
+    note:'שתי ההעלאות אחת על השנייה 50/50 — בדיוק ה"אמצע" שהאתר מייצר. הכי מספר את הסיפור.' },
+  { cls:'v-tint',  title:'ג · בלנד + שכבת סגול',
+    note:'אותו בלנד עם וילון סגול מעל, כדי לשמור על שפת הצבע של הסרגל.' },
+  { cls:'v-duo',   title:'ד · בלנד בגוון סגול',
+    note:'הבלנד נדחף לתוך הסגול של המותג (דואוטון). מתערבב עם העיצוב אבל שומר על הצורות.' },
+  { cls:'v-swirl', title:'ה · בלנד שמתערבב',
+    note:'שתי התמונות נעות אחת נגד השנייה בזמן המילוי — כאילו זה עדיין בתהליך.' },
+];
+
+const grid=document.getElementById('grid'), tpl=document.getElementById('scene'), stages=[];
+for(const f of FILLS){
+  const cell=document.createElement('figure'); cell.className='cell';
+  const stage=document.createElement('div'); stage.className='stage '+f.cls;
+  stage.appendChild(tpl.content.cloneNode(true));
+  const cap=document.createElement('figcaption'); cap.className='cap';
+  cap.innerHTML=`${f.title}<small>${f.note}</small>`;
+  cell.append(stage,cap); grid.appendChild(cell); stages.push(stage);
+}
+function setSpeed(ms){
+  stages.forEach(s=>{
+    const lvl=s.querySelector('.bowl-fill__level');
+    lvl.style.animation='none'; void lvl.offsetWidth;
+    lvl.style.animation=`fill ${ms}ms linear infinite`;
+  });
+}
+let cur=4200;
+document.querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{
+  cur=Number(b.dataset.speed);
+  document.querySelectorAll('[data-speed]').forEach(o=>o.classList.toggle('on',o===b));
+  setSpeed(cur);
+}));
+document.getElementById('replay').addEventListener('click',()=>setSpeed(cur));
+</script>
+</body>
+</html>

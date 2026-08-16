@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — stop motion options</title>
+<style>
+  /* ── the two layers ──────────────────────────────────────────────────
+     Every tile is background-layer + actor-layer, never one baked image.
+     The background is an SVG driven entirely by two custom properties, so
+     swapping it is a matter of setting --sky / --table (or dropping a
+     different <svg>/<img> into .stage__bg) and touching nothing else. */
+  :root {
+    --sky:   #000000;
+    --table: #9fb3ce;
+    --table2:#7d93b8;
+    --ui:    #e9e9ea;
+    --dim:   rgba(233,233,234,.55);
+    --line:  rgba(255,255,255,.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 22px 22px 60px;
+    background: #101013; color: var(--ui);
+    font: 400 13px/1.45 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 4px; letter-spacing: .01em; }
+  .sub { color: var(--dim); margin: 0 0 18px; font-size: 12px; }
+
+  /* ── control bar ─────────────────────────────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+    padding: 12px 16px; margin: 0 0 20px;
+    background: rgba(20,20,24,.94); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 14px;
+  }
+  label { display: flex; align-items: center; gap: 8px; color: var(--dim); white-space: nowrap; }
+  input[type=range] { width: 116px; accent-color: #fff; }
+  .val { color: var(--ui); font-variant-numeric: tabular-nums; min-width: 46px; }
+  select, button {
+    font: inherit; color: var(--ui); background: #1e1e24;
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: rgba(255,255,255,.34); }
+  button.on { background: #fff; color: #000; border-color: #fff; }
+  .swatches { display: flex; gap: 6px; }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; padding: 0; }
+  .sw.on { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* ── grid of options ─────────────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #17171b; }
+  .card__top { display: flex; align-items: baseline; gap: 8px; padding: 10px 13px 8px; }
+  .card__n { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 11px; }
+  .card__name { font-weight: 600; letter-spacing: .01em; }
+  .card__note { padding: 0 13px 10px; color: var(--dim); font-size: 11.5px; min-height: 32px; }
+
+  .stage { position: relative; aspect-ratio: 4 / 3; overflow: hidden; cursor: zoom-in; background: var(--sky); }
+  .stage__bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage__actors { position: absolute; inset: 0; }
+  /* No transitions anywhere: stop motion is a hard cut on every tick.
+     Anything that eased between ticks would read as CGI, not as hand work. */
+  .actor {
+    position: absolute; left: 0; top: 0;
+    height: 10%; width: auto;
+    will-change: transform;
+    transform-origin: 50% 50%;
+    user-select: none; pointer-events: none;
+  }
+
+  /* ── blown-up view ───────────────────────────────────────────────── */
+  .zoom { position: fixed; inset: 0; z-index: 50; background: rgba(8,8,10,.94); display: none; padding: 3vh 3vw; }
+  .zoom.open { display: flex; flex-direction: column; gap: 12px; }
+  .zoom .stage { flex: 1; border-radius: 12px; cursor: zoom-out; }
+  .zoom__bar { display: flex; gap: 12px; align-items: center; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<h1>pop — stop motion, 10 כיוונים</h1>
+<p class="sub">
+  הרקע הוא שכבה נפרדת בכל אחד מהם (<code>.stage__bg</code>) — מוחלף דרך שני משתני CSS ולא נוגע בדמויות.
+  לחיצה על משבצת מגדילה אותה.
+</p>
+
+<div class="bar">
+  <label>קצב
+    <input type="range" id="fps" min="2" max="24" step="1" value="9">
+    <span class="val" id="fpsVal">9 fps</span>
+  </label>
+  <label>גודל
+    <input type="range" id="size" min="60" max="200" step="5" value="100">
+    <span class="val" id="sizeVal">100%</span>
+  </label>
+  <label>רקע
+    <span class="swatches" id="swatches"></span>
+  </label>
+  <button id="playAll" class="on">❚❚ עצור הכל</button>
+  <span class="val" id="tick" style="color:var(--dim)">t 0</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="zoom" id="zoom">
+  <div class="zoom__bar"><strong id="zoomName"></strong><span id="zoomNote"></span><span style="margin-inline-start:auto">לחצי כדי לסגור</span></div>
+</div>
+
+<script>
+/* ══ assets ═══════════════════════════════════════════════════════════
+   Five cut-outs, keyed off the original black/blue plates. Index 0 is the
+   photographed face, 4 is the finished green pop, so a rising stage index
+   always reads as "further through the transformation". */
+const POPS = [1,2,3,4,5].map(n => `assets/pop-cut/w${n}.png`);
+
+/* Backgrounds live here and nowhere else — each is just a pair of colours
+   fed to the same SVG, which is why swapping one never disturbs a variant. */
+const BGS = [
+  { name: 'המקורי',  sky:'#000000', table:'#9fb3ce', table2:'#7d93b8' },
+  { name: 'סגול',    sky:'#560476', table:'#f0d800', table2:'#d8b400' },
+  { name: 'ירוק',    sky:'#0b6b2f', table:'#f4f1e8', table2:'#d9d4c4' },
+  { name: 'כחול לילה',sky:'#06052e', table:'#3f5c9c', table2:'#28407a' },
+  { name: 'אדום',    sky:'#c8102e', table:'#0b0b0b', table2:'#000000' },
+  { name: 'לבן',     sky:'#f2f2ef', table:'#c9c4b6', table2:'#b0aa9a' },
+];
+
+/* deterministic hash-noise in 0..1 — same tick always gives the same wobble,
+   so the loop repeats exactly instead of drifting forever */
+const N = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+const S = (a, b) => N(a, b) - 0.5;                     // signed, -0.5..0.5
+
+/* ══ the variants ═════════════════════════════════════════════════════
+   Each is a pure function of the integer tick: tick -> list of actors.
+   Nothing holds state between frames, so any variant can be scrubbed,
+   paused or restarted and land in exactly the same place. An actor is
+   { i: which cut-out, x/y: % of stage, h: height as % of stage,
+     r: degrees, o: transform-origin, z: paint order }. */
+const VARIANTS = [
+{
+  id:'boil', name:'boiling', note:'עומד במקום ורוטט — הרעידה של צילום פריים־פריים ביד. הטרנספורמציה מתקדמת לאט מתחת לרעש.',
+  fn: t => [{ i: Math.floor(t/7) % 5, x: 50 + S(t,1)*1.6, y: 52 + S(t,2)*1.6, h: 74, r: S(t,3)*3.5 }]
+},
+{
+  id:'strobe', name:'strobe morph', note:'מחליף שלב בכל פריים בודד — הטרנספורמציה כולה מהבהבת. אגרסיבי, קשה להסיר ממנו את העין.',
+  fn: t => [{ i: t % 5, x: 50 + S(t,4)*1.2, y: 52 + S(t,5)*1.2, h: 74, r: S(t,6)*2.5 }]
+},
+{
+  id:'multiply', name:'multiply', note:'נגררות לפריים אחת אחרי השנייה בזוויות וגדלים שונים עד קומפוזיציה צפופה, ואז מתאפסת.',
+  /* period matches the cap: filling to 12 and then holding for another 14
+     ticks read as the loop having stalled */
+  fn: t => {
+    const n = (t % 13) + 1, out = [];
+    for (let k = 0; k < Math.min(n, 12); k++) {
+      out.push({ i: k % 5, x: 14 + N(k,7)*72, y: 24 + N(k,8)*54, h: 34 + N(k,9)*36,
+                 r: S(k,10)*54 + S(t+k,11)*2, z: k });
+    }
+    return out;
+  }
+},
+{
+  id:'hop', name:'hop across', note:'אחת מנתרת משמאל לימין ומשנה שלב בכל קפיצה — הכי קרוב לסטופ־מושן קלאסי של אובייקט.',
+  fn: t => {
+    const p = (t % 22) / 21, b = Math.abs(Math.sin(p * Math.PI * 4));
+    return [{ i: Math.min(4, Math.floor(p * 5)), x: 10 + p * 80, y: 66 - b * 26,
+              h: 62, r: Math.cos(p * Math.PI * 4) * 16 }];
+  }
+},
+{
+  id:'plant', name:'planted', note:'המקל נעוץ בקו האופק והראש עולה ומתחלף — מנצל את הקרקע שכבר קיימת ברקע.',
+  fn: t => {
+    const p = (t % 18) / 17;
+    return [{ i: Math.min(4, Math.floor(p * 5)), x: 50 + S(t,12)*1, y: 118 - p * 62,
+              h: 30 + p * 52, r: S(t,13)*2.5, o: '50% 100%' }];
+  }
+},
+{
+  id:'spin', name:'spin', note:'מסתובבת סביב קצה המקל כמו מחוג. הצעדים הגסים הופכים את הסיבוב לרצף תמונות ולא לתנועה חלקה.',
+  fn: t => {
+    const step = t % 18;
+    return [{ i: Math.floor(step / 4) % 5, x: 50, y: 92, h: 62,
+              r: step * (360 / 18), o: '50% 100%' }];
+  }
+},
+{
+  id:'wave', name:'row wave', note:'שורה של חמש, וגל של החלפת שלב עובר לאורכה. סטטי בתנועה, קריא מאוד.',
+  fn: t => Array.from({length:5}, (_, k) => ({
+    i: ((t - k * 2) % 5 + 5) % 5, x: 12 + k * 19, y: 54 + S(t+k,14)*1.2,
+    h: 56, r: S(t+k,15)*2.5
+  }))
+},
+{
+  id:'orbit', name:'orbit', note:'שלוש חגות סביב מרכז הפריים, כל אחת בשלב אחר — הרכב שמשתנה כל הזמן בלי התחלה וסוף.',
+  fn: t => Array.from({length:3}, (_, k) => {
+    const a = (t * (Math.PI * 2 / 20)) + k * (Math.PI * 2 / 3);
+    return { i: (k + Math.floor(t/10)) % 5, x: 50 + Math.cos(a) * 26, y: 52 + Math.sin(a) * 22,
+             h: 46, r: (a * 180 / Math.PI) % 360 * .25 + S(t+k,16)*2, z: Math.round(Math.sin(a)*10) + 10 };
+  })
+},
+{
+  id:'swarm', name:'swarm', note:'שבע פזורות שכולן רוטטות יחד — הכי כאוטי, מרגיש כמו פריים תפוס בתוך משהו חי.',
+  fn: t => Array.from({length:7}, (_, k) => ({
+    i: (k + Math.floor(t/5)) % 5,
+    x: 16 + N(k,17)*68 + S(t+k*3,18)*2.2,
+    y: 22 + N(k,19)*56 + S(t+k*5,20)*2.2,
+    h: 28 + N(k,21)*30, r: S(k,22)*50 + S(t+k,23)*4, z: k
+  }))
+},
+{
+  id:'stack', name:'stack up', note:'נערמות מלמטה למעלה, אחת בכל פריים, עד מגדל — ואז נופלת חזרה לאחת.',
+  fn: t => {
+    const n = (t % 6) + 1, out = [];
+    for (let k = 0; k < n; k++) {
+      out.push({ i: k % 5, x: 50 + S(k,24)*14, y: 96 - k * 15, h: 40, r: S(k,25)*18, z: 10 - k });
+    }
+    return out;
+  }
+},
+];
+
+/* ══ rendering ════════════════════════════════════════════════════════
+   One pooled <img> per actor slot per stage, reused every tick — creating
+   and dropping nodes 9 times a second would thrash far more than it costs
+   to keep a handful around. */
+/* The gradient id has to be unique per stage: url(#id) resolves against the
+   whole document, so a shared id would point every tile at the first tile's
+   gradient — invisible today because they are identical, but it would silently
+   defeat any per-tile background later. */
+let bgSeq = 0;
+const bgSvg = () => {
+  const id = 'tg' + (++bgSeq);
+  return `<svg class="stage__bg" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+  <rect width="400" height="300" fill="var(--sky)"/>
+  <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#${id})"/>
+  <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+  </linearGradient></defs>
+</svg>`;
+};
+
+function makeStage() {
+  const st = document.createElement('div');
+  st.className = 'stage';
+  st.innerHTML = bgSvg();
+  const actors = document.createElement('div');
+  actors.className = 'stage__actors';
+  st.appendChild(actors);
+  st._actors = actors; st._pool = [];
+  return st;
+}
+
+function draw(stage, variant, t, sizeMul) {
+  const list = variant.fn(t);
+  const pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className = 'actor'; img.alt = '';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img, k) => {
+    const a = list[k];
+    if (!a) { img.style.display = 'none'; return; }
+    img.style.display = '';
+    if (img._src !== a.i) { img.src = POPS[a.i]; img._src = a.i; }
+    img.style.height = (a.h * sizeMul) + '%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transformOrigin = a.o || '50% 50%';
+    img.style.transform =
+      `translate(${a.x}cqw, ${a.y}cqh) translate(-50%, -50%) rotate(${a.r || 0}deg)`;
+  });
+}
+
+/* stage coordinates are given in % of the stage box, so the actors need the
+   stage itself as the containment context rather than the page */
+document.head.insertAdjacentHTML('beforeend',
+  '<style>.stage{container-type:size}</style>');
+
+const grid = document.getElementById('grid');
+const cards = VARIANTS.map((v, n) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+1).padStart(2,'0')}</span>
+                    <span class="card__name">${v.name}</span></div>`;
+  const stage = makeStage();
+  card.appendChild(stage);
+  card.insertAdjacentHTML('beforeend', `<p class="card__note">${v.note}</p>`);
+  grid.appendChild(card);
+  stage.addEventListener('click', () => openZoom(v));
+  return { v, stage };
+});
+
+/* ── zoom ── */
+const zoom = document.getElementById('zoom');
+let zoomEntry = null;
+function openZoom(v) {
+  zoom.querySelectorAll('.stage').forEach(s => s.remove());
+  const st = makeStage();
+  st.addEventListener('click', () => { zoom.classList.remove('open'); zoomEntry = null; });
+  zoom.appendChild(st);
+  document.getElementById('zoomName').textContent = v.name;
+  document.getElementById('zoomNote').textContent = v.note;
+  zoom.classList.add('open');
+  zoomEntry = { v, stage: st };
+}
+addEventListener('keydown', e => { if (e.key === 'Escape') { zoom.classList.remove('open'); zoomEntry = null; } });
+
+/* ── background swatches ── */
+const swWrap = document.getElementById('swatches');
+BGS.forEach((b, k) => {
+  const btn = document.createElement('button');
+  btn.className = 'sw' + (k === 0 ? ' on' : '');
+  btn.title = b.name;
+  btn.style.background = `linear-gradient(160deg, ${b.sky} 0 55%, ${b.table} 55% 100%)`;
+  btn.onclick = () => {
+    document.documentElement.style.setProperty('--sky', b.sky);
+    document.documentElement.style.setProperty('--table', b.table);
+    document.documentElement.style.setProperty('--table2', b.table2);
+    swWrap.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+    btn.classList.add('on');
+  };
+  swWrap.appendChild(btn);
+});
+
+/* ── clock ─────────────────────────────────────────────────────────────
+   One clock for every tile, so the whole page steps together and the grid
+   reads as one sheet of frames rather than ten drifting loops. */
+const fpsEl = document.getElementById('fps'), sizeEl = document.getElementById('size');
+const tickEl = document.getElementById('tick'), playBtn = document.getElementById('playAll');
+let t = 0, playing = true, last = 0;
+
+function frame(now) {
+  const step = 1000 / +fpsEl.value;
+  if (playing && now - last >= step) {
+    last = now; t++;
+    const mul = +sizeEl.value / 100;
+    for (const c of cards) draw(c.stage, c.v, t, mul);
+    if (zoomEntry) draw(zoomEntry.stage, zoomEntry.v, t, mul);
+    tickEl.textContent = 't ' + t;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+fpsEl.oninput  = () => document.getElementById('fpsVal').textContent = fpsEl.value + ' fps';
+sizeEl.oninput = () => {
+  document.getElementById('sizeVal').textContent = sizeEl.value + '%';
+  const mul = +sizeEl.value / 100;
+  for (const c of cards) draw(c.stage, c.v, t, mul);
+};
+playBtn.onclick = () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '❚❚ עצור הכל' : '▶ הפעל הכל';
+  playBtn.classList.toggle('on', playing);
+};
+
+for (const c of cards) draw(c.stage, c.v, 0, 1);
+</script>
+</body>
+</html>

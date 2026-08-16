@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — WPA 2026</title>
+<link rel="stylesheet" href="deck.css?v=11">
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+<!-- ══ 01 · COVER ═══════════════════════════════════════════════════════
+     Figma node 5:150. Same lockup and hierarchy, TOOOL's palette.        -->
+<section class="slide cover" data-node="5:150">
+  <div class="cover__mark">
+    <img class="cover__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <img class="cover__dot" src="assets/deck/dot.svg" alt="" aria-hidden="true">
+    <img class="cover__heart" src="assets/deck/heart.svg" alt="" aria-hidden="true">
+  </div>
+  <h1 class="cover__title">Wix Playground Academy 2026</h1>
+  <!-- TODO(noa): full name for the cover -->
+  <p class="cover__by">Designer: Noa</p>
+</section>
+
+<!-- ══ 02 · PROJECT NAME ════════════════════════════════════════════════
+     Figma node 5:142 ("E.V.E"). Wordmark set in the site's own typeface. -->
+<section class="slide" data-node="5:142">
+  <h1 class="name__word">TOOOL</h1>
+  <p class="name__sub">Midpoint Generator</p>
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+<!-- ══ 03 · 01 CONCEPT ══════════════════════════════════════════════════ -->
+<section class="slide" data-node="5:233">
+  <h2 class="title">Concept</h2>
+  <p class="num">01</p>
+
+  <p class="lead" style="top:calc(300 * var(--s))">
+    What is exactly <em>halfway</em> between two things?<br>
+    Upload two objects — TOOOL generates the one that should not exist in between.
+  </p>
+
+  <!-- real steps 01 / 05 / 03 out of the tool, so the slide shows an actual
+       result rather than a stand-in: A + B = the thing in the middle -->
+  <div class="trio">
+    <div class="plate"><img src="assets/mix/big-01.png" alt="First object"></div>
+    <span class="trio__op">+</span>
+    <div class="plate"><img src="assets/mix/big-05.png" alt="Second object"></div>
+    <span class="trio__op">=</span>
+    <!-- the middle one runs: A morphs into B and back, so the slide shows the
+         in-between actually happening instead of one frozen frame -->
+    <div class="plate">
+      <div class="gif" data-fps="5"
+           data-frames="assets/mix/big-01.png,assets/mix/big-02.png,assets/mix/big-03.png,assets/mix/big-04.png,assets/mix/big-05.png"></div>
+    </div>
+  </div>
+  <div class="trio__caps">
+    <span class="cap">Object A</span><span></span>
+    <span class="cap">Object B</span><span></span>
+    <span class="cap">Everything in between</span>
+  </div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+  <aside class="notes">Open on the question, not the tool. Two objects in, one impossible object out.</aside>
+</section>
+
+<!-- ══ 04 · 02 INSPIRATION ══════════════════════════════════════════════
+     Frames are intentionally empty — Noa drops the references in later.  -->
+<section class="slide" data-node="5:162">
+  <h2 class="title">Inspiration</h2>
+  <p class="num">02</p>
+
+  <div class="board">
+    <div class="board__cell" data-src="assets/deck/insp-1.jpg"><span>Reference 01</span></div>
+    <div class="board__cell" data-src="assets/deck/insp-2.jpg"><span>Reference 02</span></div>
+    <div class="board__cell" data-src="assets/deck/insp-3.jpg"><span>Reference 03</span></div>
+    <div class="board__cell" data-src="assets/deck/insp-4.jpg"><span>Reference 04</span></div>
+    <div class="board__cell" data-src="assets/deck/insp-5.jpg"><span>Reference 05</span></div>
+    <div class="board__cell" data-src="assets/deck/insp-6.jpg"><span>Reference 06</span></div>
+  </div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+  <aside class="notes">Drop insp-1.jpg … insp-6.jpg into assets/deck/ and these fill themselves.</aside>
+</section>
+
+<!-- ══ 05 · 03 MEDIUM AND DIRECTION ═════════════════════════════════════ -->
+<section class="slide" data-node="5:242">
+  <h2 class="title">Medium<br>and Direction</h2>
+  <p class="num">03</p>
+
+  <div class="dirs">
+    <div>
+      <h3>Medium</h3>
+      <p>A tool in the browser, not a poster. You make your own object — the piece is only finished once someone uses it.</p>
+    </div>
+    <div>
+      <h3>Direction</h3>
+      <p>Every result is an analog documentary photograph: 35mm, hard direct flash, white seamless paper — and it is described like a museum specimen.</p>
+    </div>
+  </div>
+
+  <div class="plate strip"><img src="assets/mix/grid.png" alt="Five-step spectrum from object A to object B"></div>
+  <div class="meme-inset meme-inset--dirs" data-src="assets/deck/meme-1.jpg" data-on-missing="remove" data-label="Meme 1 → assets/deck/meme-1.jpg"></div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+  <aside class="notes">The two rules that never bend: analog photo look, encyclopedia voice.</aside>
+</section>
+
+<!-- ══ 06 · 04 TARGET AUDIENCE ══════════════════════════════════════════
+     The one template slide with a real body — geometry kept 1:1
+     (Figma 5:251: rules at y 571 / 700 / 829 / 961).                     -->
+<section class="slide" data-node="5:251">
+  <h2 class="title">Target<br>Audience</h2>
+  <p class="num">04</p>
+
+  <div class="rule" style="top:calc(571 * var(--s))"></div>
+  <div class="row" style="top:calc(597 * var(--s))">
+    <span class="row__n">01</span><p class="row__t">Curious people &amp; happy time-wasters</p>
+  </div>
+
+  <div class="rule" style="top:calc(700 * var(--s))"></div>
+  <div class="row" style="top:calc(726 * var(--s))">
+    <span class="row__n">02</span><p class="row__t">Designers hunting for a starting point</p>
+  </div>
+
+  <div class="rule" style="top:calc(829 * var(--s))"></div>
+  <div class="row" style="top:calc(858 * var(--s))">
+    <span class="row__n">03</span><p class="row__t">Anyone who likes objects that shouldn't exist</p>
+  </div>
+  <div class="rule" style="top:calc(961 * var(--s))"></div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+<!-- ══ 07 · 05 VISUAL LANGUAGE ══════════════════════════════════════════ -->
+<section class="slide" data-node="5:171">
+  <h2 class="title">Visual Language</h2>
+  <p class="num">05</p>
+
+  <p class="lead" style="top:calc(220 * var(--s));font-size:calc(46 * var(--s))">
+    Nothing in the interface pretends to be software. It is a kitchen: two things go in a bowl, a hand stirs them.
+  </p>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="tile__box"><div class="mini-slot" data-n="01"></div></div>
+      <p class="cap">Dashed slots — empty until you fill them</p>
+    </div>
+    <div class="tile">
+      <div class="tile__box"><img src="assets/hand-spoon-v2.png" alt="A hand holding a spoon"></div>
+      <p class="cap">A real hand, a real spoon</p>
+    </div>
+    <div class="tile">
+      <div class="tile__box">
+        <div class="mini-bowl">
+          <img class="mini-bowl__body" src="assets/bowl-body.svg" alt="The mixing bowl">
+          <img class="mini-bowl__rim" src="assets/bowl-rim.svg" alt="" aria-hidden="true">
+        </div>
+      </div>
+      <p class="cap">The bowl fills with your own two images</p>
+    </div>
+    <div class="tile">
+      <div class="tile__box"><div class="mini-mix">mix</div></div>
+      <p class="cap">One button, one verb</p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+<!-- ══ 08 · 06 TYPOGRAPHY AND COLOR ═════════════════════════════════════
+     Same anatomy as Figma 5:180 (name → specimen → swatch row).          -->
+<section class="slide" data-node="5:180">
+  <h2 class="title">Typography<br>and Color</h2>
+  <p class="num">06</p>
+
+  <p class="type-label">Helvetica Neue W01 75 Bold — interface &amp; deck</p>
+  <p class="type-spec">ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890</p>
+
+  <p class="type-label type-label--alt">ABC Helveesti Spikes Mono — the TOOOL wordmark</p>
+  <p class="type-spec type-spec--alt">ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890</p>
+
+  <div class="swatches">
+    <div class="swatch" style="background:#FE0000">#FE0000</div>
+    <div class="swatch" style="background:#FFFF01">#FFFF01</div>
+    <div class="swatch" style="background:#B700FF;color:#fff">#B700FF</div>
+    <div class="swatch" style="background:#000000;color:#fff">#000000</div>
+    <div class="swatch" style="background:#FFFFFF">#FFFFFF</div>
+  </div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+<!-- ══ 09 · 07 UX / FLOW ════════════════════════════════════════════════ -->
+<section class="slide" data-node="5:198">
+  <h2 class="title">UX / Flow</h2>
+  <p class="num">07</p>
+
+  <div class="flow flow--4">
+    <div class="step">
+      <p class="step__n">01</p><div class="step__r"></div>
+      <p class="step__t">Upload</p>
+      <p class="step__d">Drop the first image into the dashed slot.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">02</p><div class="step__r"></div>
+      <p class="step__t">Upload again</p>
+      <p class="step__d">The second image goes in below it. Nothing else to configure.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">03</p><div class="step__r"></div>
+      <p class="step__t">Mix</p>
+      <p class="step__d">The hand stirs the bowl while the two images churn together.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">04</p><div class="step__r"></div>
+      <p class="step__t">Read the result</p>
+      <p class="step__d">Five clickable steps from A to B, plus an encyclopedia entry for the object in the middle.</p>
+    </div>
+  </div>
+
+  <!-- the four states of the interface, in the same four columns as the text -->
+  <div class="flow-visuals">
+    <div class="cell"><div class="mini-slot" data-n="01"></div></div>
+    <div class="cell"><div class="mini-slot" data-n="02"></div></div>
+    <div class="cell"><div class="mini-mix">mix</div></div>
+    <div class="cell cell--plate">
+      <div class="gif" data-fps="5"
+           data-frames="assets/mix/big-01.png,assets/mix/big-02.png,assets/mix/big-03.png,assets/mix/big-04.png,assets/mix/big-05.png"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+  <aside class="notes">Four steps, no settings, no sign-up. That is the whole product.</aside>
+</section>
+
+<!-- ══ 10 · 08 AI PROCESS AND TOOLS ═════════════════════════════════════
+     The real pipeline, as specified in LIVE-PLAN.md.                     -->
+<section class="slide" data-node="5:207">
+  <h2 class="title">AI Process<br>and Tools</h2>
+  <p class="num">08</p>
+
+  <div class="flow flow--5" style="top:calc(400 * var(--s))">
+    <div class="step">
+      <p class="step__n">01</p><div class="step__r"></div>
+      <p class="step__t">Grid template</p>
+      <p class="step__d">Your two images are sent together with an empty 5-cell grid.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">02</p><div class="step__r"></div>
+      <p class="step__t">fal.ai</p>
+      <p class="step__d"><code>gpt-image-2</code> edits into the grid: 01 = A, 05 = B, 03 = the hybrid, 02 / 04 the mutations in between.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">03</p><div class="step__r"></div>
+      <p class="step__t"><code>grid-crop.js</code></p>
+      <p class="step__d">Slices the returned grid into five, drops the white background, trims and centers each one.</p>
+    </div>
+    <div class="step">
+      <p class="step__n">04</p><div class="step__r"></div>
+      <p class="step__t">Claude · vision</p>
+      <p class="step__d">Looks at the midpoint and writes its encyclopedia entry — description, function, references, "this article is a stub".</p>
+    </div>
+    <div class="step">
+      <p class="step__n">05</p><div class="step__r"></div>
+      <p class="step__t">Result window</p>
+      <p class="step__d">Five steps and the article, ready to click through.</p>
+    </div>
+  </div>
+
+  <div class="meme-inset meme-inset--ai" data-src="assets/deck/meme-2.jpg" data-on-missing="remove" data-label="Meme 2 → assets/deck/meme-2.jpg"></div>
+
+  <p class="tools">Built with fal.ai · gpt-image-2 · Claude · Claude Code · Figma. Keys never touch the browser — every call goes through a proxy.</p>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+<!-- ══ 11 · 09 FINAL OUTPUTS ════════════════════════════════════════════ -->
+<section class="slide" data-node="5:216">
+  <h2 class="title">Final Outputs</h2>
+  <p class="num">09</p>
+
+  <div class="plate output"><img src="assets/mix/grid.png" alt="The five generated spectrum steps"></div>
+  <p class="output-note">Every mix ends as a five-step spectrum and one written specimen. → Live demo</p>
+
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+  <aside class="notes">Switch to the other browser tab here and run one live mix.</aside>
+</section>
+
+<!-- ══ 12 · THANK YOU ═══════════════════════════════════════════════════ -->
+<section class="slide thanks" data-node="5:225">
+  <h2 class="title">Thank you!</h2>
+  <div class="meme-inset meme-inset--thanks" data-src="assets/deck/meme-3.jpg" data-on-missing="remove" data-label="Meme 3 → assets/deck/meme-3.jpg"></div>
+  <footer class="footer">
+    <img class="footer__logo" src="assets/deck/wpa-logo.svg" alt="WPA">
+    <span class="footer__meta"><span class="footer__count"></span><span>TLV | 2026</span></span>
+  </footer>
+</section>
+
+</div>
+
+<script src="deck.js?v=11"></script>
+</body>
+</html>

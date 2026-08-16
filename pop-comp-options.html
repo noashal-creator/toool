@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pop — compositions v2</title>
+<style>
+  :root {
+    --sky:   #000000;
+    --table: #9fb3ce;
+    --table2:#7d93b8;
+    --ui:    #e9e9ea;
+    --dim:   rgba(233,233,234,.55);
+    --line:  rgba(255,255,255,.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 20px 60px;
+    background: #101013; color: var(--ui);
+    font: 400 13px/1.45 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--dim); margin: 0 0 16px; font-size: 12px; }
+
+  .bar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
+    padding: 11px 15px; margin: 0 0 18px;
+    background: rgba(20,20,24,.94); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 14px;
+  }
+  label { display: flex; align-items: center; gap: 7px; color: var(--dim); white-space: nowrap; }
+  input[type=range] { width: 110px; accent-color: #fff; }
+  .val { color: var(--ui); font-variant-numeric: tabular-nums; min-width: 44px; }
+  button {
+    appearance: none; -webkit-appearance: none;
+    font: inherit; color: var(--ui); background: #1e1e24;
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  }
+  button:hover { border-color: rgba(255,255,255,.34); }
+  button.on { background: #fff; color: #000; border-color: #fff; }
+  .swatches { display: flex; gap: 6px; }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; padding: 0; }
+  .sw.on { outline: 2px solid #fff; outline-offset: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #17171b; }
+  .card__top { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 7px; }
+  .card__n { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 11px; }
+  .card__name { font-weight: 600; }
+  .card__note { padding: 0 12px 10px; color: var(--dim); font-size: 11.5px; min-height: 46px; }
+
+  /* the stage: ground behind, actors, then a FOREGROUND copy of the ground.
+     That third layer is what lets an actor duck behind the dune — without it
+     nothing can ever be occluded by the set, and every composition is forced
+     to live entirely in front of the backdrop. */
+  .stage { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--sky); container-type: size; cursor: zoom-in; }
+  .stage__bg, .stage__fg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* Off unless a composition asks for it. It was on everywhere at first, which
+     buried every stick below the horizon and turned eleven compositions into
+     heads resting on a dune — a change none of them had asked for. */
+  .stage__fg { z-index: 40; pointer-events: none; display: none; }
+  .stage.has-fg .stage__fg { display: block; }
+  .stage__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage__actors { position: absolute; inset: 0; }
+  .actor {
+    position: absolute; left: 0; top: 0;
+    height: 10%; width: auto;
+    transform-origin: 50% 50%;
+    will-change: transform;
+    user-select: none; pointer-events: none;
+  }
+
+  .zoom { position: fixed; inset: 0; z-index: 60; background: rgba(8,8,10,.95); display: none; padding: 3vh 3vw; }
+  .zoom.open { display: flex; flex-direction: column; gap: 10px; }
+  .zoom .stage { flex: 1; border-radius: 12px; cursor: zoom-out; }
+  .zoom__bar { display: flex; gap: 12px; align-items: center; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<h1>pop — קומפוזיציות, סבב 2</h1>
+<p class="sub">
+  עכשיו עם קנה מידה, עומק והסתרה — לא רק סידור. הרקע נשאר שכבה נפרדת בכולן,
+  ו־peek מוסיפה גם שכבת קדמת-במה כדי להיעלם מאחורי הדיונה. לחיצה מגדילה.
+</p>
+
+<div class="bar">
+  <label>קצב <input type="range" id="fps" min="2" max="24" step="1" value="9"><span class="val" id="fpsVal">9 fps</span></label>
+  <label>גודל <input type="range" id="size" min="60" max="180" step="5" value="100"><span class="val" id="sizeVal">100%</span></label>
+  <label>רקע <span class="swatches" id="swatches"></span></label>
+  <button id="playAll" class="on">❚❚ עצור הכל</button>
+  <span class="val" id="tick" style="color:var(--dim)">t 0</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="zoom" id="zoom">
+  <div class="zoom__bar"><strong id="zoomName"></strong><span id="zoomNote"></span><span style="margin-inline-start:auto">לחצי לסגירה</span></div>
+</div>
+
+<script>
+const POPS = [1,2,3,4,5].map(n => `assets/pop-cut/w${n}.png`);
+const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+
+const BGS = [
+  { name: 'המקורי',   sky:'#000000', table:'#9fb3ce', table2:'#7d93b8' },
+  { name: 'התמונה',   photo: true },
+  { name: 'סגול',     sky:'#560476', table:'#f0d800', table2:'#d8b400' },
+  { name: 'כחול לילה',sky:'#06052e', table:'#3f5c9c', table2:'#28407a' },
+  { name: 'אדום',     sky:'#c8102e', table:'#0b0b0b', table2:'#000000' },
+  { name: 'לבן',      sky:'#f2f2ef', table:'#c9c4b6', table2:'#b0aa9a' },
+];
+
+const N = (a,b) => { const s = Math.sin(a*127.1 + b*311.7) * 43758.5453; return s - Math.floor(s); };
+const S = (a,b) => N(a,b) - 0.5;
+
+/* the one revolution — mirrors toys.js. Fires once when the ring reaches open
+   and re-arms only after it has properly closed, so a repaint anywhere in the
+   open plateau cannot retrigger it. Stepped, not tweened, to match the crank. */
+const SPIN_STEPS = 26, SPIN_MS = 3200, SPIN_BOB = 4;
+let spin = 0, spinning = false, spinArmed = true;
+function armSpin(pull) {
+  if (pull < 0.5) spinArmed = true;
+  if (!spinArmed || spinning || pull < 0.92) return;
+  spinArmed = false; spinning = true;
+  const t0 = performance.now();
+  let shown = -1;
+  (function step(now) {
+    const k = Math.min(SPIN_STEPS, Math.floor(((now - t0) / SPIN_MS) * SPIN_STEPS));
+    if (k !== shown) { shown = k; spin = (k / SPIN_STEPS) * Math.PI * 2; }
+    if (k < SPIN_STEPS) requestAnimationFrame(step);
+    else { spin = 0; spinning = false; }        // 2*PI === 0, no jump
+  })(t0);
+}
+const HORIZON = 64;                     // where the dune crosses, in % of stage
+
+/* actor: { i, x, y, h, r, z, o, flip } — x/y/h in % of the stage */
+const VARIANTS = [
+{
+  id:'eclipse', name:'eclipse',
+  note:'שתי ענקיות חוצות אחת את השנייה ומסתירות לסירוגין. ההסתרה היא הקומפוזיציה — לא הסידור.',
+  fn: t => {
+    const p = (t % 28) / 28, a = Math.sin(p * Math.PI * 2);
+    return [
+      { i: Math.floor(t/14) % 5,      x: 50 - a*17, y: 50, h: 82, r: -a*5, z: a > 0 ? 2 : 1 },
+      { i: (Math.floor(t/14)+2) % 5,  x: 50 + a*17, y: 53, h: 82, r:  a*5, z: a > 0 ? 1 : 2 },
+    ];
+  }
+},
+{
+  id:'depth', name:'depth row',
+  note:'שורה שנסוגה לעומק: הקדמית ענקית, האחרונה זעירה. קנה מידה עושה את כל העבודה של הפרספקטיבה.',
+  fn: t => Array.from({length:5}, (_,k) => ({
+    i: ((t - k) % 5 + 5) % 5,
+    x: 15 + k * 18.5,
+    y: 74 - k * 8,
+    h: 74 - k * 12,
+    r: S(t+k,3) * 2,
+    z: 9 - k
+  }))
+},
+{
+  id:'crowd', name:'crowd',
+  note:'קהל צפוף בגדלים מעורבים, נדחק וזז. הכי קרוב לתמונה של המון — אין מרכז אחד.',
+  fn: t => Array.from({length:12}, (_,k) => {
+    const row = k % 3;
+    return {
+      i: (k + Math.floor(t/4)) % 5,
+      x: 8 + N(k,4)*84 + S(t+k*3,5)*1.6,
+      y: 46 + row*13 + N(k,6)*8 + S(t+k*5,7)*1.4,
+      h: 26 + row*9 + N(k,8)*8,
+      r: S(k,9)*16 + S(t+k,10)*2.5,
+      z: row * 3 + (k % 3)
+    };
+  })
+},
+{
+  id:'totem', name:'totem',
+  note:'נערמות לעמוד אחד עם חפיפה כבדה — אובייקט אחד מורכב, לא חמישה נפרדים.',
+  fn: t => Array.from({length:5}, (_,k) => ({
+    i: ((t + k) % 5 + 5) % 5,
+    x: 50 + S(k,11)*7,
+    y: 88 - k * 14,
+    h: 38,
+    r: S(k,12)*10 + S(t+k,13)*1.5,
+    z: 10 - k
+  }))
+},
+{
+  id:'peek', name:'peek', fg: true,
+  note:'עולות מאחורי הדיונה ורק הקודקוד מציץ, כל אחת בקצב שלה. משתמש בשכבת הקדמה.',
+  fn: t => Array.from({length:6}, (_,k) => {
+    const ph = (t + k * 4) % 22;
+    const up = ph < 11 ? ph / 11 : (22 - ph) / 11;
+    return {
+      i: (k + Math.floor(t/9)) % 5,
+      x: 10 + k * 16,
+      y: 108 - up * 32,
+      h: 44,
+      r: S(t+k,14)*2,
+      z: k
+    };
+  })
+},
+{
+  id:'fan', name:'fan',
+  note:'מניפה סביב ציר מתחת לפריים, כמו יד של קלפים. החפיפה קבועה והזוויות עושות את הקצב.',
+  fn: t => Array.from({length:7}, (_,k) => {
+    const a = (k - 3) * 13 + Math.sin(t / 6) * 6;
+    return {
+      i: ((t - k) % 5 + 5) % 5,
+      x: 50 + Math.sin(a * Math.PI/180) * 40,
+      y: 96 - Math.cos(a * Math.PI/180) * 30,
+      h: 52, r: a, o: '50% 120%',
+      z: 7 - Math.abs(k - 3)
+    };
+  })
+},
+{
+  id:'domino', name:'domino',
+  note:'שורה שנופלת אחת אחרי השנייה ומתרוממת בחזרה. הסיבוב סביב בסיס המקל הוא כל הטריק.',
+  fn: t => Array.from({length:5}, (_,k) => {
+    const ph = ((t - k * 3) % 24 + 24) % 24;
+    const fall = ph < 8 ? ph / 8 : ph < 16 ? 1 : (24 - ph) / 8;
+    return {
+      i: k % 5,
+      x: 16 + k * 17, y: 92, h: 50,
+      r: fall * 74, o: '50% 100%',
+      z: 5 - k
+    };
+  })
+},
+{
+  id:'punch', name:'zoom punch',
+  note:'אחת מסתערת על המצלמה עד שהיא חורגת מהפריים, בזמן שהרקע נשאר קטן ורגוע.',
+  fn: t => {
+    const p = (t % 20) / 20;
+    const back = Array.from({length:4}, (_,k) => ({
+      i: (k + 1) % 5, x: 14 + k * 24, y: 52, h: 26, r: S(k,15)*8, z: 1
+    }));
+    return [...back, { i: Math.floor(t/20) % 5, x: 50, y: 56, h: 18 + p*p*110, r: p*14, z: 20 }];
+  }
+},
+{
+  id:'converge', name:'converge',
+  note:'נאספות למרכז עד שהן חופפות, ובשיא ההתכנסות אחת נפתרת למעלה — הפנים או הסוכריה הגמורה, לסירוגין. הערימה מסתדרת לרגע לתמונה אחת קריאה ואז מתפזרת.',
+  fn: t => {
+    /* same arc the site runs — kept in step deliberately, so choosing here
+       means choosing what actually ships. closed -> open -> closed, with a
+       flat middle so the one revolution has somewhere to happen. */
+    const P = 26;
+    const p = (t % P) / P;
+    const OPEN_AT = 0.38, CLOSE_AT = 0.62;
+    const pull = p < OPEN_AT  ? p / OPEN_AT
+               : p < CLOSE_AT ? 1
+               : 1 - (p - CLOSE_AT) / (1 - CLOSE_AT);
+    armSpin(pull);
+    const out = Array.from({length:8}, (_,k) => {
+      const a = k * (Math.PI*2/8) + spin;
+      /* neighbours ride opposite each other while the ring turns — one up, one
+         down — and trade halfway. sin(0)=0, so it self-gates to the turn. */
+      const bob = Math.sin(spin + k * Math.PI) * SPIN_BOB * pull;
+      return {
+        i: (k + Math.floor(t/13)) % 5,
+        x: 50 + Math.cos(a) * 37 * pull,
+        y: 54 + Math.sin(a) * 15 * pull + bob,
+        h: 40, r: S(k,16)*20 + S(t+k,17)*2,
+        z: Math.round(Math.sin(a)*8) + 10
+      };
+    });
+    /* At the bottom of the pull the eight are piled on the same spot and read
+       as mush. One resolved frame on top turns that moment into the point of
+       the whole loop: the pile arrives at an answer. Alternating 1 and 5 makes
+       it land on the two ends of the transformation — the photographed face,
+       then the finished pop — so consecutive loops do not repeat. */
+    if (pull < 0.22) {
+      out.push({ i: (Math.floor(t / P) % 2) ? 4 : 0, x: 50, y: 53, h: 57.5, r: 0, z: 99 });
+    }
+    return out;
+  }
+},
+{
+  id:'conga', name:'conga',
+  note:'טור אלכסוני שצועד וחוצה את הפריים, כל אחת מסתירה חלקית את הבאה אחריה.',
+  fn: t => Array.from({length:6}, (_,k) => {
+    const p = (((t + k * 4) % 30) / 30);
+    return {
+      i: (k + Math.floor(t/7)) % 5,
+      x: -8 + p * 116,
+      y: 30 + p * 46,
+      h: 24 + p * 44,
+      r: -10 + p * 20,
+      z: Math.round(p * 10)
+    };
+  })
+},
+{
+  id:'mirror', name:'mirror',
+  note:'זוג משוקף על קו האופק — הקומפוזיציה היחידה שמשתמשת בקרקע כציר ולא כרצפה.',
+  fn: t => {
+    const i = Math.floor(t/6) % 5, x = 50 + Math.sin(t/9) * 16;
+    return [
+      { i, x, y: HORIZON - 22, h: 56, r: Math.sin(t/9)*6, z: 2 },
+      { i, x, y: HORIZON + 22, h: 56, r: -Math.sin(t/9)*6, z: 1, flip: true }
+    ];
+  }
+},
+{
+  id:'glitch', name:'glitch grid',
+  note:'רשת מסודרת שכמה תאים בה מסרבים להתנהג — סדר שנשבר במקומות אקראיים בכל פריים.',
+  fn: t => Array.from({length:9}, (_,k) => {
+    const col = k % 3, row = (k / 3) | 0;
+    const off = N(k + t * 7, 18) > .78;          // a couple of cells misbehave
+    return {
+      i: off ? (k + t) % 5 : (k + Math.floor(t/6)) % 5,
+      x: 24 + col * 26 + (off ? S(t+k,19)*7 : 0),
+      y: 30 + row * 22 + (off ? S(t+k,20)*6 : 0),
+      h: off ? 34 : 28,
+      r: off ? S(t+k,21)*30 : 0,
+      z: off ? 9 : 1
+    };
+  })
+},
+];
+
+/* ── stage plumbing ─────────────────────────────────────────────────── */
+let seq = 0;
+const groundSvg = (cls, id) => `<svg class="${cls}" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+  ${cls === 'stage__bg' ? `<rect width="400" height="300" fill="var(--sky)"/>` : ''}
+  <path d="M0,196 C110,176 290,212 400,188 L400,300 L0,300 Z" fill="url(#${id})"/>
+  <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="var(--table)"/><stop offset="1" stop-color="var(--table2)"/>
+  </linearGradient></defs>
+</svg>`;
+
+function makeStage(v) {
+  const n = ++seq;
+  const st = document.createElement('div');
+  st.className = 'stage' + (v && v.fg ? ' has-fg' : '');
+  st.innerHTML = groundSvg('stage__bg', 'g' + n) +
+                 `<img class="stage__photo" alt="" hidden>` +
+                 `<div class="stage__actors"></div>` +
+                 groundSvg('stage__fg', 'f' + n);
+  st._actors = st.querySelector('.stage__actors');
+  st._photo  = st.querySelector('.stage__photo');
+  st._pool   = [];
+  return st;
+}
+
+function draw(stage, v, t, mul) {
+  const list = v.fn(t), pool = stage._pool;
+  while (pool.length < list.length) {
+    const img = document.createElement('img');
+    img.className = 'actor'; img.alt = '';
+    stage._actors.appendChild(img); pool.push(img);
+  }
+  pool.forEach((img, k) => {
+    const a = list[k];
+    if (!a) { img.style.display = 'none'; return; }
+    img.style.display = '';
+    if (img._i !== a.i) { img.src = POPS[a.i]; img._i = a.i; }
+    img.style.height = (a.h * mul) + '%';
+    img.style.zIndex = a.z ?? 1;
+    img.style.transformOrigin = a.o || '50% 50%';
+    img.style.transform = `translate(${a.x}cqw, ${a.y}cqh) translate(-50%,-50%) rotate(${a.r||0}deg)`
+                        + (a.flip ? ' scale(1,-1)' : '');
+  });
+}
+
+const grid = document.getElementById('grid');
+const cards = VARIANTS.map((v, n) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card__top"><span class="card__n">${String(n+1).padStart(2,'0')}</span>
+                    <span class="card__name">${v.name}</span></div>`;
+  const stage = makeStage(v);
+  card.appendChild(stage);
+  card.insertAdjacentHTML('beforeend', `<p class="card__note">${v.note}</p>`);
+  grid.appendChild(card);
+  stage.addEventListener('click', () => openZoom(v));
+  return { v, stage };
+});
+
+const zoom = document.getElementById('zoom');
+let zoomEntry = null;
+function openZoom(v) {
+  zoom.querySelectorAll('.stage').forEach(s => s.remove());
+  const st = makeStage(v);
+  st.addEventListener('click', () => { zoom.classList.remove('open'); zoomEntry = null; });
+  zoom.appendChild(st);
+  document.getElementById('zoomName').textContent = v.name;
+  document.getElementById('zoomNote').textContent = v.note;
+  zoom.classList.add('open');
+  zoomEntry = { v, stage: st };
+  applyBg(currentBg);
+}
+addEventListener('keydown', e => { if (e.key === 'Escape') { zoom.classList.remove('open'); zoomEntry = null; } });
+
+/* ── background ── */
+let currentBg = BGS[0];
+function applyBg(b) {
+  currentBg = b;
+  const root = document.documentElement.style;
+  if (!b.photo) { root.setProperty('--sky', b.sky); root.setProperty('--table', b.table); root.setProperty('--table2', b.table2); }
+  const all = [...cards.map(c => c.stage), ...(zoomEntry ? [zoomEntry.stage] : [])];
+  for (const st of all) {
+    const p = st._photo;
+    if (b.photo) { p.onerror = () => { p.hidden = true; }; p.onload = () => { p.hidden = false; }; p.src = DEFAULT_BG; }
+    else { p.hidden = true; }
+  }
+}
+const swWrap = document.getElementById('swatches');
+BGS.forEach((b, k) => {
+  const btn = document.createElement('button');
+  btn.className = 'sw' + (k === 0 ? ' on' : '');
+  btn.title = b.name;
+  btn.style.background = b.photo ? 'linear-gradient(160deg,#1b2a44 0 55%,#8fa8c8 55%)'
+                                 : `linear-gradient(160deg, ${b.sky} 0 55%, ${b.table} 55%)`;
+  btn.onclick = () => { applyBg(b); swWrap.querySelectorAll('.sw').forEach(s => s.classList.remove('on')); btn.classList.add('on'); };
+  swWrap.appendChild(btn);
+});
+
+/* ── clock ── */
+const fpsEl = document.getElementById('fps'), sizeEl = document.getElementById('size');
+const tickEl = document.getElementById('tick'), playBtn = document.getElementById('playAll');
+let t = 0, playing = true, last = 0;
+function frame(now) {
+  if (playing && now - last >= 1000 / +fpsEl.value) {
+    last = now; t++;
+    const mul = +sizeEl.value / 100;
+    for (const c of cards) draw(c.stage, c.v, t, mul);
+    if (zoomEntry) draw(zoomEntry.stage, zoomEntry.v, t, mul);
+    tickEl.textContent = 't ' + t;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+fpsEl.oninput = () => document.getElementById('fpsVal').textContent = fpsEl.value + ' fps';
+sizeEl.oninput = () => {
+  document.getElementById('sizeVal').textContent = sizeEl.value + '%';
+  const mul = +sizeEl.value / 100;
+  for (const c of cards) draw(c.stage, c.v, t, mul);
+};
+playBtn.onclick = () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '❚❚ עצור הכל' : '▶ הפעל הכל';
+  playBtn.classList.toggle('on', playing);
+};
+
+for (const c of cards) draw(c.stage, c.v, 0, 1);
+</script>
+</body>
+</html>

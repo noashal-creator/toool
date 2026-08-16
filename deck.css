@@ -1,0 +1,614 @@
+/* ─────────────────────────────────────────────────────────────────────
+   TOOOL — WPA 2026 deck
+   Structure comes from the Figma "Working Template" (file nd1zMwgWxFnbMuv9fh0kah):
+   1920 × 1080 slides, 35px margins, 150px ExtraBold title at 35,35, section
+   number at right 31, footer at bottom 35, body hairlines at y 571/700/829/961.
+   The PALETTE is deliberately NOT the template's (brown/off-white/pink) — it is
+   TOOOL's own red/black from styles.css, so the deck and the product read as
+   one thing.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* same values as styles.css:12-18 — deck and product share one palette */
+  --red:    #FE0000;
+  --ink:    #000000;
+  --yellow: #FFFF01;
+  --purple: #B700FF;
+  --white:  #FFFFFF;
+
+  /* Slide canvas. Unlike the site (which fits to height and lets the content
+     column scroll), a slide must always be WHOLE — so this is a contain fit
+     and the leftover space becomes letterbox. */
+  --s: min(100vw / 1920, 100dvh / 1080);
+}
+
+/* the wordmark typeface, base64-embedded so it also works over file:// */
+@import url("assets/fonts/spikes-font.css");
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--ink);          /* letterbox bars */
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  font-family: "Wix Madefor Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── the stage: one 1920×1080 canvas, scaled as a block ─────────────── */
+.stage {
+  position: relative;
+  width:  calc(1920 * var(--s));
+  height: calc(1080 * var(--s));
+  overflow: hidden;
+  background: var(--red);
+}
+
+/* ── slides ─────────────────────────────────────────────────────────── */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  background: var(--red);
+}
+.slide.is-active { display: block; }
+
+/* every measurement below is a Figma design unit × --s */
+.slide > * { position: absolute; }
+
+/* ── title (Figma: 150px, leading-none, tracking -7.5px, at 35,35) ──── */
+.title {
+  left: calc(35 * var(--s));
+  top:  calc(35 * var(--s));
+  margin: 0;
+  width: calc(1441 * var(--s));
+  font-size: calc(150 * var(--s));
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: calc(-7.5 * var(--s));
+  text-transform: uppercase;
+}
+
+/* section number, top right (Figma: 50px, right 31, top 35) */
+.num {
+  right: calc(31 * var(--s));
+  top:   calc(35 * var(--s));
+  margin: 0;
+  font-size: calc(50 * var(--s));
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: calc(-2.5 * var(--s));
+}
+
+/* ── footer (Figma: left 35, bottom 35, width 1850) ─────────────────── */
+.footer {
+  left:   calc(35 * var(--s));
+  bottom: calc(35 * var(--s));
+  width:  calc(1850 * var(--s));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+/* exported Figma asset, exact box preserved: 87.4619 × 30 */
+.footer__logo {
+  display: block;
+  width:  calc(87.4619 * var(--s));
+  height: calc(30 * var(--s));
+}
+.footer__meta {
+  display: flex;
+  gap: calc(40 * var(--s));
+  font-size: calc(20 * var(--s));
+  line-height: 1;
+  letter-spacing: calc(-0.6 * var(--s));
+}
+.footer__count { font-variant-numeric: tabular-nums; }
+
+/* ── shared body pieces ─────────────────────────────────────────────── */
+
+/* the lead sentence that carries each slide in a 5–7 minute talk */
+.lead {
+  left: calc(36 * var(--s));
+  margin: 0;
+  width: calc(1500 * var(--s));
+  font-size: calc(72 * var(--s));
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: calc(-2 * var(--s));
+}
+.lead em { font-style: normal; text-decoration: underline; text-underline-offset: calc(10 * var(--s)); }
+
+/* full-bleed hairline, template geometry (left 35, width 1850) */
+.rule {
+  left:  calc(35 * var(--s));
+  width: calc(1850 * var(--s));
+  height: 0;
+  border-top: calc(2 * var(--s)) solid var(--ink);
+}
+
+/* white plate — images sit on white because every TOOOL specimen is shot on
+   a white seamless backdrop; on red they'd lose their ground */
+/* a block box, NOT a centered grid: inside a centered grid item a percentage
+   height is indefinite, so `height:100%` on the image silently fell back to
+   its intrinsic aspect and overflowed. object-fit does the centering anyway. */
+.plate {
+  background: var(--white);
+  display: block;
+  overflow: hidden;
+}
+.plate img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* ── the loop ("gif") ───────────────────────────────────────────────────
+   A stack of frames with one visible at a time, driven by deck.js. Built
+   from the tool's own five spectrum steps, so the middle of a spectrum can
+   actually move instead of sitting there as a still. Only the frames on the
+   active slide are ever running. */
+.gif { position: relative; width: 100%; height: 100%; }
+.gif img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+}
+.gif img.is-on { opacity: 1; }
+
+.cap {
+  margin: 0;
+  font-size: calc(24 * var(--s));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: calc(-0.5 * var(--s));
+  text-transform: uppercase;
+}
+
+/* ══ 01 COVER ══════════════════════════════════════════════════════════ */
+.cover { display: none; }
+.cover.is-active { display: grid; place-content: center; justify-items: center; }
+.cover > * { position: static; }
+
+.cover__mark {
+  position: relative;
+  width:  calc(440 * var(--s));
+  height: calc(150.9 * var(--s));   /* 440 ÷ (87.4619/30) — asset aspect kept */
+}
+/* only the wordmark fills the box — the dot and heart keep their own sizes
+   below (every one of these exports carries preserveAspectRatio="none", so a
+   stray 100%/100% would stretch them instead of scaling them) */
+.cover__logo { display: block; width: 100%; height: 100%; }
+/* the ° heart that sits above the A (Figma: 34px dot at 1127,380) */
+.cover__dot {
+  position: absolute;
+  right: calc(-26 * var(--s));
+  top:   calc(-26 * var(--s));
+  width:  calc(58 * var(--s));
+  height: calc(58 * var(--s));
+}
+.cover__heart {
+  position: absolute;
+  right: calc(-9 * var(--s));
+  top:   calc(-7 * var(--s));
+  width:  calc(24 * var(--s));
+  height: calc(21.4 * var(--s));
+}
+.cover__title {
+  margin: calc(60 * var(--s)) 0 0;
+  width: calc(700 * var(--s));
+  font-size: calc(56 * var(--s));
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: calc(-1.7 * var(--s));
+  text-transform: uppercase;
+  text-align: center;
+}
+.cover__by {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(35 * var(--s));
+  margin: 0;
+  font-size: calc(20 * var(--s));
+  letter-spacing: calc(-0.6 * var(--s));
+  text-align: center;
+}
+
+/* ══ 02 PROJECT NAME ═══════════════════════════════════════════════════ */
+.name__word {
+  left: 0; right: 0;
+  top: calc(384 * var(--s));
+  margin: 0;
+  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
+  font-size: calc(320 * var(--s));
+  line-height: 0.8;
+  letter-spacing: calc(-8 * var(--s));
+  text-align: center;
+}
+.name__sub {
+  left: 0; right: 0;
+  top: calc(700 * var(--s));
+  margin: 0;
+  font-size: calc(56 * var(--s));
+  font-weight: 500;
+  letter-spacing: calc(-1.6 * var(--s));
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ══ 03 CONCEPT ════════════════════════════════════════════════════════ */
+.trio {
+  left: calc(36 * var(--s));
+  top:  calc(545 * var(--s));
+  width: calc(1848 * var(--s));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: calc(28 * var(--s));
+}
+.trio .plate { height: calc(380 * var(--s)); }
+.trio__op {
+  font-size: calc(90 * var(--s));
+  font-weight: 800;
+  line-height: 1;
+}
+.trio__caps {
+  left: calc(36 * var(--s));
+  top:  calc(945 * var(--s));
+  width: calc(1848 * var(--s));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: calc(28 * var(--s));
+  text-align: center;
+}
+.trio__caps span:nth-child(even) { visibility: hidden; }
+
+/* ══ 04 INSPIRATION — moodboard, images arrive later ═══════════════════ */
+.board {
+  left: calc(36 * var(--s));
+  top:  calc(300 * var(--s));
+  width:  calc(1848 * var(--s));
+  height: calc(660 * var(--s));
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: calc(24 * var(--s));
+}
+/* dashed frames are the site's own empty-slot language (index.html slot__frame) */
+.board__cell {
+  position: relative;
+  border: calc(3 * var(--s)) dashed var(--ink);
+  border-radius: calc(10 * var(--s));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+/* absolute, not height:100% — see .meme-inset above for why */
+.board__cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.board__cell span {
+  font-size: calc(22 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(1 * var(--s));
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+/* ══ 05 MEDIUM AND DIRECTION ═══════════════════════════════════════════ */
+.dirs {
+  left: calc(36 * var(--s));
+  top:  calc(400 * var(--s));   /* clears the two-line title (35 + 2×150) */
+  width: calc(1848 * var(--s));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(80 * var(--s));
+}
+.dirs h3 {
+  margin: 0 0 calc(14 * var(--s));
+  font-size: calc(30 * var(--s));
+  font-weight: 800;
+  letter-spacing: calc(1.5 * var(--s));
+  text-transform: uppercase;
+}
+.dirs p {
+  margin: 0;
+  font-size: calc(44 * var(--s));
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: calc(-1 * var(--s));
+}
+/* sized to grid.png's own 3000×760 so the five specimens sit edge to edge
+   with no letterbox gutters */
+.strip {
+  left: calc(36 * var(--s));
+  top:  calc(650 * var(--s));
+  width:  calc(1302 * var(--s));
+  height: calc(330 * var(--s));
+}
+
+/* ══ 06 TARGET AUDIENCE — the template's own row layout ════════════════ */
+/* Figma: rules at y 571/700/829/961; row number 18px; label 65px, leading .9 */
+.row {
+  left: calc(53 * var(--s));
+  width: calc(1830 * var(--s));
+  display: flex;
+  align-items: baseline;
+  gap: calc(24 * var(--s));
+}
+.row__n {
+  font-size: calc(22 * var(--s));
+  font-weight: 700;
+  line-height: 0.94;
+}
+.row__t {
+  margin: 0;
+  font-size: calc(78 * var(--s));
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: calc(-1.6 * var(--s));
+}
+
+/* ══ MEMES ═════════════════════════════════════════════════════════════
+   Not a slide of their own — each one drops into the empty space of a slide
+   that already exists. deck.js removes any inset whose file isn't in
+   assets/deck/ yet, so a missing meme leaves the slide exactly as it was
+   instead of leaving a hole. */
+.meme-inset {
+  position: absolute;                /* inset:0 on the image sidesteps the
+                                        percentage-height problem entirely */
+  background: var(--white);
+  border: calc(3 * var(--s)) solid var(--ink);
+  overflow: hidden;
+}
+.meme-inset img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+
+/* Waiting for its file: a labelled dashed frame, so the spot is visible while
+   you build the deck. It is NOT filled white — an empty white box would read
+   as a broken image rather than as a slot. */
+.meme-inset.is-empty {
+  background: transparent;
+  border-style: dashed;
+  display: grid;
+  place-items: center;
+}
+.meme-inset.is-empty::after {
+  content: attr(data-label);
+  font-size: calc(26 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(1.5 * var(--s));
+  text-transform: uppercase;
+  opacity: 0.5;
+  text-align: center;
+  padding: calc(20 * var(--s));
+}
+/* …and gone the moment you present. Hit F for fullscreen and every unfilled
+   slot drops out, leaving the slide exactly as it was designed without it. */
+:fullscreen .meme-inset.is-empty { display: none; }
+
+/* Each box is cut to its meme's own aspect ratio, so the image fills it edge
+   to edge instead of floating in white bars.
+   right of the spectrum strip on "Medium and Direction" — 3:2 */
+.meme-inset--dirs   { left: calc(1368 * var(--s)); top: calc(650 * var(--s)); width: calc(516 * var(--s)); height: calc(344 * var(--s)); }
+/* the gap between the pipeline columns and the tools line on "AI Process" —
+   square, and a one-panel meme on purpose: this slot is short, and a
+   multi-panel meme shrunk into it would be unreadable from the back row */
+.meme-inset--ai     { left: calc(1643 * var(--s)); top: calc(624 * var(--s)); width: calc(241 * var(--s)); height: calc(234 * var(--s)); }
+/* the wide open room under "Thank you!" — the biggest space in the deck, so
+   the four-panel one goes here where its text is actually legible */
+.meme-inset--thanks { left: calc(36 * var(--s));   top: calc(340 * var(--s)); width: calc(900 * var(--s)); height: calc(576 * var(--s)); }
+
+/* ══ 07 VISUAL LANGUAGE ════════════════════════════════════════════════ */
+.tiles {
+  left: calc(36 * var(--s));
+  top:  calc(330 * var(--s));
+  width: calc(1848 * var(--s));
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(28 * var(--s));
+}
+.tile { display: grid; grid-template-rows: calc(430 * var(--s)) auto; gap: calc(18 * var(--s)); }
+.tile__box {
+  border: calc(3 * var(--s)) solid var(--ink);
+  display: grid;
+  place-items: center;
+  padding: calc(30 * var(--s));
+  background: var(--red);
+}
+/* explicit height, not max-height:100% — the box is a centered grid item, so a
+   percentage height is indefinite there and the image would run off the slide.
+   430 (row) − 2 × 30 (padding) = 370. */
+.tile__box img {
+  display: block;
+  width: 100%;
+  height: calc(370 * var(--s));
+  object-fit: contain;
+}
+
+/* the bowl is two exported parts, body then rim on top — same stack as the
+   site (index.html .bowl); geometry from the source SVGs (239.639 × 117.143
+   and 239 × 33), scaled together so the proportions hold */
+.mini-bowl {
+  position: relative;
+  width:  calc(276 * var(--s));
+  height: calc(154 * var(--s));
+}
+.mini-bowl img { position: absolute; height: auto; }
+.mini-bowl__body { left: 0; top: calc(19 * var(--s)); width: calc(276 * var(--s)); height: calc(135 * var(--s)); }
+.mini-bowl__rim  { left: 0; top: 0;                    width: calc(275 * var(--s)); height: calc(38 * var(--s)); }
+
+/* the empty upload slot, rebuilt from index.html's dashed frame */
+.mini-slot {
+  width: 100%; height: 100%;
+  border: calc(3 * var(--s)) dashed var(--ink);
+  border-radius: calc(12 * var(--s));
+  position: relative;
+}
+.mini-slot::after {
+  content: attr(data-n);
+  position: absolute;
+  left: calc(16 * var(--s));
+  top:  calc(10 * var(--s));
+  font-size: calc(40 * var(--s));
+  font-weight: 800;
+  color: var(--yellow);
+  -webkit-text-stroke: calc(1.5 * var(--s)) var(--ink);
+}
+/* the MIX button — yellow type in a black-edged disc, as on the site */
+.mini-mix {
+  width: calc(230 * var(--s));
+  height: calc(230 * var(--s));
+  border-radius: 50%;
+  background: var(--red);
+  border: calc(3 * var(--s)) solid var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: calc(64 * var(--s));
+  font-weight: 800;
+  color: var(--yellow);
+  -webkit-text-stroke: calc(2 * var(--s)) var(--ink);
+  text-transform: lowercase;
+}
+
+/* ══ 08 TYPOGRAPHY AND COLOR — template geometry, TOOOL's own values ═══ */
+/* Figma: label 18px at y 540, specimen 40px at y 580, boxes 197.853×209 at y 730 */
+.type-label {
+  left: calc(36 * var(--s));
+  top:  calc(430 * var(--s));
+  margin: 0;
+  font-size: calc(24 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(-0.36 * var(--s));
+}
+.type-spec {
+  left: calc(36 * var(--s));
+  top:  calc(470 * var(--s));
+  margin: 0;
+  width: calc(1400 * var(--s));
+  font-size: calc(56 * var(--s));
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: calc(2 * var(--s));
+}
+.type-label--alt { top: calc(620 * var(--s)); }
+.type-spec--alt  {
+  top: calc(660 * var(--s));
+  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
+  font-size: calc(48 * var(--s));
+  letter-spacing: 0;
+}
+.swatches {
+  left: calc(36 * var(--s));
+  top:  calc(790 * var(--s));
+  display: flex;
+  gap: calc(20 * var(--s));
+}
+.swatch {
+  width:  calc(197.853 * var(--s));
+  height: calc(160 * var(--s));
+  border: calc(3 * var(--s)) solid var(--ink);
+  display: flex;
+  align-items: flex-end;
+  padding: calc(12 * var(--s));
+  font-size: calc(20 * var(--s));
+  font-weight: 700;
+}
+
+/* ══ 09 UX / FLOW  and  10 AI PROCESS ══════════════════════════════════ */
+.flow {
+  left: calc(36 * var(--s));
+  top:  calc(400 * var(--s));
+  width: calc(1848 * var(--s));
+  display: grid;
+  align-items: start;
+  gap: calc(20 * var(--s));
+}
+.flow--4 { grid-template-columns: repeat(4, 1fr); }
+.flow--5 { grid-template-columns: repeat(5, 1fr); }
+.step__n {
+  margin: 0 0 calc(16 * var(--s));
+  font-size: calc(28 * var(--s));
+  font-weight: 800;
+  letter-spacing: calc(1.4 * var(--s));
+}
+.step__r { border-top: calc(3 * var(--s)) solid var(--ink); margin-bottom: calc(20 * var(--s)); }
+.step__t {
+  margin: 0 0 calc(14 * var(--s));
+  font-size: calc(48 * var(--s));
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: calc(-1.2 * var(--s));
+}
+.step__d {
+  margin: 0;
+  font-size: calc(28 * var(--s));
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: calc(-0.4 * var(--s));
+}
+.step code, .tools code {
+  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
+  font-size: 0.92em;
+}
+/* a visuals row pinned to its own y, so the four boxes line up with each other
+   regardless of how long each step's description runs */
+.flow-visuals {
+  left: calc(36 * var(--s));
+  top:  calc(680 * var(--s));
+  width: calc(1848 * var(--s));
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(20 * var(--s));
+}
+.flow-visuals .cell {
+  height: calc(300 * var(--s));
+  border: calc(3 * var(--s)) solid var(--ink);
+  display: grid;
+  place-items: center;
+  padding: calc(20 * var(--s));
+}
+.flow-visuals .cell img {
+  display: block;
+  width: 100%;
+  height: calc(254 * var(--s));   /* 300 − 2×3 border − 2×20 padding */
+  object-fit: contain;
+}
+.flow-visuals .cell--plate { background: var(--white); padding: 0; }
+.flow-visuals .cell--plate img { height: calc(294 * var(--s)); }
+
+.tools {
+  left: calc(36 * var(--s));
+  top:  calc(880 * var(--s));
+  width: calc(1848 * var(--s));
+  margin: 0;
+  padding-top: calc(20 * var(--s));
+  border-top: calc(3 * var(--s)) solid var(--ink);
+  font-size: calc(34 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(-0.6 * var(--s));
+}
+
+/* ══ 11 FINAL OUTPUTS ══════════════════════════════════════════════════ */
+.output {
+  left: calc(36 * var(--s));
+  top:  calc(300 * var(--s));
+  width:  calc(1848 * var(--s));
+  height: calc(560 * var(--s));
+}
+.output-note {
+  left: calc(36 * var(--s));
+  top:  calc(890 * var(--s));
+  margin: 0;
+  font-size: calc(44 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(-1 * var(--s));
+}
+
+/* ══ 12 THANK YOU ══════════════════════════════════════════════════════ */
+.thanks .title { font-size: calc(220 * var(--s)); letter-spacing: calc(-11 * var(--s)); }
+
+/* speaker notes live in the file but never render */
+.notes { display: none; }

@@ -1,0 +1,233 @@
+<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — המעבר של הלוגו לפינה</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<style>
+:root{ --red:#CC0000; --blue:#1A6FFF; --green:#3E8E2E; }
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;padding:22px}
+h2{margin:0 0 6px;font-size:20px}
+.sub{opacity:.62;margin:0 0 18px;font-size:14px;max-width:900px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:22px}
+figure{margin:0;min-width:0}
+figcaption{margin-top:8px;font-size:15px;font-weight:700}
+figcaption span{display:block;font-weight:400;opacity:.55;font-size:13px;margin-top:3px}
+
+/* every option is its own little page you scroll inside */
+.stage{position:relative;height:430px;overflow:hidden;border:1px solid #333;background:#fff}
+.scroll{height:100%;overflow-y:auto;overscroll-behavior:contain;margin-left:54px}
+.band{height:150px;background:var(--blue)}
+.rest{height:900px;background:var(--green)}
+.rest p{margin:0;padding:18px;color:#fff;font-size:13px;opacity:.75}
+/* stand-in for the site's fixed sidebar, so "parallel to it" can be judged */
+.rail{position:absolute;inset:0 auto 0 0;width:54px;background:#fff;border-right:1px solid #000;
+  display:flex;flex-direction:column;gap:8px;padding:8px 6px}
+.rail i{display:block;height:52px;background:#FFFF00;border:1px dashed #000;border-radius:4px}
+
+/* the mark itself — one object for the whole journey */
+.mark{position:absolute;top:0;right:auto;left:0;margin:0;padding:0;border:0;background:none;
+  cursor:pointer;line-height:1;white-space:nowrap;letter-spacing:-.055em;direction:ltr;
+  transform-origin:50% 50%;will-change:transform}
+.mark .ltr{display:inline-block;vertical-align:baseline;text-transform:lowercase;color:var(--red);
+  font-family:"ABC Helveesti Spikes Trial","Helvetica Neue",sans-serif;
+  -webkit-text-stroke:2px #000;paint-order:stroke fill;transform-origin:50% 88%}
+.mark .bl{display:inline-block;width:0;height:0;overflow:hidden;vertical-align:baseline}
+.hint{position:absolute;inset:auto 0 0 0;text-align:center;font-size:11px;padding:4px;
+  background:rgba(0,0,0,.55);color:#fff;pointer-events:none}
+</style></head><body>
+
+<h2>המעבר של הלוגו — 7 אופציות</h2>
+<p class="sub">גללי בתוך כל ריבוע בנפרד. בכולן זה <b>אותו אובייקט</b> שעובר מהבאנר למקומו החדש (חוץ מ-6, שזה מה שיש באתר עכשיו — שני סימנים נפרדים). הפס הלבן משמאל הוא הסרגל, כדי שאפשר יהיה לשפוט את <b>3 ו-3b</b> — שם הלוגו מסתובב רבע סיבוב ונעמד <b>מקביל לסרגל</b>, והתוכן עובר מימינו. הפונטים מתחלפים כל הזמן כאן כדי שתראי איך זה נראה בתנועה.</p>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const FONTS=['"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"','"ABC Gravity Trial"',
+ '"ABC Gravity Wide Trial"','"ABC Gravity Expanded Trial"','"ABC Gravity Compressed Trial"',
+ '"ABC Gravity Extra Condensed Trial"','"ABC Ginto Nord Trial"','"ABC Ginto Condensed Trial"',
+ '"ABC Ginto Rounded Nord Trial"','"ABC Arizona Serif Trial"','"ABC Arizona Flare Trial"',
+ '"ABC Arizona Mix Trial"','"ABC Gramercy Display Trial"','"ABC Gramercy Fine Trial"',
+ '"ABC Diatype Extended Trial"','"ABC Diatype Compressed Trial"','"ABC Diatype Rounded Trial"',
+ '"ABC Favorit Expanded Trial"','"ABC Favorit Compressed Trial"','"ABC Camera Rounded Trial"',
+ '"ABC Ikarus Contrast Trial"','"ABC Ikarus Flair Trial"','"ABC Daily Slab Trial"',
+ '"ABC Daily Scotch Trial"','"ABC Estragon Trial"','"ABC Asfalt Expanded Trial"',
+ '"ABC Bingo Trial"','"ABC Cowboy Trial"','"ABC Honeymoon Trial"','"ABC Bubblegum Trial"'];
+const WEIGHTS=['200','300','400','500','700','800','900'];
+const XH=0.52, MAX_H=0.80, TARGET=3.15, TOL=0.12;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const cx=document.createElement('canvas').getContext('2d');
+
+/* ── the same engine the site runs: x-height normalised, width balanced ── */
+const CAND={};
+function buildMetrics(){
+  for(const ch of 'tol'){ const list=[];
+    for(const fam of FONTS) for(const w of WEIGHTS) for(const st of ['normal','italic']){
+      cx.font=`${st} ${w} 200px ${fam}`;
+      const mo=cx.measureText('o');
+      const xh=(mo.actualBoundingBoxAscent+mo.actualBoundingBoxDescent)/200;
+      if(!(xh>0.05)) continue;
+      const sizeEm=XH/xh, m=cx.measureText(ch);
+      const ascR=m.actualBoundingBoxAscent/200, descR=m.actualBoundingBoxDescent/200;
+      if((ascR+descR)*sizeEm>MAX_H) continue;
+      list.push({fam,w,st,sizeEm,ascR,
+        br2:(m.actualBoundingBoxRight||m.width)/200, adv:(m.width/200)*sizeEm});
+    }
+    CAND[ch]=list; }
+}
+function apply(el,p){
+  el.style.fontFamily=p.fam+', "Helvetica Neue", sans-serif';
+  el.style.fontWeight=p.w; el.style.fontStyle=p.st;
+  el.style.fontSize=p.sizeEm.toFixed(3)+'em';
+  el.dataset.asc=p.ascR; el.dataset.br2=p.br2;
+}
+function balance(chars,p){
+  for(let i=0;i<24;i++){
+    const t=p.reduce((s,x)=>s+x.adv,0);
+    if(Math.abs(t-TARGET)<=TOL) break;
+    const wider=t<TARGET;
+    const j=p.reduce((m,x,k)=>(wider? x.adv<p[m].adv : x.adv>p[m].adv)?k:m,0);
+    let best=p[j];
+    for(let a=0;a<8;a++){const c=pick(CAND[chars[j]]); if(wider? c.adv>best.adv : c.adv<best.adv) best=c;}
+    p[j]=best;
+  }
+  return p;
+}
+
+/* the six ways of getting there */
+const V=[
+ ['1 · טיסה רציפה','הלוגו כולו מתכווץ וטס באלכסון מהבאנר לפינה — אובייקט אחד, בלי חיתוך',       'flight'],
+ ['2 · נסגר, טס, נפתח','קודם נסגר ל-"tl" כמו שסיכמנו, ה-tl טס לפינה, ושם הספקטרום נפתח שוב קטן','closefly'],
+ ['3 · לאורך הסרגל — נשאר גדול','מסתובב לאנכי ונעמד לאורך הסרגל, בגודל מלא, והתוכן עובר מימינו','railbig'],
+ ['3b · לאורך הסרגל — יורד למטה','אותו סיבוב, אבל מתכווץ ויורד לאורך הסרגל עד לתחתית',        'rail'],
+ ['4 · מתקפל לתוך ה-l','מתכווץ לכיוון הקצה הימני שלו — ה-l הוא הציר, והמילה מתקפלת פנימה אליו','anchor'],
+ ['5 · נחיתה עם קפיץ','אותה טיסה, אבל נוחת עם קפיצה קטנה — שובב יותר',                        'spring'],
+ ['6 · דהייה (מה שיש עכשיו)','הגדול נעלם, הקטן מופיע בפינה — שני סימנים נפרדים, בלי מעבר',    'fade'],
+];
+
+const PAD=14, CORNER=30, RAIL=54;                // corner inset, corner size, sidebar width
+const grid=document.getElementById('grid');
+
+document.fonts.ready.then(()=>{
+  buildMetrics();
+  V.forEach(([name,desc,mode])=>{
+    const f=document.createElement('figure');
+    f.innerHTML=
+      `<div class="stage"><div class="rail"><i></i><i></i></div><div class="scroll"><div class="band"></div>`+
+      `<div class="rest"><p>גללי כאן ↓</p></div></div>`+
+      `<div class="mark">`+[...'toool'].map(c=>`<span class="ltr">${c}</span>`).join('')+
+      `<span class="bl"></span></div></div>`+
+      `<figcaption>${name}<span>${desc}</span></figcaption>`;
+    grid.appendChild(f);
+
+    const stage=f.querySelector('.stage'), scroller=f.querySelector('.scroll');
+    const band=f.querySelector('.band'), mark=f.querySelector('.mark');
+    const letters=[...mark.querySelectorAll('.ltr')], chars=letters.map(e=>e.textContent);
+
+    let p=balance(chars,chars.map(ch=>pick(CAND[ch])));
+    letters.forEach((el,k)=>apply(el,p[k]));
+    /* sized off the band's width AND height — the tallest faces spill out of a
+       short band if only the width is used */
+    const big=()=>{ mark.style.fontSize=
+      Math.min(band.clientWidth*0.26, band.clientHeight*0.60)+'px'; };
+    big();
+
+    /* the o's are the spectrum between the t and the l — same pose function
+       the site uses, so option 2 closes exactly the way the site does */
+    function spectrum(u){
+      const xs=letters.map(el=>el.offsetLeft), ws=letters.map(el=>el.offsetWidth);
+      const last=letters.length-1, lStart=xs[0]+ws[0];
+      const lx=lStart+(xs[last]-lStart)*u;
+      letters[last].style.transform = u>=1?'none':`translateX(${(lx-xs[last]).toFixed(1)}px)`;
+      for(let i=1;i<last;i++){
+        const c=clamp((lx-xs[i])/Math.max(ws[i],1),0,1);
+        letters[i].style.transform = c>=1?'none':`scale(${(0.35+0.65*c).toFixed(3)})`;
+        letters[i].style.opacity=c.toFixed(3);
+      }
+    }
+
+    const easeInOut=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    const easeOut=t=>1-Math.pow(1-t,3);
+    /* easeOutBack: travels the whole way, overshoots slightly, settles —
+       an exponential spring was 98% there by half the scroll and read as a jump */
+    const spring=t=>1+2.6*Math.pow(t-1,3)+1.6*Math.pow(t-1,2);
+
+    function place(){
+      const s=stage.getBoundingClientRect(), b=band.getBoundingClientRect();
+      const prog=clamp((s.top-b.top)/Math.max(b.height,1),0,1);
+      const w=mark.offsetWidth, h=mark.offsetHeight;
+      const small=CORNER/parseFloat(mark.style.fontSize);
+
+      /* where it starts: dead centre of the band, wherever the band is now */
+      const x0=(b.left-s.left)+b.width/2, y0=(b.top-s.top)+b.height/2;
+      /* where it lands: the bottom-right corner of the frame */
+      const x1=s.width-PAD-(w*small)/2, y1=s.height-PAD-(h*small)/2;
+
+      let x=x0, y=y0, k=1, op=1, origin='50% 50%', u=1, rot=0;
+
+      if(mode==='flight'){
+        const e=easeInOut(prog); x=lerp(x0,x1,e); y=lerp(y0,y1,e); k=lerp(1,small,e);
+      }
+      else if(mode==='closefly'){
+        const a=clamp(prog/0.38,0,1);                 // close to "tl"
+        const b2=clamp((prog-0.34)/0.44,0,1);         // travel
+        const c=clamp((prog-0.78)/0.22,0,1);          // open again, small
+        u=Math.max(1-a,c);
+        const e=easeInOut(b2); x=lerp(x0,x1,e); y=lerp(y0,y1,e); k=lerp(1,small,e);
+      }
+      else if(mode==='rail' || mode==='railbig'){
+        /* Turns a quarter turn and stands up ALONGSIDE the sidebar — the t at
+           the top, reading downwards — so the page's content runs past it on
+           the right. Once it is upright its on-screen width is its line HEIGHT
+           (h·k) and its length is the word's width (w·k), which is what the
+           anchoring below is built from. */
+        const big=(mode==='railbig');
+        const e=easeInOut(prog);
+        rot=90*e;
+        const kEnd = big ? (s.height*0.78)/Math.max(w,1) : small;
+        k=lerp(1,kEnd,e);
+        const xRail = RAIL + PAD + (h*k)/2;                 // snug against the rail
+        const yRail = big ? s.height/2 : s.height - PAD - (w*k)/2;
+        x=lerp(x0,xRail,e); y=lerp(y0,yRail,e);
+      }
+      else if(mode==='anchor'){
+        /* scaling about its own right end: the l stays the anchor and the word
+           folds into it, so the thing that lands in the corner is the same l */
+        origin='100% 100%';
+        const e=easeInOut(prog);
+        x=lerp(x0,x1+(w*small)/2-w/2,e); y=lerp(y0,y1+(h*small)/2-h/2,e); k=lerp(1,small,e);
+      }
+      else if(mode==='spring'){
+        const e=spring(prog); x=lerp(x0,x1,e); y=lerp(y0,y1,e); k=lerp(1,small,easeInOut(prog));
+      }
+      else if(mode==='fade'){
+        if(prog<0.7){ op=1-clamp((prog-0.45)/0.25,0,1); }
+        else { x=x1; y=y1; k=small; op=clamp((prog-0.7)/0.2,0,1); }
+      }
+
+      mark.style.transformOrigin=origin;
+      mark.style.opacity=op;
+      mark.style.transform=`translate(${(x-w/2).toFixed(1)}px, ${(y-h/2).toFixed(1)}px)`+
+                           ` rotate(${rot.toFixed(2)}deg) scale(${k.toFixed(3)})`;
+      spectrum(u);
+    }
+
+    place();
+    let tick=false;
+    scroller.addEventListener('scroll',()=>{
+      if(tick) return; tick=true;
+      requestAnimationFrame(()=>{tick=false; place();});
+    },{passive:true});
+    new ResizeObserver(()=>{big(); place();}).observe(stage);
+
+    /* keep the typefaces turning over so the motion is judged as it will look */
+    letters.forEach((el,k)=>{
+      const beat=()=>{ p[k]=pick(CAND[chars[k]]); p=balance(chars,p);
+                       letters.forEach((e,i)=>apply(e,p[i])); place(); };
+      setTimeout(()=>{beat(); setInterval(beat,250+Math.random()*150);}, k*110+Math.random()*150);
+    });
+  });
+});
+</script>
+</body></html>
