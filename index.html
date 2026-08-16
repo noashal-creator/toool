@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TOOOL — Midpoint Generator</title>
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
-<link rel="stylesheet" href="styles.css?v=vloop1">
+<link rel="stylesheet" href="styles.css?v=hcimgs1">
 </head>
 <body>
 
@@ -221,6 +221,17 @@
       <label>follow <input type="range" id="hc-follow" min="15" max="140" value="26"></label>
       <button type="button" id="hc-bg-btn" class="hc-btn">upload background</button>
       <input type="file" id="hc-bg-file" accept="image/*" hidden>
+      <!-- temporary tuning: replace each of the 5 moving cut-outs; removed once
+           the final set is chosen and baked into the chase-N.png files -->
+      <div class="hc-imgs">
+        <span class="hc-imgs__lbl">images</span>
+        <button type="button" class="hc-img-btn" data-hc-img="0">1</button>
+        <button type="button" class="hc-img-btn" data-hc-img="1">2</button>
+        <button type="button" class="hc-img-btn" data-hc-img="2">3</button>
+        <button type="button" class="hc-img-btn" data-hc-img="3">4</button>
+        <button type="button" class="hc-img-btn" data-hc-img="4">5</button>
+      </div>
+      <input type="file" id="hc-img-file" accept="image/*" hidden>
     </div>
   </section>
 
@@ -450,11 +461,11 @@
 <input type="file" id="picker" accept="image/*" hidden>
 
 <script src="app.js?v=13"></script>
-<script src="hero.js?v=reel1"></script>
-<script src="logo.js?v=v22"></script>
+<script src="hero.js?v=handoff1"></script>
+<script src="logo.js?v=v23"></script>
 <script src="game.js?v=1"></script>
-<script src="toys.js?v=spin1"></script>
-<script src="hero-chase.js?v=1"></script>
+<script src="toys.js?v=stick1"></script>
+<script src="hero-chase.js?v=2"></script>
 <script src="grid-crop.js"></script>
 <script src="mix-modal.js?v=2"></script>
 <script src="color-edit.js?v=4"></script>
@@ -463,8 +474,8 @@
 
 <!-- seamless loop for the intro clip: its last and first frames are the two
      most different in the file, so `loop` cuts. Cross-faded instead. -->
-<script src="intro-loop.js?v=2"></script>
+<script src="intro-loop.js?v=4"></script>
 <!-- optional endless sideways-scroll mode, toggled by a button (sideways.js) -->
-<script src="sideways.js?v=13"></script>
+<script src="sideways.js?v=16"></script>
 </body>
 </html>

@@ -139,7 +139,6 @@ img { display: block; }
   width: calc(36 * var(--s));
   height: calc(36 * var(--s));
   background: #560476;
-  border: calc(1 * var(--s)) solid var(--black);
   border-radius: 50%;
   z-index: 3;
   display: flex;
@@ -191,19 +190,23 @@ img { display: block; }
   100% { transform: translateY(0); }
 }
 .slot.is-cta .slot__num,
+/* The pill is physically welded to the spoon (see .spoon-rig), so when the
+   nudge lands on MIX the whole rig has to hop with it — hopping .run on its
+   own tore the button off the spoon for the length of the bob. The rig is the
+   preceding sibling of .run, hence :has(+ …). Both animations are declared
+   identically and start on the same class toggle, so they stay in step — and
+   because both drop back to rig-idle at the same instant, the pill's idle
+   twitch no longer drifts out of phase with the spoon's after every nudge. */
+.spoon-rig:has(+ .run.is-cta),
 .run.is-cta { animation: cta-bounce 600ms ease-in-out both; }
 
-/* reduced-motion: no hop; a steady ring marks the current "start here" target
-   instead (cta.js sets .is-cta-static on it). */
+/* reduced-motion: no hop. (There used to be a static purple ring here as the
+   "start here" cue, but it drew an unwanted halo around the numeral, so it's
+   gone — under reduced motion the numeral and its label are the cue, no glow.) */
 @media (prefers-reduced-motion: reduce) {
   .slot.is-cta .slot__num,
+  .spoon-rig:has(+ .run.is-cta),
   .run.is-cta { animation: none; }
-  .slot.is-cta-static .slot__num {
-    box-shadow: 0 0 0 calc(3 * var(--s)) rgba(86, 4, 118, .35);
-  }
-  .run.is-cta-static {
-    box-shadow: 0 0 0 calc(3 * var(--s)) rgba(86, 4, 118, .35);
-  }
 }
 
 .slot__label {
@@ -1160,19 +1163,30 @@ img { display: block; }
   user-select: none;
   -webkit-user-drag: none;
 }
+/* Pinned to the SCREEN, not to the frame. The chase band is taller than a
+   viewport, so a panel sitting at the frame's bottom-left corner was simply
+   below the fold the whole time you were looking at the band — present, but
+   never on screen. Fixed + a class the observer in hero-chase.js toggles means
+   it rides along for exactly as long as the band is in view, and is gone the
+   rest of the time. (Fixed is not clipped by the band's overflow:hidden — no
+   ancestor here creates a containing block for it.) */
 .hc-controls {
-  position: absolute;
+  position: fixed;
   left: calc(16 * var(--sc));
   bottom: calc(16 * var(--sc));
-  z-index: 5;
+  z-index: 55;
+  cursor: auto;                 /* the band hides the cursor; the panel needs it */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
   display: flex;
   flex-direction: column;
   gap: calc(5 * var(--sc));
   padding: calc(8 * var(--sc)) calc(11 * var(--sc));
-  background: rgba(0, 0, 0, .38);
+  background: rgba(0, 0, 0, .55);
   border-radius: calc(6 * var(--sc));
-  pointer-events: auto;
 }
+.hc-controls.is-onscreen { opacity: 1; pointer-events: auto; }
 .hc-controls label {
   display: flex;
   align-items: center;
@@ -1201,6 +1215,38 @@ img { display: block; }
   cursor: pointer;
 }
 .hc-controls .hc-btn:hover { filter: brightness(.94); }
+/* the 5 cut-out replace slots (temporary tuning) — a row of small numbered
+   buttons, one per moving cut-out */
+.hc-imgs {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--sc));
+  margin-top: calc(3 * var(--sc));
+}
+.hc-imgs__lbl {
+  font-size: calc(12 * var(--sc));
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-right: calc(4 * var(--sc));
+}
+.hc-img-btn {
+  width: calc(22 * var(--sc));
+  height: calc(22 * var(--sc));
+  font: inherit;
+  font-size: calc(11 * var(--sc));
+  color: #000;
+  background: #fff;
+  border: none;
+  border-radius: calc(4 * var(--sc));
+  cursor: pointer;
+}
+.hc-img-btn:hover { filter: brightness(.94); }
+/* Sideways: the hero-chase slide is centred in a 100dvh pin, but the section is
+   taller than that, so its bottom-left controls fall below the fold. Cap it to
+   the pin height in sideways so the controls (and the whole frame) sit on
+   screen — the cut-outs just chase within the shorter frame. */
+body.sideways #hero-chase { height: 100dvh; }
 @media (prefers-reduced-motion: reduce) {
   .hero-chase { cursor: default; }
 }

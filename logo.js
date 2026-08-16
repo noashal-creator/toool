@@ -285,8 +285,12 @@ const FONTS=['"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"','"ABC Gravit
            the width left the last o a few percent short of solid, for ever. */
         const pitch = xs[i+1] - xs[i];
         const c = clamp((lx - xs[i]) / Math.max(pitch > 0 ? pitch : ws[i], 1), 0, 1);
-        letters[i].style.transform = c >= 1 ? 'none' : `scale(${(0.35 + 0.65 * c).toFixed(3)})`;
-        letters[i].style.opacity   = c.toFixed(3);
+        /* No fade — solid ink the whole way. The o grows from nothing instead:
+           at scale 0 there is simply no glyph, so it never appears as a ghost
+           of itself. Eased so it doesn't pop at the start of its slot. */
+        const s = c * c * (3 - 2 * c);
+        letters[i].style.transform = c >= 1 ? 'none' : `scale(${s.toFixed(3)})`;
+        if (letters[i].style.opacity) letters[i].style.opacity = '';
       }
     }
     /* how far the banner has left the top of the screen: 0 at rest, 1 gone.

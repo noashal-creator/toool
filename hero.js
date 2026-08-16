@@ -64,6 +64,7 @@
     idleRaf = requestAnimationFrame(idleTick);
   }
   function idleKick() {
+    swStop();                                              /* only one drift loop at a time */
     if (reduce.matches || mobile.matches || travel <= 0 || stripW <= 0) { idleStop(); return; }
     ensureClone();
     idleSpeed = travel / IDLE_PASS_MS;                     /* px/ms, same pace as before */
@@ -75,6 +76,44 @@
     if (!idleRaf) return;
     cancelAnimationFrame(idleRaf);
     idleRaf = 0;
+  }
+
+  /* ── sideways handoff: drifts on its own, scroll takes over ──────────────
+     While the reel owns the hero slide, the strip offset is scroll-sweep PLUS
+     an idle-only drift, kept as one continuous sum so neither transition jumps:
+       · sweep = p·travel, p = the slide's dwell fraction (0→1) — scrolling
+         drives it, sweeping cow→tomato across inside the held-centred slide;
+       · drift accrues ONLY once p has been still for a moment, so the instant
+         you scroll the drift steps aside and the sweep reads cleanly, then it
+         drifts again when you stop.
+     mod stripW + the seamless clone hide the wrap. */
+  let swRaf = 0, swDrift = 0, swPrevP = null, swLastMove = 0, swLast = 0;
+  const SW_IDLE_MS = 140;
+  function swTick(now) {
+    if (!window.reelMode?.active() || travel <= 0 || stripW <= 0) { swStop(); return; }
+    if (!swLast) swLast = now;
+    let dt = now - swLast; swLast = now;
+    if (dt > 50) dt = 50;
+    const raw = window.reelMode.progress(hero);
+    const p = (raw == null) ? (swPrevP == null ? 0 : swPrevP) : raw;
+    if (swPrevP !== null && Math.abs(p - swPrevP) > 1e-4) swLastMove = now;   // scrolling
+    swPrevP = p;
+    if (now - swLastMove > SW_IDLE_MS) swDrift += idleSpeed * dt;             // idle → drift
+    const off = (((p * travel + swDrift) % stripW) + stripW) % stripW;
+    track.style.transform = 'translate3d(' + (-off) + 'px,0,0)';
+    swRaf = requestAnimationFrame(swTick);
+  }
+  function swStart() {
+    if (reduce.matches || mobile.matches || travel <= 0 || stripW <= 0) { swStop(); return; }
+    idleStop();                                            /* the normal drift loop must not also run */
+    ensureClone();
+    idleSpeed = travel / IDLE_PASS_MS;                     /* px/ms drift pace, same as idle */
+    if (!swRaf) { swLast = 0; swLastMove = 0; swPrevP = null; swRaf = requestAnimationFrame(swTick); }
+  }
+  function swStop() {
+    if (!swRaf) return;
+    cancelAnimationFrame(swRaf);
+    swRaf = 0;
   }
 
   /* clear everything → static band (mobile / reduced-motion) */
@@ -92,10 +131,10 @@
        sweep the strip, scrubbed from the section's horizontal progress instead
        of vertical scroll. No self-pin (the reel owns positioning). */
     if (window.reelMode?.active()) {
-      idleStop();
-      const p = window.reelMode.progress(hero);
-      if (p == null) return;
-      track.style.transform = 'translate3d(' + (-p * travel) + 'px,0,0)';
+      /* sideways: the strip drifts on its own, and the moment you scroll the
+         drift steps aside and your scroll sweeps the spectrum across inside the
+         slide (see swTick). */
+      swStart();
       return;
     }
     const viewH = window.innerHeight;
@@ -132,10 +171,9 @@
        scroll distance and the pin. Leave the band as a plain relative box that
        fills its slide; onScroll (reel branch) just sweeps the strip. */
     if (window.reelMode?.active()) {
-      idleStop();
       hero.style.height = '';
       ['position', 'top', 'bottom', 'left', 'width'].forEach(k => sticky.style[k] = '');
-      onScroll();
+      onScroll();   // → idleKick(): the strip auto-pans continuously in its slide
       return;
     }
     hero.style.height = (viewH + Math.round(viewH * 1.2)) + 'px';   /* ~1.2 screens of lock */

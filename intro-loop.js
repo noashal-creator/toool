@@ -40,8 +40,38 @@
 
   let front = a, back = b, swapping = false;
 
+  /* Play only once the band is actually reached, and always from the TOP.
+     Before this, both copies autoplayed/looped from page load, so by the time
+     you scrolled (or slid, in sideways mode) to the clip it was mid-playback —
+     and settling onto it that way read as a jump. Now an IntersectionObserver
+     starts it fresh at frame 0 the moment its slide arrives, and parks it back
+     at 0 (paused) whenever it leaves, so the restart is never on screen. */
+  let onScreen = false;
+  function goLive() {                        // arrived → clean start from the top
+    swapping = false; front = a; back = b;
+    b.pause(); b.currentTime = 0; b.style.opacity = '0';
+    a.currentTime = 0;
+    a.play().catch(() => { /* autoplay refused — fine, it will play on gesture */ });
+  }
+  function goDark() {                         // left → hold paused at a clean start
+    swapping = false; front = a; back = b;
+    a.pause(); b.pause(); a.currentTime = 0; b.currentTime = 0; b.style.opacity = '0';
+  }
+  goDark();                                   // start parked; IO wakes it on arrival
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (e.isIntersecting === onScreen) continue;
+        onScreen = e.isIntersecting;
+        onScreen ? goLive() : goDark();
+      }
+    }, { threshold: 0.55 }).observe(band);
+  } else {
+    onScreen = true; a.play().catch(() => {});  // no IO → old always-on behaviour
+  }
+
   function handoff() {
-    if (swapping) return;
+    if (swapping || !onScreen) return;
     const d = front.duration;
     if (!d || !isFinite(d)) return;
     swapping = true;
@@ -74,6 +104,11 @@
      transition left things correct. Both are no-ops once they hold (setting
      opacity to the value it already has does not restart the transition). */
   const check = () => {
+    if (!onScreen) {              // off-screen — keep it parked at the top, even
+      if (!a.paused) { a.pause(); a.currentTime = 0; }   // if the `autoplay`
+      if (!b.paused) { b.pause(); b.currentTime = 0; }   // attribute tried to start it
+      return;
+    }
     const d = front.duration;
     if (!swapping) {
       if (!back.paused) { back.pause(); back.currentTime = 0; }

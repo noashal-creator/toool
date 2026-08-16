@@ -822,8 +822,10 @@
        always yields the same angle, a band that scrolls away and back resumes
        exactly, nothing accumulates. One turn every SPIN_PERIOD_MS: raise it to
        go gentler, lower it to speed the turn up. */
-    const SPIN_PERIOD_MS = 12000;   // one slow, gentle revolution
-    const SPIN_BOB       = 6;       // % of band each pop rides up / down as it turns
+    const SPIN_PERIOD_MS   = 12000;  // one slow, gentle revolution of the ring
+    const SPIN_BOB         = 9;      // % of band each pop rides up / down on its stick
+    const CAROUSEL_CYCLES  = 3;      // up/downs each pop makes per full turn (merry-go-round pace)
+    const CAROUSEL_WAVE    = 2;      // wave crests travelling around the 8-pop ring at once
     let spin = 0, ambientRaf = 0;
 
     /* the ambient clock: advance the angle off wall-time and repaint. Runs only
@@ -892,12 +894,14 @@
           const a = k * (Math.PI * 2 / 8) + spin;
           /* While the ring turns, neighbours ride opposite each other — one up
              while the next goes down — and trade places halfway through, so the
-             turn has a rise and fall in it instead of being a flat carousel.
-             sin(spin + k*PI) is just sin(spin) with its sign flipped on every
-             other k, which is exactly "one up, one down".
-             It needs no gate: spin is 0 whenever the ring is not turning, and
-             sin(0) is 0, so the bob starts and ends at nothing on its own. */
-          const bob = Math.sin(spin + k * Math.PI) * SPIN_BOB * pull;
+             turn is a MERRY-GO-ROUND: each pop rides up and down on its stick
+             like a carousel horse as the ring turns, and the pops are phase-
+             offset around the ring so the heights read as a wave travelling
+             around it (CAROUSEL_WAVE crests at once), a few rides per turn
+             (CAROUSEL_CYCLES). It needs no gate: it is scaled by pull, so a
+             gathered ring collapses to the centre and the ride isn't seen. */
+          const bob = Math.sin(spin * CAROUSEL_CYCLES - k * (Math.PI * 2 / 8) * CAROUSEL_WAVE)
+                      * SPIN_BOB * pull;
           return {
             i: (k + Math.floor(t / 20)) % 5,   // P/2 — same count of stage changes per arc
             x: 50 + Math.cos(a) * 37 * pull,
@@ -906,8 +910,8 @@
                lowest tip at 94% of the frame — right against the edge, so the
                stick ends read as cut. This holds the same head size and lands
                the lowest tip at 89%. */
-            y: 54 + Math.sin(a) * 15 * pull + bob,
-            h: 40,
+            y: 50.9 + Math.sin(a) * 15 * pull + bob,
+            h: 33.7,
             r: S(k, 16) * 20 + S(t + k, 17) * 2,
             /* the one further down the ellipse is the one nearer the camera */
             z: Math.round(Math.sin(a) * 8) + 10
@@ -921,7 +925,7 @@
            finished pop — so consecutive gathers never repeat themselves. */
         if (pull < 0.22) {
           const loop = Math.floor(((t % (P * 2)) + P * 2) % (P * 2) / P);
-          out.push({ i: loop ? 4 : 0, x: 50, y: 53, h: 57.5, r: 0, z: 99 });
+          out.push({ i: loop ? 4 : 0, x: 50, y: 49.9, h: 48.4, r: 0, z: 99 });
         }
         return out;
       }

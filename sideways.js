@@ -36,7 +36,6 @@
   if (!content || !reelPin || !reelVstage || !reelRow || !sidebar) return;
 
   const logoBanner = reelVstage.querySelector('.logo-banner');
-  const videoEl = document.querySelector('#intro-video video');   // just to keep it running
 
   const STORE = 'toool-scroll-mode';
   const STORE_LEN = 'toool-logo-len';   // 'short' | 'long' — sideways logo band height
@@ -47,12 +46,12 @@
   const isOn  = () => body.classList.contains('sideways');
   const active = () => isOn() && wideEnough();
 
-  // slides that should "stick" get a "dwell": a stretch of the track where the
-  // slide stays centred (translateX held) while you scroll through it — the two
-  // scroll-animated ones scrub their animation 0→1 across it (hero sweep, pop
-  // crank), and the intro video just keeps autoplaying/looping so you get a
-  // moment to watch it RUN. Length in VH units. Keyed by element id. */
-  const DWELL_VH = { 'hero': 1.5, 'intro-video': 1.2, 'toy-pop-converge': 1.6 };
+  // Discrete slides (stick 1-2-3) — EXCEPT the cow→tomato hero band, which keeps
+  // a DWELL: a held region where you scroll and the spectrum SWEEPS across
+  // inside the slide FIRST, then you move on (as agreed). The pop ring (ambient
+  // carousel) and the intro video (plays on arrival) don't need a scrub region,
+  // so they stay discrete. Length in screen-heights, keyed by element id.
+  const DWELL_VH = { 'hero': 1.5 };
 
   // ── layout: a segment track (recomputed on enter + resize) ──
   // segs: ordered {start,end,txFrom,txTo} in pos-px — flat during the logo step
@@ -107,7 +106,7 @@
 
   // ── motion: inertia toward target, gentle idle-settle ──
   let pos = 0, target = 0, raf = 0, settleTimer = 0;
-  const LERP = 0.18, SETTLE_MS = 150;
+  const LERP = 0.18, SETTLE_MS = 120;   // LERP: smooth glide between slides; SETTLE_MS: land on a slide promptly
 
   function nearestSnap(v) {
     let best = snaps[0], bd = Infinity;
@@ -255,10 +254,9 @@
     measure();
     pos = target = 0;                                             // start on the logo
     applyTransforms(0);
-    // ensure the intro video is RUNNING (not frozen). The toggle click is a user
-    // gesture, so play() on a muted video is always permitted; belt-and-suspenders
-    // over the HTML autoplay in case the browser held it back.
-    if (videoEl) { try { const p = videoEl.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+    // the intro video is owned by intro-loop.js now: it starts from the top when
+    // its slide is actually reached (IntersectionObserver) and parks paused when
+    // it leaves, so it no longer jumps mid-playback the moment you slide onto it.
     addListeners();
     nudgeOthers();
   }

@@ -76,16 +76,68 @@
     });
   }
 
+  /* replace any of the 5 moving cut-outs — temporary tuning control, one slot
+     per cut-out. Choices are shrunk (transparency kept) and remembered across
+     reloads so the tuning survives a refresh; once the set is chosen they get
+     baked into the chase-N.png files and these controls come out. */
+  const IMG_KEY = 'toool.hc.cutouts';
+  const imgFile = document.getElementById('hc-img-file');
+  let pendingIdx = -1;
+  try {
+    const saved = JSON.parse(localStorage.getItem(IMG_KEY) || 'null');
+    if (Array.isArray(saved)) saved.forEach((src, i) => { if (src && curs[i]) curs[i].src = src; });
+  } catch (e) { /* nothing saved / private mode */ }
+  function shrinkCutout(file, cb) {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const s = Math.min(1, 512 / Math.max(im.naturalWidth, im.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.naturalWidth * s));
+      c.height = Math.max(1, Math.round(im.naturalHeight * s));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      try { cb(c.toDataURL('image/png')); } catch (e) { cb(null); }   // PNG keeps the alpha
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); cb(null); };
+    im.src = url;
+  }
+  section.querySelectorAll('.hc-img-btn').forEach(btn => {
+    btn.addEventListener('click', () => { pendingIdx = +btn.dataset.hcImg; if (imgFile) imgFile.click(); });
+  });
+  if (imgFile) imgFile.addEventListener('change', () => {
+    const f = imgFile.files && imgFile.files[0];
+    imgFile.value = '';
+    const idx = pendingIdx; pendingIdx = -1;
+    if (!f || idx < 0 || !curs[idx]) return;
+    shrinkCutout(f, data => {
+      if (!data) return;
+      curs[idx].src = data;
+      try {
+        const saved = JSON.parse(localStorage.getItem(IMG_KEY) || '[]');
+        saved[idx] = data;
+        localStorage.setItem(IMG_KEY, JSON.stringify(saved));
+      } catch (e) { /* quota: shown live but not remembered */ }
+    });
+  });
+
   applySize();
   applyZoom();
   window.addEventListener('resize', applySize);
 
+  /* the tuning panel is screen-pinned (see .hc-controls), so it is shown for
+     exactly as long as the band is on screen and hidden the rest of the time */
+  const panel = section.querySelector('.hc-controls');
+  const showPanel = on => panel && panel.classList.toggle('is-onscreen', on);
+
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(entries => {
-      for (const en of entries) { visible = en.isIntersecting; visible ? start() : stop(); }
+      for (const en of entries) {
+        visible = en.isIntersecting; visible ? start() : stop(); showPanel(visible);
+      }
     }, { threshold: 0.15 });
     io.observe(section);
   } else {
-    visible = true; start();
+    visible = true; start(); showPanel(true);
   }
 })();
