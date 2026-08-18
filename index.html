@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- auto-deploy-check-noa816 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TOOOL — Midpoint Generator</title>
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
-<link rel="stylesheet" href="styles.css?v=rec2">
+<link rel="stylesheet" href="styles.css?v=spec2">
 </head>
 <body>
 
@@ -21,6 +20,8 @@
 
     <button type="button" class="slot" id="slot-a" aria-describedby="slot-a-label">
       <svg class="slot__frame" viewBox="0 0 305 325" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="slot__frame-w" x="0.5" y="0.5" width="304" height="324" rx="10.5" ry="10.5"
+              fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="5 5" stroke-dashoffset="5"/>
         <rect x="0.5" y="0.5" width="304" height="324" rx="10.5" ry="10.5"
               fill="none" stroke="#000" stroke-width="1" stroke-dasharray="5 5"/>
       </svg>
@@ -31,6 +32,8 @@
 
     <button type="button" class="slot" id="slot-b" aria-describedby="slot-b-label">
       <svg class="slot__frame" viewBox="0 0 305 313" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="slot__frame-w" x="0.5" y="0.5" width="304" height="312" rx="10.5" ry="10.5"
+              fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="5 5" stroke-dashoffset="5"/>
         <rect x="0.5" y="0.5" width="304" height="312" rx="10.5" ry="10.5"
               fill="none" stroke="#000" stroke-width="1" stroke-dasharray="5 5"/>
       </svg>
@@ -106,6 +109,43 @@
         <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G" scale="60">
           <animate attributeName="scale" dur="6s" repeatCount="indefinite" values="45;110;45"/>
         </feDisplacementMap>
+      </filter>
+
+      <!-- Turns ONLY the warm pixels purple, in the chase band's cut-outs.
+           A plain CSS hue-rotate() would do the yellow and the red correctly —
+           and greys are immune to it, so black tyres and white highlights are
+           safe either way — but it would also swing the car's GREEN bumper
+           round to red. Nothing in CSS can rotate one hue and not another, so
+           the selection happens here.
+
+           HOW THE SELECTION WORKS. warmth = R − B, written into alpha by the
+           first matrix. That one subtraction separates the set cleanly:
+             yellow .92   red .64   |   green .31   skin .31   grey/white 0
+           feComponentTransfer then hardens it into a switch — the ramp sits in
+           the gap between .31 and .64, so warm goes to 1 and everything else to
+           roughly 0. Intersecting with SourceAlpha keeps the cut-out's own
+           transparent margin out of the mask.
+
+           Then the rotated copy is punched to that mask and laid back over the
+           untouched original, so only the warm areas change. -->
+      <filter id="warm-to-purple" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" result="warmth"
+                       values="1 0 0 0 0
+                               0 1 0 0 0
+                               0 0 1 0 0
+                               1 0 -1 0 0"/>
+        <feComponentTransfer in="warmth" result="warmSoft">
+          <feFuncA type="table" tableValues="0 0 0 0.35 1 1 1 1"/>
+        </feComponentTransfer>
+        <feComposite in="warmSoft" in2="SourceAlpha" operator="in" result="warmMask"/>
+
+        <feColorMatrix in="SourceGraphic" type="hueRotate" values="266" result="rotated"/>
+        <feComposite in="rotated" in2="warmMask" operator="in" result="rotatedWarm"/>
+
+        <feMerge>
+          <feMergeNode in="SourceGraphic"/>
+          <feMergeNode in="rotatedWarm"/>
+        </feMerge>
       </filter>
     </svg>
     <!-- visible loading read-out. The spoken version lives in #status, which is
@@ -209,7 +249,9 @@
     </div><!-- /.pop-stage -->
   </section>
 
-  <!-- cut-outs trailing the cursor — same frame as the green cow band (live-tunable) -->
+  <!-- cut-outs trailing the cursor — sits right after the Trump+lollipop pop
+       scene; keeps its live edit controls (size/zoom/follow, upload background,
+       replace the 5 cut-outs) -->
   <section class="hero-chase" id="hero-chase" aria-label="Cut-outs chasing the cursor">
     <img class="hc-cur" src="assets/chase-1.png" alt="" aria-hidden="true">
     <img class="hc-cur" src="assets/chase-2.png" alt="" aria-hidden="true">
@@ -233,6 +275,48 @@
         <button type="button" class="hc-img-btn" data-hc-img="4">5</button>
       </div>
       <input type="file" id="hc-img-file" accept="image/*" hidden>
+    </div>
+  </section>
+
+  <!-- ── tooth → troll, three ways ────────────────────────────────────────
+       Three candidates to pick ONE from, then delete the other two sections.
+       Each is pinned like the cow band and scrolls sideways: the <section> is
+       only the runway (height JS-owned), .roll-stage holds still inside it,
+       and the strip is wider than the stage so the world pans past.
+
+       Five cut-outs IS the transition, so every one of them runs 1→5 exactly
+       once across its pin. Flat colour ground — the swatches in the corner
+       change it. See roll.js. Markup ships empty; roll.js fills .roll-actors. -->
+  <section class="toy toy--roll" id="toy-roll-somersault" data-roll="somersault"
+           aria-label="A tooth tumbling across the frame and becoming a troll as you scroll">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="toy toy--roll" id="toy-roll-trail" data-roll="trail"
+           aria-label="A tooth walking past and leaving each earlier form of itself standing behind">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="toy toy--roll" id="toy-roll-stomp" data-roll="stomp"
+           aria-label="A tooth stomping across the frame, changing on every landing, and becoming a troll">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -388,30 +472,52 @@
        aria-label="Generated midpoint result">
 
     <div class="mixwin__hero">
-      <img class="mixwin__big" id="mixwin-big" src="assets/mix/thumb-03.png"
+      <img class="mixwin__big" id="mixwin-big" src="assets/mix/n-03.png"
            alt="The generated midpoint object">
 
+      <!-- the spec sheet (Figma 3234:272/273 + the two Line 5 rules). Size and
+           Weight are per-step: mix-modal.js writes them from its SPECS table. -->
       <div class="mixwin__article">
-        <h2 class="mixwin__title">Perforated metal penguin</h2>
+        <h2 class="mixwin__title">Wing dryer</h2>
         <div class="mixwin__body">
-          <p>Perforated metal bird figure</p>
-          <p>The perforated metal bird figure is a small pressed-metal object,
-             approximately 9&nbsp;cm in height, pierced on the front by a circular
-             perforated panel. The species depicted has not been identified.</p>
-          <p><span class="u">Description</span></p>
-          <p>The body is hollow and ovoid. Eleven hemispherical studs are
-             distributed across it. Two are where the eyes would be. Nine are not.</p>
-          <p><span class="u">Function</span></p>
-          <p>Not documented.[1]</p>
-          <p><span class="u">References</span></p>
-          <p>1. ↑ Species undetermined.</p>
-          <p>[[Category:Metal objects]]</p>
-          <p>This article is a stub.</p>
+          <p class="mixwin__kind"><span class="u">Insect accessory</span></p>
+          <p class="mixwin__desc">A wing dryer is an object used for drying the wings of
+             large insects. The body is rounded and compact, with a raised upper section.
+             The insect is placed on the surface while the wings dry.</p>
+        </div>
+        <!-- label, then the rule, then the value: measured off the Figma render,
+             the 78-wide rule sits BETWEEN the two (y=215 / y=279) while the text
+             is indented to x=45 and the rule starts back at x=16. -->
+        <div class="mixwin__spec mixwin__spec--size">
+          <span class="mixwin__spec-label">Size</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-size">12 cm × 8 cm</span>
+        </div>
+        <div class="mixwin__spec mixwin__spec--weight">
+          <span class="mixwin__spec-label">Weight</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-weight">180 g</span>
         </div>
       </div>
 
       <div class="mixwin__actions">
-        <button type="button" class="mixwin__dl" id="mixwin-dl">download</button>
+        <button type="button" class="mixwin__dl" id="mixwin-dl" aria-label="Download">
+          <!-- The word carries a DASHED outline on the letterforms (Figma 3229:179).
+               CSS cannot dash a text stroke, and a flattened PNG went coarse once
+               scaled down, so it is drawn as SVG text: real type, real dashed
+               stroke, crisp at any size. textLength pins it to the Figma 151. -->
+          <svg class="mixwin__dl-word" viewBox="0 0 151 30" aria-hidden="true">
+            <text x="75.5" y="24" text-anchor="middle" textLength="143" lengthAdjust="spacing"
+                  font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="25"
+                  fill="#000" stroke="#000" stroke-width="0.7"
+                  stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
+          </svg>
+        </button>
+        <button type="button" class="mixwin__play" id="mixwin-play" aria-label="Play">
+          <svg class="i-play" viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4 L21 13 L7 22 Z" fill="currentColor"/></svg>
+          <svg class="i-pause" viewBox="0 0 26 26" aria-hidden="true"><rect x="6" y="4" width="5.4" height="18" fill="currentColor"/><rect x="14.6" y="4" width="5.4" height="18" fill="currentColor"/></svg>
+        </button>
         <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
           <svg viewBox="0 0 26 26" aria-hidden="true">
             <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
@@ -425,27 +531,27 @@
       <button type="button" class="mixwin__cell" data-i="0">
         <span class="mixwin__tick" aria-hidden="true"></span>
         <span class="mixwin__num">01</span>
-        <img src="assets/mix/thumb-01.png" alt="Spectrum step 1">
+        <img src="assets/mix/n-01.png" alt="Spectrum step 1">
       </button>
       <button type="button" class="mixwin__cell" data-i="1">
         <span class="mixwin__tick" aria-hidden="true"></span>
         <span class="mixwin__num">02</span>
-        <img src="assets/mix/thumb-02.png" alt="Spectrum step 2">
+        <img src="assets/mix/n-02.png" alt="Spectrum step 2">
       </button>
       <button type="button" class="mixwin__cell is-selected" data-i="2">
         <span class="mixwin__tick" aria-hidden="true"></span>
         <span class="mixwin__num">03</span>
-        <img src="assets/mix/thumb-03.png" alt="Spectrum step 3 — the midpoint">
+        <img src="assets/mix/n-03.png" alt="Spectrum step 3 — the midpoint">
       </button>
       <button type="button" class="mixwin__cell" data-i="3">
         <span class="mixwin__tick" aria-hidden="true"></span>
         <span class="mixwin__num">04</span>
-        <img src="assets/mix/thumb-04.png" alt="Spectrum step 4">
+        <img src="assets/mix/n-04.png" alt="Spectrum step 4">
       </button>
       <button type="button" class="mixwin__cell" data-i="4">
         <span class="mixwin__tick" aria-hidden="true"></span>
         <span class="mixwin__num">05</span>
-        <img src="assets/mix/thumb-05.png" alt="Spectrum step 5">
+        <img src="assets/mix/n-05.png" alt="Spectrum step 5">
       </button>
     </div>
 
@@ -461,15 +567,17 @@
 
 <input type="file" id="picker" accept="image/*" hidden>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=16"></script>
+<script src="clean.js?v=1"></script>
 <script src="hero.js?v=scrub2"></script>
-<script src="logo.js?v=v23"></script>
+<script src="logo.js?v=opt2"></script>
 <script src="game.js?v=1"></script>
-<script src="toys.js?v=smooth1"></script>
+<script src="toys.js?v=join2"></script>
+<script src="roll.js?v=roll9"></script>
 <script src="hero-chase.js?v=hc3"></script>
-<script src="grid-crop.js"></script>
-<script src="mix-modal.js?v=2"></script>
-<script src="color-edit.js?v=5"></script>
+<script src="grid-crop.js?v=2"></script>
+<script src="mix-modal.js?v=hold3"></script>
+<script src="color-edit.js?v=7"></script>
 <!-- call-to-action nudge: sequential badge hop → hands off to MIX (cta.js) -->
 <script src="cta.js?v=3"></script>
 
@@ -477,8 +585,9 @@
      most different in the file, so `loop` cuts. Cross-faded instead. -->
 <script src="intro-loop.js?v=4"></script>
 <!-- optional endless sideways-scroll mode, toggled by a button (sideways.js) -->
-<script src="sideways.js?v=ease2"></script>
+<script src="sideways.js?v=gear13"></script>
 <!-- scripted, cursor-less demo for screen capture — opened with ?rec (recording.js) -->
-<script src="recording.js?v=2"></script>
+<script src="recording.js?v=gif2"></script>
+<script src="auto-mix.js?v=2"></script>
 </body>
 </html>

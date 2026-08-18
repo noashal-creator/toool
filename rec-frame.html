@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הקלטה — מסך מלא 1920×1080</title>
+<style>
+  /* pure black, edge-to-edge canvas — no OS window chrome once fullscreen, so
+     nothing rounded/green ever shows at the edges. A centred 16:9 box fits
+     inside the screen however it's shaped; whatever's left over (top/bottom on
+     a taller screen, sides on a wider one) stays pure black automatically. */
+  html, body {
+    margin: 0; height: 100%; background: #000; overflow: hidden;
+  }
+  .frame-16x9 {
+    position: fixed; inset: 0; margin: auto; background: #000;
+    /* dvh/dvw (not vh/vw): on mobile, vh is based on the browser chrome being
+       fully hidden, so with the address bar visible the real viewport is
+       shorter than 100vh — the box would be sized against space that isn't
+       actually there, throwing off centering. dvh/dvw track what's really
+       visible. */
+    width: min(100dvw, calc(100dvh * 16 / 9));
+    height: min(100dvh, calc(100dvw * 9 / 16));
+  }
+  /* the real site, unscaled, filling the box exactly — sideways.js measures the
+     iframe's own real viewport, so its reel/mouse math stays correct. */
+  .frame-16x9 iframe {
+    width: 100%; height: 100%; border: 0; display: block; background: #000;
+  }
+</style>
+</head>
+<body>
+  <div class="frame-16x9">
+    <!-- src is set in script, not here: this page is a recording rig, and a
+         cached index.html would keep pointing at an old styles.css?v=… — which
+         is exactly how a fixed design still shows up stale on screen. A fresh
+         query on every load makes that impossible. -->
+    <iframe id="stage" allow="autoplay"></iframe>
+  </div>
+<script>
+  const stage = document.getElementById('stage');
+  stage.src = 'index.html?rec&cb=' + Date.now();   // ?rec is preserved
+  // Focus deliberately stays on THIS (outer) page after load — not the iframe —
+  // so the very first Space/R press below is the one that's caught here, not
+  // silently swallowed inside the site before fullscreen ever gets requested.
+
+  // No visible "fullscreen" button — that button itself was showing up in the
+  // recording. Instead, the very first Space/R press does everything at once:
+  // requests fullscreen (a keydown counts as a real user gesture, so this is
+  // allowed), then hands the SAME key press into the iframe so the site's own
+  // scripted intro starts immediately, with nothing ever shown on screen.
+  let armed = true;
+  window.addEventListener('keydown', (e) => {
+    if (!armed) return;
+    if (e.key !== ' ' && e.key !== 'Spacebar' && e.key !== 'r' && e.key !== 'R') return;
+    armed = false;
+    try { document.documentElement.requestFullscreen()?.catch(() => {}); } catch (err) {}
+    // Deferred: giving the outer document a moment to settle after the
+    // fullscreen request keeps this focus hand-off from being overwritten.
+    setTimeout(() => {
+      stage.contentWindow.focus();
+      stage.contentWindow.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true }));
+    }, 0);
+  });
+</script>
+</body>
+</html>

@@ -796,7 +796,7 @@
        That cost a debugging round once already, and again when the remembered
        background was added — hence every constant wireUpload touches lives
        here, above the loop that calls it. */
-    const DEFAULT_BG = 'assets/pop-bg-default.jpg';
+    const DEFAULT_BG = 'assets/pop-bg-default.jpg?v=2';
     const BG_KEY     = 'toool.pop.bg';     // remembered upload, survives reloads
     const BG_MAX_W   = 1920;               // plenty for a full-bleed band
     const BG_QUALITY = 0.82;
@@ -908,13 +908,40 @@
            own. pull scales both the orbit radius and the bob, so a gathered ring
            collapses to the centre and the motion simply isn't seen there. */
         /* SIZE morph (no opacity, ever): as the ring opens (pull 0→~0.35) the
-           single big "answer" head SHRINKS away while the ring heads GROW in and
-           spread — so the big-head → small-heads change is a smooth burst
-           instead of the old hard cut at pull 0.22. Pure scale, nothing fades. */
+           heads GROW in and spread. Pure scale, nothing fades. */
         const xf = Math.max(0, Math.min(1, pull / 0.35));
         const RING_H = 40;   // bumped from 33.7 — the ring pops were a touch small
+
+        /* The big "answer" pop IS one of the ring — pop 2 — not a ninth actor
+           laid on top of it. It used to be its own object pinned at the centre
+           with its height driven to zero, so when the ring bloomed it simply
+           deflated on the spot: every other pop in the frame was flying outward
+           and this one just went away, which read as deleted rather than
+           transformed. Worse, actors anchor on their BOX centre (see draw) while
+           the candy head sits ~28% down the box (measured across w1..w5: 27.1 to
+           29.7), so shrinking a box about its centre drags the head down with it
+           — about 95px of downward suck on the way to nothing. That was the
+           "disappearing into itself".
+
+           Now one continuous actor starts big at the centre, shrinks to ring
+           size and travels out to its slot: it joins the ring instead of dying,
+           and it does the same thing in reverse on the close. Pop 2 and not an
+           arbitrary slot — the ring assigns `i: k % 5`, so pop 2 already carries
+           stage 2, exactly the stage the centre pop was fixed to. The cut-out
+           therefore never changes mid-morph, which matters because a stage swap
+           here is a hard cut (fades are ruled out throughout this band).
+
+           The other seven still scale up out of the centre, but their size is
+           locked to xf, which tracks pull, which is also the orbit radius — size
+           and distance move together, so they read as receding inward rather
+           than being deleted. The centre pop was the only one with no journey to
+           justify its shrink. */
+        const HERO = 2, HERO_H = 52;
+        const lerp = (from, to, u) => from + (to - from) * u;
+
         const out = Array.from({ length: 8 }, (_, k) => {
           const a = k * (Math.PI * 2 / 8) + spin;
+          const hero = k === HERO;
           /* While the ring turns, neighbours ride opposite each other — one up
              while the next goes down — and trade places halfway through, so the
              turn is a MERRY-GO-ROUND: each pop rides up and down on its stick
@@ -937,26 +964,25 @@
                lowest tip at 94% of the frame — right against the edge, so the
                stick ends read as cut. This holds the same head size and lands
                the lowest tip at 89%. */
-            y: 50.9 + Math.sin(a) * 15 * pull + bob,
-            h: RING_H * xf,                           // grow in from nothing as it opens (no fade)
-            r: S(k, 16) * 20,                          // fixed tilt per pop (the tick-based wobble strobed on a continuous tick)
-            /* the one further down the ellipse is the one nearer the camera */
-            z: Math.round(Math.sin(a) * 8) + 10
+            /* the hero eases off the centre pop's 49.9 onto the ring's own base
+               of 50.9. Interpolated and not switched: a straight hand-off would
+               jump the composition by 1% of the band at the moment it happened */
+            y: lerp(hero ? 49.9 : 50.9, 50.9, hero ? xf : 1)
+               + Math.sin(a) * 15 * pull + bob,
+            /* the hero never reaches 0 — it settles into the ring's size */
+            h: hero ? lerp(HERO_H, RING_H, xf) : RING_H * xf,
+            // fixed tilt per pop (the tick-based wobble strobed on a continuous
+            // tick); the hero stands upright while it is the answer, then eases
+            // into its own tilt as it takes its place
+            r: S(k, 16) * 20 * (hero ? xf : 1),
+            /* the one further down the ellipse is the one nearer the camera —
+               and the hero rides in front while it is big, so the other seven
+               pass BEHIND it as they gather, which is what sells the merge */
+            z: Math.round(lerp(Math.round(Math.sin(a) * 8) + 10, 99,
+                               hero ? 1 - xf : 0))
           };
         });
 
-        /* At the bottom of the pull all eight sit on the same spot and read as
-           mush. One resolved frame on top turns that into the point of the
-           loop: the pile arrives at an answer. Alternating 1 and 5 lands it on
-           the two ends of the transformation — the photographed face, then the
-           finished pop — so consecutive gathers never repeat themselves. */
-        if (xf < 1) {
-          /* the big "answer" head starts at 52 and SHRINKS to nothing as the
-             ring grows in — a size burst, no fade — so it bursts INTO the ring
-             instead of cutting to it. Fixed stage (2 = the midpoint), no
-             stop-motion alternation. */
-          out.push({ i: 2, x: 50, y: 49.9, h: 52 * (1 - xf), r: 0, z: 99 });
-        }
         return out;
       }
     };

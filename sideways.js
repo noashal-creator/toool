@@ -42,7 +42,12 @@
   const body  = document.body;
   const MIN_W = 861;
 
-  const wideEnough = () => window.innerWidth >= MIN_W;
+  // Recording mode's letterbox frame is always 16:9 regardless of its actual
+  // pixel size, so falling back to the narrow/mobile layout there — which can
+  // happen on a smaller real screen even with the frame correctly proportioned
+  // — is never right: it silently disables the reel and lets normal vertical
+  // page scroll take over instead of the intended sideways one.
+  const wideEnough = () => window.innerWidth >= MIN_W || body.classList.contains('recording');
   const isOn  = () => body.classList.contains('sideways');
   const active = () => isOn() && wideEnough();
 
@@ -55,14 +60,18 @@
      against, so standing on the slide and scrolling did nothing at all. */
   const DWELL_VH = { 'hero': 1.5, 'toy-pop-converge': 1.5 };
   /* how much of a dwell one pixel of wheel covers — geared down so a single
-     flick advances part of the animation instead of crossing all of it */
-  const DWELL_GEAR = 0.2;
+     flick advances part of the animation instead of crossing all of it. Was
+     0.2, which meant sweeping the ~1.5-screen cow→tomato dwell needed ~6 screens
+     of scrolling and getting past it took the same — it read as STUCK. 0.7
+     sweeps it in ~1.5 screens (close to normal vertical mode) while a flick
+     still only advances ~a quarter, so it moves under your finger, not stuck. */
+  const DWELL_GEAR = 0.7;
 
   // ── layout: a segment track (recomputed on enter + resize) ──
   // segs: ordered {start,end,txFrom,txTo} in pos-px — flat during the logo step
   // and dwells, ramped during transitions. snaps: centred rest points (each
   // slide, plus both dwell endpoints). dwell: id → {start,len} for progress().
-  let N = 0, slideW = 0, VH = 0, logoH = 0, maxPos = 0, snaps = [0], segs = [], dwell = {};
+  let N = 0, slideW = 0, VH = 0, logoH = 0, maxPos = 0, snaps = [0], segs = [], dwell = {}, sceneSnap = [], sceneEntranceSnap = [];
   function measure() {
     N = reelRow.children.length;
     slideW = reelPin.clientWidth || (window.innerWidth - sidebar.getBoundingClientRect().width);
@@ -74,10 +83,13 @@
     segs = [{ start: 0, end: logoH, txFrom: 0, txTo: 0 }]; // logo step (tx held at 0)
     snaps = [0];                                          // 0 = logo
     dwell = {};
+    sceneSnap = [];                                       // section i → snap-index of its fully-played scene
+    sceneEntranceSnap = [];                                // section i → snap-index of its FIRST-arrived (unplayed) scene
     let p = logoH;                                        // slide 0 is centred here
     for (let i = 0; i < N; i++) {
       const tx = -i * slideW;
       snaps.push(p);                                      // slide i centred (dwell start if animated)
+      sceneEntranceSnap[i] = snaps.length - 1;             // the just-arrived, not-yet-scrubbed snap
       const dv = DWELL_VH[kids[i].id];
       if (dv) {
         const len = dv * VH;
@@ -86,6 +98,7 @@
         p += len;
         snaps.push(p);                                    // the far end of the sweep
       }
+      sceneSnap[i] = snaps.length - 1;                    // scene = dwell-end if it dwells, else centred
       if (i < N - 1) {                                    // transition to the next slide
         segs.push({ start: p, end: p + slideW, txFrom: tx, txTo: -(i + 1) * slideW });
         p += slideW;
@@ -296,15 +309,67 @@
      mode on WITHOUT persisting (the demo shouldn't rewrite the user's saved
      preference); go(i)/count() step through the same snaps the input handlers
      use, so the set-piece dwells scrub exactly as they do by hand. */
+  // a slow, custom-duration eased glide to an ABSOLUTE pos (the built-in
+  // goToSnap is fixed at STEP_MS≈620ms — too quick for a "show reel" pan).
+  // Drives pos itself and pings every frame so the set-pieces scrub. Promise.
+  function recGlideToPos(posTarget, ms) {
+    const to = clampPos(posTarget);
+    const from = pos;
+    const dur = Math.max(1, ms || STEP_MS);
+    tween = null;                                   // take over from any built-in tween
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    return new Promise(resolve => {
+      const t0 = performance.now();
+      const stepG = now => {
+        const k = Math.min(1, (now - t0) / dur);
+        pos = from + (to - from) * smootherstep(k);
+        applyTransforms(pos); ping();
+        if (k < 1) requestAnimationFrame(stepG);
+        else { pos = target = to; applyTransforms(pos); ping(); resolve(); }
+      };
+      requestAnimationFrame(stepG);
+    });
+  }
+  function recGlide(index, ms) {
+    return recGlideToPos(snaps[Math.max(0, Math.min(snaps.length - 1, index | 0))], ms);
+  }
+
   window.reelMode = {
     active, progress,
     enable() { wantsOn = true; apply(); },
+    disable() { wantsOn = false; apply(); },
     count() { return snaps.length; },
     go(i) {
       const n = snaps.length;
       const idx = Math.max(0, Math.min(n - 1, i | 0));
       goToSnap(snaps[idx]);
     },
+    glide(i, ms) { return recGlide(i, ms); },
+    // tour by GAME: sceneCount() = number of reel sections; glideScene(i,ms)
+    // glides to section i's fully-played state (dwell-end if it dwells), so each
+    // game gets one fair, equal time-slice instead of dwelled games hogging snaps.
+    sceneCount() { return sceneSnap.length; },
+    glideScene(i, ms) {
+      const idx = Math.max(0, Math.min(sceneSnap.length - 1, i | 0));
+      return recGlide(sceneSnap[idx], ms);
+    },
+    // raw positions for a section's own first-arrived ("entrance") snap and its
+    // fully-played ("end") snap — equal when the section has no dwell (there's
+    // only ever its one centred snap). A recorded scrub uses these to visibly
+    // PLAY a dwell (entrance → end, slowly) instead of glideScene's one jump
+    // straight to the end, and to know how far past a non-dwelled section's own
+    // centre counts as "finished" (its animation is driven by on-screen
+    // position, not a dwell — see roll.js/toys.js reading reelMode.progress()).
+    sceneEntrance(i) {
+      const idx = Math.max(0, Math.min(sceneEntranceSnap.length - 1, i | 0));
+      return snaps[sceneEntranceSnap[idx]];
+    },
+    sceneEnd(i) {
+      const idx = Math.max(0, Math.min(sceneSnap.length - 1, i | 0));
+      return snaps[sceneSnap[idx]];
+    },
+    slideWidth() { return slideW; },
+    glideTo(posTarget, ms) { return recGlideToPos(posTarget, ms); },
     goEnd() { goToSnap(maxPos); },
   };
 
@@ -369,13 +434,14 @@
     'cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.5)';
   const btn = document.createElement('button');      // mode: sideways ⇄ vertical
   btn.type = 'button'; btn.className = 'rec-hide'; btn.style.cssText = PILL + ';top:62px';
-  document.body.appendChild(btn);
+  // sideways scroll is forced always-on, so its toggle button is hidden on the published site
+  // document.body.appendChild(btn);
   const logoBtn = document.createElement('button');  // logo band: short ⇄ long (sideways only)
   logoBtn.type = 'button'; logoBtn.className = 'rec-hide'; logoBtn.style.cssText = PILL + ';top:110px';
-  document.body.appendChild(logoBtn);
+  // logo-length toggle hidden on the published site (authoring-only)
+  // document.body.appendChild(logoBtn);
 
-  let wantsOn = false, longLogo = false, running = false;
-  try { wantsOn  = (localStorage.getItem(STORE)     || '0')     === '1';    } catch (e) {}
+  let wantsOn = true, longLogo = false, running = false;   // sideways scroll is always on (button removed)
   try { longLogo = (localStorage.getItem(STORE_LEN) || 'short') === 'long'; } catch (e) {}
 
   function syncBtn() {

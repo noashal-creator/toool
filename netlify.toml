@@ -1,5 +1,4 @@
 # Static site — no build step. Netlify serves the repo root as-is.
-# auto-deploy test — this line was pushed to prove GitHub → Netlify auto-updates work.
 [build]
   publish = "."
   command = ""

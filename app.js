@@ -298,9 +298,10 @@ picker.addEventListener('change', () => {
   if (file && activeKey) load(activeKey, file);
 });
 
-function load(key, file) {
+function load(key, file, onDone) {
   if (!file.type.startsWith('image/')) {
     say(`"${file.name}" is not an image.`);
+    if (onDone) onDone();
     return;
   }
 
@@ -316,11 +317,13 @@ function load(key, file) {
     slot.el.querySelector('.slot__preview').src = slot.url;
     slot.el.querySelector('.slot__label').textContent = file.name;
     say(`Object ${key.toUpperCase()} loaded: ${file.name}`);
+    if (onDone) onDone();
   };
   image.onerror = () => {
     say(`Could not read "${file.name}".`);
     URL.revokeObjectURL(slot.url);
     slot.url = null;
+    if (onDone) onDone();
   };
   image.src = slot.url;
 }
@@ -438,10 +441,14 @@ function say(message) {
    from a preset asset, starting the churn with a short fill, and the spoon
    "lift" beat — without recording.js reaching into this file's internals or
    the normal flow changing at all. Purely additive. */
+// resolves ONLY once the image has actually decoded and is showing in the slot
+// (load()'s onDone) — recording.js awaits this instead of guessing a timeout.
 window.recFillSlot = (key, url) =>
   fetch(url)
     .then(r => r.blob())
-    .then(b => load(key, new File([b], key + '.jpg', { type: b.type || 'image/jpeg' })));
+    .then(b => new Promise(resolve => {
+      load(key, new File([b], 'object ' + (key === 'a' ? '1' : '2') + '.jpg', { type: b.type || 'image/jpeg' }), resolve);
+    }));
 window.recResetSlots = () => resetSlots();
 window.recStir = (fillMs) => { playStir(fillMs); };
 window.recLift = () => {

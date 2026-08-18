@@ -127,9 +127,10 @@ const ANIMS = {
        whole point of this one. At 50 the last frame holds all five. */
     const stripW = 150, SIZE = 44;
     const TRAVEL = stripW - 100;
-    /* horizon well below the shared 74: the lineup is short, and at 74 it left
-       341px of air above against 215 below. 86.5 splits it evenly. */
-    const GND = 86.5;
+    /* the shared horizon. Dropping it to centre the group only traded 341/215
+       of air for 298/108 — the extremes are set by different frames, so it does
+       not move linearly — and this is the composition already signed off. */
+    const GND = GROUND;
     /* Everything is positioned in STRIP coordinates, which is the only way the
        shed copies stay put in the world while the camera moves on. The camera
        sees strip-x [TRAVEL*p, TRAVEL*p + 100], so the centre of the frame is

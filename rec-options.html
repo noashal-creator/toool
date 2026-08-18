@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הקלטה — אופציות תנועה</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#16191e; --line:#2a2f37; --ink:#f2f4f7; --dim:#9aa3af;
+    --accent:#e33; --slot:#ffd400; --slotline:#111;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif; padding:34px 26px 80px;
+  }
+  h1{font-size:26px; margin:0 0 4px; letter-spacing:.2px}
+  .sub{color:var(--dim); margin:0 0 30px; max-width:70ch}
+  h2{font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim);
+     border-bottom:1px solid var(--line); padding-bottom:10px; margin:38px 0 20px}
+  .grid{display:grid; gap:18px}
+  .grid.ent{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .grid.scr{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:16px;
+        padding:16px; display:flex; flex-direction:column; gap:12px}
+  .stage{border-radius:12px; overflow:hidden; background:#0a0c0f;
+         display:flex; align-items:center; justify-content:center; position:relative}
+  .ent .stage{height:230px}
+  .scr .stage{height:190px}
+  .cap{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+  .tag{font-weight:800; color:var(--accent); font-size:16px}
+  .name{font-weight:700}
+  .desc{color:var(--dim); font-size:13px; margin:0}
+  .row{display:flex; gap:8px; align-items:center; margin-top:auto}
+  button{background:#222833; color:#fff; border:1px solid var(--line); border-radius:10px;
+         padding:8px 14px; font:600 13px/1 inherit; cursor:pointer}
+  button:hover{background:#2c3543}
+  .pick{margin-inline-start:auto; color:var(--dim); font-size:12px}
+
+  /* mock slot (mirrors the real yellow dashed square) */
+  .slot{position:relative; width:170px; height:184px; background:var(--slot);
+        border-radius:12px; display:flex; align-items:center; justify-content:center}
+  .slot::before{content:""; position:absolute; inset:7px; border:2px dashed var(--slotline);
+        border-radius:8px}
+  .slot__num{position:absolute; top:10px; inset-inline-start:10px; width:22px; height:22px;
+        border-radius:50%; background:#7a2ea6; color:#fff; font-weight:800; font-size:12px;
+        display:flex; align-items:center; justify-content:center}
+  .thumb{position:absolute; width:150px; height:164px; object-fit:cover; border-radius:8px;
+         will-change:transform,opacity,filter; opacity:0}
+
+  /* mini reel */
+  .reel{position:relative; width:100%; height:100%; overflow:hidden; direction:ltr}
+  .track{position:absolute; inset:0; display:flex; will-change:transform}
+  .panel{flex:0 0 100%; height:100%; display:flex; align-items:center; justify-content:center;
+         font:800 40px/1 -apple-system,Helvetica,Arial,sans-serif; color:#fff;
+         will-change:opacity}
+  .p0{background:linear-gradient(135deg,#2f6bff,#1d3fb0)}
+  .p1{background:linear-gradient(135deg,#25b34b,#12813a)}
+  .p2{background:linear-gradient(135deg,#e33,#a11)}
+  .p3{background:linear-gradient(135deg,#ffd400,#e0a500); color:#3a2a00}
+  .p4{background:linear-gradient(135deg,#7a2ea6,#4d1c6b)}
+  .stack .panel{position:absolute; inset:0; flex:none}
+</style>
+</head>
+<body>
+  <h1>אופציות תנועה להקלטה 🎬</h1>
+  <p class="sub">בחר סגנון <b>כניסה</b> לתמונות (E) וסגנון <b>גלילה</b> לסיור (S). כל אופציה רצה בלולאה — לחיצה על הכרטיס או על "הרצה" מנגנת שוב. תגיד לי E# + S# ואחבר לזה את ההקלטה (מוגבל ל־5 התחנות הראשונות, ~30 שניות).</p>
+
+  <h2>כניסת התמונות לריבוע</h2>
+  <div class="grid ent" id="ents"></div>
+
+  <h2>תחושת הגלילה (show reel)</h2>
+  <div class="grid scr" id="scrs"></div>
+
+<script>
+(() => {
+  const smoother = k => k*k*k*(k*(k*6-15)+10);
+  const easeOut  = k => 1 - Math.pow(1-k, 3);
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  function tween(ms, on, ease=smoother){
+    return new Promise(res=>{
+      const t0=performance.now();
+      const step=now=>{ const k=Math.min(1,(now-t0)/ms); on(ease(k),k);
+        if(k<1) requestAnimationFrame(step); else res(); };
+      requestAnimationFrame(step);
+    });
+  }
+  const OBJ = 'assets/object-a.jpg';
+
+  /* ── entrance options ── */
+  const ENTRANCES = [
+    { tag:'E1', name:'Materialize', desc:'מופיעה במקום עם fade ו־scale עדין. מינימלי ונקי.',
+      run: async t => { t.style.filter='none';
+        await tween(1000, e=>{ t.style.opacity=e; t.style.transform=`scale(${(0.92+0.08*e).toFixed(3)})`; }); } },
+    { tag:'E2', name:'Gentle drift', desc:'גולשת מרחק קצר מבחוץ עם ease-out ארוך ורך.',
+      run: async t => { t.style.filter='none';
+        await tween(1100, e=>{ t.style.opacity=Math.min(1,e*1.6);
+          t.style.transform=`translateX(${(70-70*e).toFixed(1)}px) scale(1)`; }, easeOut); } },
+    { tag:'E3', name:'Focus-in', desc:'נכנסת מטושטשת ומתחדדת, כמו עדשה שמתמקדת.',
+      run: async t => {
+        await tween(1050, e=>{ t.style.opacity=Math.min(1,e*1.5);
+          t.style.filter=`blur(${(14-14*e).toFixed(1)}px)`;
+          t.style.transform=`scale(${(1.06-0.06*e).toFixed(3)})`; }); t.style.filter='none'; } },
+    { tag:'E4', name:'Rise & settle', desc:'עולה בעדינות מלמטה ומתיישבת ללא הקפצה.',
+      run: async t => { t.style.filter='none';
+        await tween(1050, e=>{ t.style.opacity=Math.min(1,e*1.5);
+          t.style.transform=`translateY(${(50-50*e).toFixed(1)}px) scale(1)`; }); } },
+  ];
+
+  function buildEntrance(opt){
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=
+      `<div class="stage"><div class="slot"><span class="slot__num">1</span>`+
+      `<img class="thumb" src="${OBJ}" alt=""></div></div>`+
+      `<div class="cap"><span class="tag">${opt.tag}</span><span class="name">${opt.name}</span></div>`+
+      `<p class="desc">${opt.desc}</p>`+
+      `<div class="row"><button>הרצה ▸</button><span class="pick">בחירה: ${opt.tag}</span></div>`;
+    const thumb=card.querySelector('.thumb');
+    let playing=false;
+    async function play(){ if(playing) return; playing=true;
+      thumb.style.opacity=0; thumb.style.transform=''; thumb.style.filter='';
+      await sleep(120); await opt.run(thumb); await sleep(1400); playing=false; loop(); }
+    let looping=false;
+    function loop(){ if(looping) return; looping=true; playing=false; play().then(()=>looping=false); }
+    card.querySelector('button').addEventListener('click',()=>{ looping=false; playing=false; play(); });
+    card.querySelector('.stage').addEventListener('click',()=>{ looping=false; playing=false; play(); });
+    play();
+    return card;
+  }
+
+  /* ── scroll-feel options (mini reel of 5 panels) ── */
+  const N=5;
+  function makeReel(stack){
+    const wrap=document.createElement('div'); wrap.className='reel';
+    const track=document.createElement('div'); track.className='track'+(stack?' stack':'');
+    for(let i=0;i<N;i++){ const p=document.createElement('div'); p.className='panel p'+i;
+      p.textContent='0'+(i+1); track.appendChild(p); }
+    wrap.appendChild(track); return {wrap,track};
+  }
+  const SCROLLS=[
+    { tag:'S1', name:'Cinematic pan', desc:'זחילה אחת רציפה וחלקה דרך כל ה־5, ease רק בקצוות. בלי עצירות.',
+      run: async (track,W)=>{ await tween(8000, e=>{ track.style.transform=`translateX(${(-(N-1)*W*e).toFixed(1)}px)`; },
+        k => k<0.15 ? smoother(k/0.15)*0.15 : k>0.85 ? 0.85+smoother((k-0.85)/0.15)*0.15 : k ); } },
+    { tag:'S2', name:'Drift & breathe', desc:'זחילה רכה שנכנסת ל־ease לכל תחנה וממשיכה — נעימה, אף פעם לא סטטית.',
+      run: async (track,W)=>{ for(let i=1;i<N;i++){ const from=-(i-1)*W, to=-i*W;
+        await tween(1500, e=>{ track.style.transform=`translateX(${(from+(to-from)*e).toFixed(1)}px)`; });
+        await sleep(650); } } },
+    { tag:'S3', name:'Dissolve', desc:'מעבר ב־cross-fade בין תחנות במקום החלקה. עדין ורגוע.', stack:true,
+      run: async (track)=>{ const ps=[...track.children]; ps.forEach((p,i)=>p.style.opacity=i===0?1:0);
+        for(let i=1;i<N;i++){ await sleep(950);
+          await tween(700, e=>{ ps[i-1].style.opacity=1-e; ps[i].style.opacity=e; }); } } },
+  ];
+
+  function buildScroll(opt){
+    const card=document.createElement('div'); card.className='card';
+    const stageWrap=document.createElement('div'); stageWrap.className='stage';
+    const {wrap,track}=makeReel(opt.stack);
+    stageWrap.appendChild(wrap);
+    card.appendChild(stageWrap);
+    card.insertAdjacentHTML('beforeend',
+      `<div class="cap"><span class="tag">${opt.tag}</span><span class="name">${opt.name}</span></div>`+
+      `<p class="desc">${opt.desc}</p>`+
+      `<div class="row"><button>הרצה ▸</button><span class="pick">בחירה: ${opt.tag}</span></div>`);
+    let playing=false, stop=false;
+    async function play(){ if(playing) return; playing=true; stop=false;
+      const W=wrap.clientWidth;
+      // reset
+      track.style.transform='translateX(0)';
+      [...track.children].forEach((p,i)=>p.style.opacity = opt.stack ? (i===0?1:0) : 1);
+      await sleep(200); if(stop){playing=false;return;}
+      await opt.run(track,W); await sleep(1200); playing=false; if(!stop) play(); }
+    card.querySelector('button').addEventListener('click',()=>{ stop=true; playing=false; setTimeout(play,60); });
+    stageWrap.addEventListener('click',()=>{ stop=true; playing=false; setTimeout(play,60); });
+    play();
+    return card;
+  }
+
+  const eWrap=document.getElementById('ents');
+  ENTRANCES.forEach(o=>eWrap.appendChild(buildEntrance(o)));
+  const sWrap=document.getElementById('scrs');
+  SCROLLS.forEach(o=>sWrap.appendChild(buildScroll(o)));
+})();
+</script>
+</body>
+</html>

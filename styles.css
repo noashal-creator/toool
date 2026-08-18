@@ -8,7 +8,7 @@
 
 :root {
   --red:    #FE0000;
-  --yellow: #FFFF01;   /* type yellow — badges numerals / "mix" (Figma #FFFF01) */
+  --yellow: #FFFF00;   /* type yellow — "mix", the % gauge, badge numerals. Set to the upload slots' exact #FFFF00 (was #FFFF01) so all the yellows are identical */
   --panel:  #FFFFFF;   /* baked-in per user's colour-panel pick (was #FFFF00) */
   --gray:   #8A8A8A;
   --purple: #B700FF;
@@ -272,6 +272,13 @@ img { display: block; }
   transition: opacity .18s ease;
 }
 .slot.is-filled .slot__preview { opacity: 1; }
+/* keep the dashed frame legible once a photo is under it: a WHITE set of dashes
+   fills the gaps of the black ones (offset by one dash), so the frame reads as
+   black/white "marching ants" — visible over ANY image, dark or light. The white
+   half is hidden while the slot is empty (transparent overrides its inline
+   stroke), so the plain yellow slot keeps its original all-black dashes. */
+.slot__frame-w { stroke: transparent; }
+.slot.is-filled .slot__frame-w { stroke: #fff; }
 /* Asymmetric on purpose. Coming IN, .18s is right — the photo should land the
    instant the file is chosen, as feedback. Going OUT it is the tool clearing
    itself after the result, which nobody asked for, so it gets to be gentle:
@@ -411,6 +418,9 @@ img { display: block; }
   justify-content: center;
   padding: 0;
   background: #560476;
+  /* stays calc(1 * var(--s)) — NOT the max(1px, …) used for the page's
+     separators. border-width is part of this element's box, and the pill's
+     bottom-clearance against .bowl-floor was verified at this exact size. */
   border: calc(1 * var(--s)) solid var(--black);
   border-radius: 50%;
   transform-origin: calc(-53.97 * var(--s)) calc(61.16 * var(--s));
@@ -990,14 +1000,67 @@ img { display: block; }
 
 .content {
   margin-left: var(--sbw);
-  border-left: 1px solid var(--black);   /* thin rule between the panel and the rest */
+  /* Rule between the panel and the rest, at the weight of the BOWL'S outline.
+
+     2 × --s, not 1 ×, and the reason is worth keeping. The old value was a
+     hard-coded 1px while every other length in this file scales, so on a large
+     display the layout grew around it and it thinned away — which is why these
+     read as deleted even though the CSS was never removed.
+
+     But matching the bowl's NUMBER does not match the bowl's LOOK. The rim's
+     stroke measures 0.833px here, and a 0.833px black line reads clearly around
+     the bowl (black on red, black on white) while the very same width between
+     the blue banner and the green band below is invisible — two saturated
+     mid-tones with a hairline between them. The bowl also has two coincident
+     outlines, the rim's stroke and the body's filled outline band, so it is
+     heavier on screen than one stroke width suggests.
+     Verified by painting these borders magenta at 8px: both DO render, the
+     geometry was never the problem, only the weight. */
+}
+
+/* The rule between the panel and the page lives on the SIDEBAR, not on
+   .content's left edge, and that is deliberate.
+
+   As a border-left it kept not showing up on her screen while measuring a
+   perfectly healthy 1.5px on mine — the two boxes meet at a fractional
+   coordinate (293.328px here), and which side of the device-pixel grid that
+   lands on depends on the window height, the zoom and the scrollbar. A
+   hairline that falls in the seam between two adjacent boxes is exactly the
+   kind of thing that renders on one machine and not on another.
+
+   Pinned inside the sidebar it has no seam to fall into: the sidebar is
+   position:fixed with z-index 10, so this sits at a known edge, is painted
+   over the content column, and cannot be swallowed by a scrollbar, a
+   sub-pixel margin difference, or anything .content does. It also stays put
+   while the page scrolls, like the panel it belongs to.
+   The panel's own contents end 23 design units short of this edge, so it
+   covers nothing. Switched off in the stacked layout below, where the panel
+   sits above the content and the rule belongs on top instead. */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  /* Drawn as a BORDER, not as a filled box of the same width, so that it goes
+     through the browser's border snapping exactly like the horizontal rules
+     between the sections do. As a background box it was painted at its true
+     0.92px — 1.84 device pixels on a 2× screen — while the section borders snap
+     to a whole device pixel, so the vertical rule came out nearly twice the
+     weight of the horizontal ones. Same declaration, same rounding, same line. */
+  width: 0;
+  border-right: calc(2 * var(--s)) solid var(--black);
+  z-index: 30;
+  pointer-events: none;
 }
 
 /* thin black rule between each stacked section in the scroll */
 /* the separator between stacked sections. In sideways mode the sections are
    grandchildren under the reel wrappers, so match them there too (render-
    identical in normal mode, where the wrappers are display:contents). */
-.content > *, .content .reel__vstage > *, .content .reel__row > * { border-bottom: 1px solid var(--black); }
+.content > *, .content .reel__vstage > *, .content .reel__row > * {
+  border-bottom: calc(2 * var(--s)) solid var(--black);   /* same weight as the vertical sidebar rule and the bowl's outline */
+}
 
 /* logo banner — the Figma header lockup (frame 2769:2): dark-purple #560476
    band, live-animated "toool" wordmark (was a static PNG). The real Figma
@@ -1179,6 +1242,49 @@ img { display: block; }
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* ── the chase's cut-outs: the WARM colours go purple, nothing else ────
+   The set read badly because a yellow ride-on car and a pair of red lips do
+   not sit together, and with the trail gathered they overlap.
+
+   The brief is narrow and worth restating, because the first attempt missed it:
+   only the yellow and the red change. Everything else — the green bumper, the
+   black tyres, the white highlights — stays as photographed.
+
+   THE FIRST ATTEMPT, AND WHY IT WAS WRONG. It began `grayscale(1) sepia(1)`,
+   which collapses any input to one hue so that a single rotation can SET a
+   colour rather than turn one. That solved a problem nobody had: it made the
+   whole picture purple, bumper and tyres included. `grayscale` was the mistake.
+
+   A BARE hue-rotate() is almost right, and for a good reason: it acts on
+   chroma, so pixels with none — black, white, grey — come through untouched.
+   The tyres and highlights are safe for free. Its one flaw is that it cannot
+   be aimed: at the 266deg that carries yellow to 300 and red to 253, the
+   green bumper is dragged round to 358, i.e. red.
+
+   So the selection is done in SVG, where a mask can be built from the pixels
+   themselves — see #warm-to-purple in index.html. CSS has no way to rotate one
+   hue and spare another.
+
+   The mask is built from the CONTENT, not from which slot an image sits in,
+   and that matters here: these five are not the chase-N.png files in the repo.
+   hero-chase.js lets any of them be replaced live and keeps the choice in
+   localStorage (`toool.hc.cutouts`), so what is on screen is whatever was last
+   uploaded. Anything keyed to "slot 3 is the car" breaks on the next upload.
+
+   WHAT 266deg DOES, modelled channel by channel:
+     yellow 43  -> 300 (magenta-purple)      green  95 -> spared by the mask
+     red   355  -> 253 (blue-violet)         black/white -> untouched, no chroma
+   The two land 47deg apart and that is inherent — a rotation preserves the gap
+   between its inputs. Both sit inside the purple family, which is what was
+   asked; forcing them onto one identical hue is what needed grayscale, and
+   that cost everything else in the frame.
+
+   On .hc-cur only, never on .hero-chase, so the uploaded background is
+   untouched. */
+.hero-chase .hc-cur {
+  filter: url(#warm-to-purple);
 }
 /* The panel rides the VISIBLE part of the band. In normal scrolling the band is
    taller than the viewport, so its bottom-left corner — where this used to sit —
@@ -1806,7 +1912,13 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
     overflow: hidden;
   }
 
-  .content { margin-left: 0; border-left: 0; }
+  /* Stacked layout: the panel sits ABOVE the content instead of beside it, so
+     the rule that separates them has to move from the left edge to the top one.
+     Dropping border-left is right; leaving nothing in its place was the bug —
+     the horizontal separators between sections stayed, so the panel was the one
+     boundary on the page with no line at all. Same weight as those. */
+  .content { margin-left: 0; border-left: 0; border-top: calc(2 * var(--s)) solid var(--black); }
+  .sidebar::after { display: none; }   /* stacked: the rule is .content's top edge */
   .logo-banner { height: calc(396 * var(--sc)); }
 
   /* on phones: always pan by touch, never hijack vertical scroll */
@@ -1837,10 +1949,32 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
 .mixwin__card {
   container-type: size;
   position: relative;
-  aspect-ratio: 1207 / 975;
-  width: min(92%, calc(92vh * 1207 / 975));
-  max-height: 92vh;
-  background: #fff;
+  /* 1207 x 975 — the exact Figma dimensions (node 2949:83), written in the
+     site's own design unit like every other element here. The whole site is a
+     1728x1080 Figma frame drawn at --s (100dvh/1080): the sidebar is 352*--s,
+     the bowl 240*--s, and so on. Writing the card in raw px would draw it at a
+     different scale from everything around it — which is exactly what made it
+     look wrong. Verified against the reference screenshot: sidebar measured
+     ~360 there and 352*--s predicts 364; the window measured ~1250 and
+     1207*--s predicts 1248.
+
+     1207 x 975 in the site's own unit, so the card stays in proportion to the
+     sidebar and the bowl beside it (Figma: 1207/352 = 3.43x the sidebar). Sizing
+     it off the viewport width instead broke that ratio — it came out 3.81x and
+     1083 tall on a 1080 screen, i.e. taller than the screen.
+
+     --fit is a CEILING, nothing else: a whole-design scale that never exceeds
+     the room actually available. At any normal size it is bigger than --s, so
+     --s wins and the card is exactly 1207x975 as designed; it only takes over
+     when the window would otherwise be cut off — which is what full screen was
+     doing. One factor drives both axes, so the 1207:975 ratio cannot distort,
+     and both stay DEFINITE lengths (.mixwin__hero is 71.18% OF THIS HEIGHT, so
+     an `auto` height would be circular and collapse the card). */
+  --fit: min(calc((100vw - var(--sbw) - 4vw) / 1207), calc((100dvh - 4vh) / 975));
+  --u: min(var(--s), var(--fit));
+  width: calc(1207 * var(--u));
+  height: calc(975 * var(--u));
+  background: #f0f0f0;          /* Figma 3229:174 now covers the whole card */
   border: 1px dashed #000;
   border-radius: 0.9cqw;
   box-shadow: 0 1.6cqw 5cqw rgba(0, 0, 0, .28);
@@ -1860,20 +1994,21 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   100% { transform: scale(1);   opacity: 1; }
 }
 
-/* hero — light-grey stage, big result image on the right, article overlaid left */
+/* hero — grey stage, big result image, article overlaid left.
+   71.18% = the Figma strip top line (y=694 of 975). */
 .mixwin__hero {
   position: relative;
-  flex: 0 0 71.2%;
-  background: #f1f1f1;          /* matches the composed large-03 backdrop */
+  flex: 0 0 71.18%;
+  background: #f0f0f0;          /* Figma 3229:174 — the grey behind the object */
   overflow: hidden;
 }
-/* pieces sliced from a prepared grid sit on white → white hero so they blend */
-.mixwin.is-generated .mixwin__hero { background: #fff; }
 .mixwin__big {
-  position: absolute;
-  left: 2%; top: 3%;
-  width: 96%; height: 94%;      /* explicit box (auto+insets would use the img's intrinsic size) */
-  object-fit: contain;          /* whole object, centred in the hero, never cropped */
+  position: absolute;           /* Figma 2949:86 — a placed box, not full bleed */
+  left: 24.44%;                 /* 295 of 1207 */
+  top: 5.19%;                   /* Figma: 36 of the hero's 694 */
+  width: 51.21%;                /* 618.17 of 1207 */
+  height: 90.10%;               /* 625.32 of 694 */
+  object-fit: contain;
   object-position: center;
 }
 /* little pop when the big image swaps to a chosen step */
@@ -1885,45 +2020,84 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
 }
 
 .mixwin__article {
-  position: absolute;
-  top: 1cqw;
-  left: 1.4cqw;
-  width: 24cqw;
+  position: absolute;           /* a positioning layer — the two blocks below
+                                   are pinned to their own Figma coordinates,
+                                   so the paragraph never drifts with the
+                                   title's line count */
+  inset: 0;
   color: #000;
 }
 .mixwin__title {
-  margin: 0 0 1cqw;
+  position: absolute;
+  left: 1.331cqw;               /* Figma 3234:273 — x = 16.07 */
+  top: 1.209cqw;                /* Figma — the line centres on y = 25.59 */
+  width: 24.53cqw;              /* Figma — 296.03 */
+  margin: 0;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 2.07cqw;
-  line-height: .9;
+  line-height: 1.823cqw;        /* Figma — 22px */
   text-transform: uppercase;
 }
 .mixwin__body {
+  position: absolute;
+  left: 1.331cqw;               /* Figma 3234:272 — x = 16.07 */
+  top: 4.308cqw;                /* Figma — y = 52 */
+  width: 22.36cqw;              /* Figma — 269.94 */
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 400;
-  font-size: 1.33cqw;
-  line-height: 1.3cqw;
+  font-size: 1.33cqw;           /* Figma: 16px */
+  line-height: 1.24cqw;         /* Figma: 15px */
 }
 .mixwin__body p { margin: 0 0 1.24cqw; }
+.mixwin__kind { line-height: 1.988cqw; }   /* Figma — 24 */
+.mixwin__desc { line-height: 1.243cqw; }   /* Figma — 15 */
+
+/* Size / Weight. Measured straight off the Figma render (1 px = 1 design unit):
+   the "Size" ink sits at y=197, the 78-wide rule at y=215, the value at y=222;
+   Weight repeats it at 262 / 279 / 287. So the rule DIVIDES the label from its
+   value rather than heading the block — and the text is indented to x=45 while
+   the rule still starts at x=16. */
+.mixwin__spec {
+  position: absolute;
+  left: 3.729cqw;               /* Figma — the text indents to x = 45 */
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 1.326cqw;          /* 16 */
+  line-height: 1;
+  color: #000;
+  white-space: nowrap;
+}
+.mixwin__spec--size   { top: 16.444cqw; }  /* label ink lands on y = 197 */
+.mixwin__spec--weight { top: 21.834cqw; }  /* … and on y = 262 */
+.mixwin__spec-label { display: block; }
+.mixwin__spec-value { display: block; position: absolute; top: 2.071cqw; left: 0; }
+.mixwin__spec-rule {
+  position: absolute;
+  top: 1.326cqw;                /* the rule between them — y = 215 / 279 */
+  left: -2.403cqw;              /* back out to the Figma's x = 16 */
+  width: 6.462cqw;              /* 78 */
+  border-top: 1px solid #000;
+}
 .mixwin__body .u { text-decoration: underline; }
 
 /* actions — green DOWNLOAD pill + red ✕ close (recreated in CSS, live text) */
 .mixwin__actions {
   position: absolute;
-  top: 1cqw;
-  right: 1.2cqw;
+  top: 0.911cqw;                /* Figma 3229:177/180/181 — y = 11 */
+  right: 1.077cqw;              /* Figma — red circle ends at 1194 of 1207 */
   display: flex;
   align-items: center;
-  gap: .8cqw;
+  gap: .5cqw;                   /* Figma: 6px between pill, green and red */
   z-index: 3;
 }
 .mixwin__dl {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 2.98cqw;              /* same height as the ✕ circle → aligned row */
-  padding: 0 1.2cqw;
+  width: 13.84cqw;              /* Figma 3229:177 — 167px */
+  height: 2.40cqw;              /* Figma: 29px — same as the two circles */
+  padding: 0;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 2.07cqw;
@@ -1931,10 +2105,16 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   text-transform: uppercase;
   letter-spacing: .05cqw;
   color: #000;
-  background: #11B32E;          /* sampled from the Figma pill SVG */
-  border: 1px solid #000;
-  border-radius: 999px;
+  background: var(--yellow);    /* Figma 3229:177 — the pill is yellow */
+  border: 1px solid #000;       /* Figma Rectangle 81 — a solid stroke */
+  border-radius: 0.953cqw;      /* Figma Rectangle 81 — r = 11.5, not a full pill */
   cursor: pointer;
+}
+.mixwin__dl-word {
+  width: 11.85cqw;              /* the word inside the 167 pill, with margin */
+  height: 2.354cqw;             /* 11.85 x 30/151 — the viewBox's own ratio */
+  display: block;
+  overflow: visible;
 }
 .mixwin__dl:hover { filter: brightness(1.06); }
 .mixwin__dl:active { transform: translateY(1px); }
@@ -1942,8 +2122,8 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.98cqw;
-  height: 2.98cqw;
+  width: 2.40cqw;               /* Figma: 29px */
+  height: 2.40cqw;
   padding: 0;
   border: 1px solid #000;       /* Figma Ellipse 65 has a black stroke */
   border-radius: 50%;
@@ -1952,11 +2132,32 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   cursor: pointer;
 }
 .mixwin__x svg {
-  width: 2.05cqw;
-  height: 2.05cqw;
+  width: 1.44cqw;               /* 60% of the 29px circle — was 85%, too big */
+  height: 1.44cqw;
   display: block;
 }
 .mixwin__x:hover { filter: brightness(1.08); }
+
+/* green ▶ Play button — auto-cycles the strip like a GIF until Pause */
+.mixwin__play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.40cqw;               /* Figma: 29px */
+  height: 2.40cqw;
+  padding: 0;
+  border: 1px solid #000;
+  border-radius: 50%;
+  background: #11B32E;
+  color: #000;
+  cursor: pointer;
+}
+.mixwin__play svg { width: 1.7cqw; height: 1.7cqw; display: block; }
+.mixwin__play .i-play { margin-left: .18cqw; }   /* optically centre the triangle */
+.mixwin__play .i-pause { display: none; }
+.mixwin__play.is-playing .i-play { display: none; }
+.mixwin__play.is-playing .i-pause { display: block; margin: 0; }
+.mixwin__play:hover { filter: brightness(1.06); }
 
 /* strip — five equal bordered cells, number label + image, #03 selected */
 .mixwin__strip {
@@ -1971,15 +2172,21 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5cqw 6% .9cqw;
+  padding: 1.15cqw 6% .9cqw;    /* room for the badge that straddles the top line */
   border: 0;
   border-right: 1px solid #0a0000;
-  background: #fff;
+  background: #f0f0f0;          /* the same grey as the card; only the selected
+                                   step breaks out of it, in red */
   font: inherit;
   cursor: pointer;
 }
 .mixwin__cell:last-child { border-right: 0; }
-.mixwin__cell.is-selected { background: var(--yellow); }
+/* the selected step reads the SAME red as the bowl, via the same custom
+   property — recolour the bowl and this follows it automatically */
+.mixwin__cell.is-selected { background: var(--bowl-color, #cc0000); }
+/* the active step's number circle lights up too (moves with the GIF) */
+.mixwin__num { transition: background .18s ease; }
+.mixwin__cell.is-selected .mixwin__num { background: #11B32E; }
 /* responsive feedback: the object lifts on hover, presses on click, and the
    chosen step gives a quick pop */
 .mixwin__cell { transition: background .16s ease; }
@@ -1994,32 +2201,54 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
 }
 /* thin vertical tick centred above each number, flush to the strip's top line
    (Figma Vector 21–25, ~9px, hanging off the top border) */
-.mixwin__tick {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1px;
-  height: .8cqw;
-  background: #000;
-}
+.mixwin__tick { display: none; }   /* replaced by the yellow circle badge below */
 .mixwin__num {
+  position: absolute;
+  top: 0;                       /* straddle the strip's top line */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.071cqw;              /* Figma 3229:129-169 — now 25px */
+  height: 2.071cqw;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 1px solid #000;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
-  font-size: 1.16cqw;
+  font-size: 1.33cqw;           /* scales with the slightly larger circle */
   line-height: 1;
-  margin-bottom: .6cqw;
+  /* Optical centring: numerals have no descender, so a metrically centred line
+     box still reads slightly high in a circle. The padding shrinks the centred
+     content box, moving the digits down by HALF of it — so this is a ~0.03em
+     nudge, not 0.06. Verified against a badge blown up to 220px. */
+  padding-top: .06em;
 }
+/* Each step has its OWN box in the Figma — they grow left to right (189x191,
+   196x198, 205x207, 205x207, 247x250) and sit at different heights, which is
+   what makes the spectrum read as a progression. One shared rule flattened all
+   five into the same box, which is why the heights came out wrong. The
+   percentages below are the Figma coordinates expressed against each cell
+   (the strip is 281 tall in the design). */
 .mixwin__cell img {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+  position: absolute;
   object-fit: contain;
 }
+/* width in cqw (a share of the CARD) because the Figma cells are not equal
+   fifths — 257/243/242/240/243 — so a percentage of the cell would land each
+   box at a slightly different size than designed. Height stays a percentage of
+   the cell, whose height is the constant 281. */
+.mixwin__cell:nth-child(1) img { left: 10.4%; top: 18.1%; width: 15.66cqw; height: 68.0%; }
+.mixwin__cell:nth-child(2) img { left:  9.4%; top: 15.7%; width: 16.26cqw; height: 70.6%; }
+.mixwin__cell:nth-child(3) img { left:  4.9%; top: 11.0%; width: 16.97cqw; height: 73.7%; }
+.mixwin__cell:nth-child(4) img { left:  5.3%; top: 11.0%; width: 16.97cqw; height: 73.7%; }
+.mixwin__cell:nth-child(5) img { left: -5.6%; top:  3.6%; width: 20.46cqw; height: 89.0%; }
 
 @media (max-width: 860px) {
   .mixwin { padding-left: 2.5vw; }          /* sidebar is stacked, not fixed */
-  .mixwin__card { width: min(94%, calc(80vh * 1207 / 975)); }
+  /* the card is NOT responsive — it stays 1207x975 (see .mixwin__card) */
 }
 
 /* ══ the result window comes OUT of the bowl ══════════════════════════
@@ -2143,6 +2372,13 @@ body.sideways .reel__vstage {
    wordmark then grows to fill it on its own (logo.js fits it to the banner). */
 body.sideways.logo-long .logo-banner { height: 85dvh; }
 
+/* The banner sits ABOVE the row, not inside it, so it never picked up the
+   slide separator that every slide carries on its right — and because that
+   separator is drawn inside the slide's own width, the blue band ran half a
+   pixel further right than everything below it. Same border here, so the right
+   edge of the banner and the right edge of every slide are the same line. */
+body.sideways .logo-banner { border-right: calc(2 * var(--s)) solid var(--black); }   /* must match the slide separator below */
+
 /* the horizontal strip of slides, translateX'd by sideways.js. align-items:
    center centres each slide so a section taller than the screen crops
    symmetrically rather than being chopped at the bottom. */
@@ -2163,7 +2399,7 @@ body.sideways .reel__row > * {
   flex: 0 0 calc(100vw - var(--sbw));
   min-width: 0;
   border-bottom: 0;
-  border-right: 1px solid var(--black);
+  border-right: calc(2 * var(--s)) solid var(--black);   /* same weight as the other section rules */
 }
 
 /* the intro video FILLS its slide edge-to-edge (cover, cropping the edges a
@@ -2210,38 +2446,179 @@ body.sideways .pop-stage { position: relative; top: auto; left: auto; width: 100
 }
 
 /* ── recording mode (recording.js) ────────────────────────────────────────
-   A scripted, cursor-less demo for a clean ~25s screen capture. `body.recording`
-   strips every on-screen control and the OS cursor so nothing but the tool and
-   an animated finger is on screen. */
-body.recording { cursor: none; }
+   A scripted, cursor-less demo for a clean ~30s screen capture. `body.recording`
+   strips every on-screen control and the OS cursor; the interaction is conveyed
+   by motion alone (objects fly into the slots, MIX presses itself) — no hand. */
+/* body-only cursor:none is inherited, but .mixwin__dl/__x/__play/__cell etc.
+   have their own explicit cursor:pointer that wins once the stationary OS
+   pointer happens to rest over one of them when the result modal opens — the
+   descendant selector + !important is needed to actually beat those. */
+body.recording, body.recording * { cursor: none !important; }
 /* the floating pills (colour / sideways) carry .rec-hide; the in-scene tuning
    panels have their own classes. !important beats their inline display. */
 body.recording .rec-hide,
 body.recording .hc-controls,
 body.recording .pop-controls { display: none !important; }
+/* Space toggles body.clean — a clean-screenshot view that hides all the dev/nav
+   controls (the colour + sideways/logo pills, and every in-scene tuning panel)
+   so you can capture the frame without any buttons. See clean.js. */
+body.clean .rec-hide,
+body.clean .hc-controls,
+body.clean .pop-controls,
+body.clean .roll-controls { display: none !important; }
+/* images POP into the slots — kill the slot preview's own fade so the fill is
+   instant (no dim) under the recording pop. */
+body.recording .slot__preview { transition: none; }   /* JS drives the drop-in transform; opacity stays instant (no fade) */
+/* while the result "gif" plays in recording, use soft cross-fades, not the
+   bouncy pop — so cycling the 5 images reads smooth, not jumpy. */
+body.recording .mixwin__big.is-swapping { animation: recswap .36s ease both; }
+@keyframes recswap { from { opacity: .45; } to { opacity: 1; } }
+body.recording .mixwin__cell.is-selected img { animation: none; }
+/* a punchy "stamp" when an image lands in a slot — a quick scale punch on the
+   whole slot plus a bright burst — so it clearly reads as the image slamming in
+   (the image itself is still an instant cut, no morph). */
+@keyframes rec-land {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  35%  { box-shadow: 0 0 0 9px rgba(255, 255, 255, .9), 0 0 30px 11px rgba(255, 205, 45, .65); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+/* glow only — the square must NOT grow (no scale) */
+body.recording .slot.rec-land { animation: rec-land .55s ease-out; }
 
-/* the demo finger and the "held" thumbnail it carries into a slot */
-.rec-finger,
-.rec-carry {
-  position: fixed;
-  left: 0; top: 0;
-  z-index: 90;                 /* above the reel, below the .mixwin modal (100) */
+/* ── ROLL: tooth → troll, pinned and scrolling sideways ─────────────────────
+   Three bands driven by roll.js. Same 1080 band as everything else on the
+   page, so they read as part of the stack rather than a full-screen
+   interruption — they just hold still while you scroll past.
+
+   The section is only the runway: roll.js owns its height and pins .roll-stage
+   inside it. No height and no overflow here on purpose. */
+.toy--roll {
+  --roll-bg: #E4002B;               /* flat colour ground; the swatches set it */
+  height: calc(1080 * var(--sc));   /* fallback only — JS overrides when pinning */
+  overflow: visible;
+  background: var(--roll-bg);
+}
+
+.roll-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* never taller than the window: on a short window the extra band height
+     cannot be shown at all, it only crops the frame */
+  height: min(calc(1080 * var(--sc)), 100vh);
+  overflow: hidden;
+  background: var(--roll-bg);
+  /* the box the composition is composed for, so also the size container the
+     figures' cqw/cqh resolve against */
+  container-type: size;
+  /* This page is LTR, but the strip is deliberately WIDER than the stage and
+     `inset:0` plus an explicit width over-constrains left/right/width. Under a
+     RTL direction the right edge would win and park the whole strip off the
+     left of the frame — it cost a full debugging round on the preview page,
+     where every figure animated perfectly outside the viewport. The stage is a
+     coordinate system, not text: it states its direction and pins its own
+     left edge, so it cannot inherit its way back into that. */
+  direction: ltr;
+}
+
+/* the world: several screens wide, slid sideways under the fixed camera */
+.roll-strip {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; right: auto;
+  will-change: transform;
+}
+
+.roll-ground {
+  position: absolute;
+  left: 0; right: auto;
+  width: 100%;
+  height: 200%;
+  top: var(--roll-ground, 74%);
+  background: rgba(0, 0, 0, .16);
+}
+
+.roll-actors { position: absolute; inset: 0; }
+
+/* Deliberately no transition. Stop motion is a hard cut on every step;
+   anything easing between them reads as CGI instead of hand work. */
+.roll-fig {
+  position: absolute;
+  left: 0; right: auto; top: 0;
+  height: 10%;
+  width: auto;
+  will-change: transform;
+  user-select: none;
   pointer-events: none;
-  will-change: transform, opacity;
-  opacity: 0;
 }
-/* wrapper is animated (translate + tap scale); the inner <img> is mirrored so
-   the photographic hand points LEFT, toward the sidebar slots */
-.rec-finger__img {
-  display: block;
-  width: 150px; height: auto;
-  transform: scaleX(-1);
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .38));
+
+.roll-controls {
+  position: absolute;
+  left: calc(36 * var(--sc));
+  bottom: calc(30 * var(--sc));
+  z-index: 6;
+  display: flex;
+  gap: calc(9 * var(--sc));
 }
-.rec-carry {
-  width: 96px; height: 96px;
-  object-fit: cover;
-  border-radius: 14px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, .38);
-  transform-origin: 50% 50%;
+.roll-sw {
+  /* WebKit paints <button> with its native control look and ignores a custom
+     background outright — the same trap .pop-btn documents. */
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(24 * var(--sc));
+  height: calc(24 * var(--sc));
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .3);
+  cursor: pointer;
 }
+.roll-sw.is-on { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* sideways mode: the reel owns pinning and scroll distance, so the band
+   collapses back to a plain in-slide box (mirrors .toy--pop above) */
+body.sideways .toy--roll { position: relative; height: auto; overflow: hidden; }
+body.sideways .roll-stage { position: relative; top: auto; left: auto; width: 100%; }
+body.recording .roll-controls { display: none !important; }
+
+/* the size tuner, sitting alongside the colour swatches */
+.roll-size {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--sc));
+  margin-inline-start: calc(6 * var(--sc));
+  font: 400 calc(13 * var(--sc))/1 -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color: rgba(255, 255, 255, .85);
+  background: rgba(0, 0, 0, .34);
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 999px;
+  padding: calc(6 * var(--sc)) calc(12 * var(--sc));
+  backdrop-filter: blur(6px);
+}
+.roll-size__cap { opacity: .65; }
+.roll-size input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(120 * var(--sc));
+  height: calc(3 * var(--sc));
+  background: rgba(255, 255, 255, .35);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.roll-size input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(14 * var(--sc));
+  height: calc(14 * var(--sc));
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+.roll-size input[type="range"]::-moz-range-thumb {
+  width: calc(14 * var(--sc));
+  height: calc(14 * var(--sc));
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+.roll-size output { min-width: calc(38 * var(--sc)); text-align: end; font-variant-numeric: tabular-nums; }

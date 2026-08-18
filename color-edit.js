@@ -16,6 +16,17 @@
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { saved = {}; }
 
+  /* one-time reset: the cow background was changed by accident, so drop that one
+     saved override and let it fall back to the green CSS default (#00961C). The
+     flag makes it happen exactly once, so the "רקע הפרה" swatch still works and
+     any future pick you make sticks. */
+  try {
+    if (!localStorage.getItem('toool.heroBg.reset1')) {
+      if (saved.heroBg) { delete saved.heroBg; localStorage.setItem(STORE, JSON.stringify(saved)); }
+      localStorage.setItem('toool.heroBg.reset1', '1');
+    }
+  } catch (e) { /* private mode — nothing to reset */ }
+
   const rgbToHex = v => {
     v = (v || '').trim();
     if (/^#[0-9a-f]{6}$/i.test(v)) return v;
@@ -117,7 +128,8 @@
     'position:fixed;top:14px;right:14px;z-index:2147483646;padding:11px 16px;border-radius:24px;' +
     'border:2px solid #fff;background:#111;color:#fff;font:600 15px/1 -apple-system,Helvetica,Arial,sans-serif;' +
     'cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.5)';
-  document.body.appendChild(btn);
+  // colour-editing tool button hidden on the published site (authoring-only)
+  // document.body.appendChild(btn);
 
   let panel = null;
   function buildPanel() {

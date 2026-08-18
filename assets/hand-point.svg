@@ -1,0 +1,17 @@
+<svg viewBox="0 0 210 150" xmlns="http://www.w3.org/2000/svg">
+  <!-- seamless silhouette: all skin shapes share one fill and overlap, so there
+       are no internal outlines. A pointing hand, index extended LEFT. -->
+  <g fill="#f0c29b">
+    <rect x="84" y="46" width="104" height="86" rx="28"/>
+    <circle cx="108" cy="49" r="17"/>
+    <circle cx="140" cy="46" r="17"/>
+    <circle cx="170" cy="50" r="15"/>
+    <path d="M96 66 C78 64 66 50 68 34 C69 24 80 20 88 26 C96 32 98 50 104 66 Z"/>
+    <rect x="8" y="58" width="98" height="32" rx="16"/>
+  </g>
+  <!-- fingernail marks it clearly as a fingertip -->
+  <ellipse cx="18" cy="74" rx="6" ry="9" fill="#f8dcc1"/>
+  <!-- soft creases (form, not outline) -->
+  <path d="M101 60 q6 14 0 28" stroke="#d7a67c" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+  <path d="M92 68 q-14 -2 -20 -14" stroke="#d7a67c" stroke-width="3" fill="none" stroke-linecap="round" opacity=".45"/>
+</svg>

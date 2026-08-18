@@ -155,17 +155,18 @@ const FONTS=['"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"','"ABC Gravit
     if(!(w>0)) return;
 
     /* Optical centring: the visual mass of "toool" is the row of o's, not the
-       thin ascenders of t and l. Centring the full box is arithmetically correct
-       but reads as sitting low, so bias the centre toward the x-height band. */
+       thin ascenders of t and l, so the mark wants to sit a touch above the
+       arithmetic middle. But the nudge has to be a share of the FREE SPACE, not
+       a share of the word: as a fixed fraction of the ink it was ~11px, which
+       was a gentle lift in a tall band and a third of all the air in a short
+       one — the word ended up with 5px above it and 28px below, reading as
+       stuck to the top. Capped against the slack, it stays a whisper at any
+       band height. */
     const OPTICAL = 0.62;                       // 0 = full box, 1 = x-height only
+    const NUDGE_CAP = 0.15;                     // ...but never more than this much of the air
     const cFull = (T+B)/2, cX = (xTop+B)/2;
-    const inkCy = cFull + (cX-cFull)*OPTICAL;
 
-    /* Because that centre is off the geometric middle, the ink reaches further
-       on one side than the other — so the scale has to come from the LARGER
-       half-extent around it, not from the box height. Using the height was what
-       let the t and l get clipped once the centre moved. */
-    const half = Math.max(inkCy-T, B-inkCy);
+    const half = (B-T)/2;
     if(!(half>0)) return;
     const kBand = Math.min((b.width*0.88)/w, (b.height*0.5*0.94)/half);
 
@@ -176,6 +177,12 @@ const FONTS=['"ABC Helveesti Spikes Trial"','"ABC Helveesti Trial"','"ABC Gravit
     const kCorner = CORNER_INK / (B-T);
     const e = easeBack(clamp(prog,0,1));
     const k = lerp(kBand, kCorner, e);
+
+    /* the lift, decided now that the scale is known: wanted in ink units, but
+       clamped so it can never eat more than NUDGE_CAP of the air above */
+    const slack = Math.max(0, b.height - (B-T)*k);
+    const lift  = Math.min((cX-cFull)*OPTICAL*k, slack * 0.5 * NUDGE_CAP);
+    const inkCy = cFull + lift / k;
 
     /* Same reasoning as the ink-pinned gaps on the old corner mark: the target
        is where the ink's right edge and baseline should land, so the visible

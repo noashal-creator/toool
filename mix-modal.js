@@ -14,18 +14,32 @@
   const strip = document.getElementById('mixwin-strip');
   const dlBtn = document.getElementById('mixwin-dl');
   const xBtn  = document.getElementById('mixwin-x');
+  const playBtn = document.getElementById('mixwin-play');
   if (!win || !big || !strip) return;
 
-  /* the "large" image shown per spectrum step (index 0–4). Step 03 (the
-     midpoint) is the default; large-03 is the richer composed render. */
-  // whitespace-trimmed so each object fills the frame → renders large + centred
+  /* The five spectrum steps, exported straight from Figma (node 2949:83) —
+     1200x896 transparent PNGs, used as-is. Step 03 (the midpoint) opens first. */
   const LARGE = [
-    'assets/mix/big-01.png',
-    'assets/mix/big-02.png',
-    'assets/mix/big-03.png',
-    'assets/mix/big-04.png',
-    'assets/mix/big-05.png',
+    'assets/mix/n-01.png',
+    'assets/mix/n-02.png',
+    'assets/mix/n-03.png',
+    'assets/mix/n-04.png',
+    'assets/mix/n-05.png',
   ];
+
+  /* Size and Weight per step. The spectrum runs tooth -> troll, so the objects
+     grow across it, while the WEIGHT peaks in the middle: the hybrid is dense
+     flesh-and-bone, and the plastic doll at the end is hollow and light. Step 03
+     keeps the Figma's own numbers. */
+  const SPECS = [
+    { size: '2.5 cm × 1.8 cm', weight: '4 g'   },
+    { size: '5 cm × 3 cm',     weight: '18 g'  },
+    { size: '12 cm × 8 cm',    weight: '180 g' },   // Figma 3234:272
+    { size: '13 cm × 9 cm',    weight: '120 g' },
+    { size: '14 cm × 9 cm',    weight: '70 g'  },
+  ];
+  const sizeEl   = document.getElementById('mixwin-size');
+  const weightEl = document.getElementById('mixwin-weight');
 
   const DEFAULT = 2;           // step 03 is the midpoint — the default result
   let selected = DEFAULT;
@@ -34,6 +48,8 @@
     if (i < 0 || i >= LARGE.length) return;
     selected = i;
     big.src = LARGE[i];
+    if (sizeEl)   sizeEl.textContent   = SPECS[i].size;
+    if (weightEl) weightEl.textContent = SPECS[i].weight;
     for (const cell of strip.children) {
       cell.classList.toggle('is-selected', Number(cell.dataset.i) === i);
     }
@@ -123,18 +139,43 @@
       launchFromBowl();
       card.focus({ preventScroll: true });   // focus the dialog, not the ✕ (avoids a focus ring on it)
     }
+    clearTimeout(autoplayTimer);
+    autoplayTimer = setTimeout(startPlay, AUTOPLAY_AFTER_MS);
   }
 
   function close() {
+    stopPlay();
     dropCurtain();               // never leave a stale bowl copy over the page
     win.classList.remove('is-open');
     win.hidden = true;
   }
 
-  /* thumbnail click → swap big image + move highlight */
+  /* ── ▶ Play: cycle the strip like a GIF, looping until Pause ──────── */
+  const PLAY_MS = 700;
+  /* The result lands on the midpoint and HOLDS there for a beat — that object is
+     the answer to the mix, and it needs a moment to be read as one before the
+     spectrum starts moving. Only then does the GIF take over, from 01. */
+  const AUTOPLAY_AFTER_MS = 3000;
+  let playTimer = 0, autoplayTimer = 0;
+  function stopPlay() {
+    clearInterval(playTimer);
+    clearTimeout(autoplayTimer);      // a manual choice cancels the pending start
+    playTimer = 0;
+    autoplayTimer = 0;
+    playBtn?.classList.remove('is-playing');
+  }
+  function startPlay() {
+    stopPlay();
+    playBtn?.classList.add('is-playing');
+    select(0, true);           // the GIF always begins at 01 and runs left → right
+    playTimer = setInterval(() => select((selected + 1) % LARGE.length, true), PLAY_MS);
+  }
+  playBtn?.addEventListener('click', () => (playTimer ? stopPlay() : startPlay()));
+
+  /* thumbnail click → swap big image + move highlight (and stop autoplay) */
   strip.addEventListener('click', event => {
     const cell = event.target.closest('.mixwin__cell');
-    if (cell) select(Number(cell.dataset.i), true);
+    if (cell) { stopPlay(); select(Number(cell.dataset.i), true); }
   });
 
   /* DOWNLOAD → save the currently-shown big image */
@@ -157,14 +198,8 @@
   // let app.js reveal the popup when the mix finishes
   window.openMixWindow = open;
 
-  /* Prepared-grid mode: if assets/mix/grid.png exists, slice it into the five
-     pieces automatically and show them already-cut — the user just sees the
-     ready window (no button, no upload). To change the result, replace that one
-     grid image (made in Figma or ChatGPT). If it's absent, the built-in fixed
-     assets above are kept. */
-  if (window.loadGridImage) {
-    window.loadGridImage('assets/mix/grid.png', LARGE.length)
-      .then(setSpectrum)
-      .catch(() => { /* no/failed grid → keep the built-in demo assets */ });
-  }
+  /* The window now shows the Figma exports directly (LARGE above), so the
+     grid-slicing pass is OFF: it would re-crop and re-trim images that are
+     already exactly as designed. `window.loadGridImage` + `setMixSpectrum`
+     remain available for the generated-grid flow (see grid-crop.js). */
 })();

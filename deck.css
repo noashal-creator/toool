@@ -60,6 +60,11 @@ body {
 }
 .slide.is-active { display: block; }
 
+/* Sections parked out of the deck (see the PARKED banner in deck.html). They
+   are not .slide any more, so they lost the display:none above — and their
+   absolutely-positioned contents would otherwise paint straight onto the stage. */
+.parked { display: none; }
+
 /* every measurement below is a Figma design unit × --s */
 .slide > * { position: absolute; }
 
@@ -220,15 +225,28 @@ body {
 }
 
 /* ══ 02 PROJECT NAME ═══════════════════════════════════════════════════ */
+/* The letters size themselves in `em` (deck.js sets each one's font-size from
+   its x-height), so this only sets the em the whole mark is measured against.
+   Baseline alignment is what keeps the row sitting on one line while the faces
+   change underneath it. */
 .name__word {
   left: 0; right: 0;
-  top: calc(384 * var(--s));
+  top: calc(300 * var(--s));
   margin: 0;
-  font-family: "ABC Helveesti Spikes Mono Trial", "Helvetica Neue", monospace;
-  font-size: calc(320 * var(--s));
-  line-height: 0.8;
-  letter-spacing: calc(-8 * var(--s));
+  font-size: calc(330 * var(--s));
+  line-height: 1;            /* fixed strut — this is what fixes the baseline */
   text-align: center;
+  white-space: nowrap;
+  overflow: visible;
+}
+/* line-height:0 stops a tall face from growing the line box: without it the
+   baseline is pushed down whenever a letter swaps to a taller typeface, and the
+   whole word visibly hops. The glyphs just overflow the zero-height box, which
+   is exactly what we want — the strut above holds the baseline still. */
+.name__word span {
+  display: inline-block;
+  vertical-align: baseline;
+  line-height: 0;
 }
 .name__sub {
   left: 0; right: 0;
@@ -242,16 +260,17 @@ body {
 }
 
 /* ══ 03 CONCEPT ════════════════════════════════════════════════════════ */
+/* taller now that the question line is gone from this slide */
 .trio {
   left: calc(36 * var(--s));
-  top:  calc(545 * var(--s));
+  top:  calc(470 * var(--s));
   width: calc(1848 * var(--s));
   display: grid;
   grid-template-columns: 1fr auto 1fr auto 1fr;
   align-items: center;
   gap: calc(28 * var(--s));
 }
-.trio .plate { height: calc(380 * var(--s)); }
+.trio .plate { height: calc(455 * var(--s)); }
 .trio__op {
   font-size: calc(90 * var(--s));
   font-weight: 800;
@@ -269,27 +288,44 @@ body {
 .trio__caps span:nth-child(even) { visibility: hidden; }
 
 /* ══ 04 INSPIRATION — moodboard, images arrive later ═══════════════════ */
+/* One row, vertically centred in the space under the title. The height is set
+   by deck.js from the pictures' real proportions; each cell's width follows
+   from its own aspect-ratio. */
+/* deck.js packs the cells into .board__row groups and writes each row's height
+   and the block's own top/height; the values here are only the starting point. */
 .board {
   left: calc(36 * var(--s));
   top:  calc(300 * var(--s));
-  width:  calc(1848 * var(--s));
-  height: calc(660 * var(--s));
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  width: calc(1848 * var(--s));
+  height: calc(620 * var(--s));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: calc(24 * var(--s));
 }
+.board__row {
+  display: flex;
+  gap: calc(24 * var(--s));
+  flex: 0 0 auto;
+}
 /* dashed frames are the site's own empty-slot language (index.html slot__frame) */
+/* Filled references are unframed and shown WHOLE — cropping a reference throws
+   away the thing being referenced. The dashed frame belongs to the empty state
+   only. Each cell is full-height; its width comes from the aspect-ratio that
+   deck.js writes on it. */
 .board__cell {
   position: relative;
-  border: calc(3 * var(--s)) dashed var(--ink);
-  border-radius: calc(10 * var(--s));
-  display: grid;
-  place-items: center;
+  height: 100%;
+  flex: 0 0 auto;
   overflow: hidden;
 }
+.board__cell.is-empty {
+  border: calc(3 * var(--s)) dashed var(--ink);
+  border-radius: calc(10 * var(--s));
+}
 /* absolute, not height:100% — see .meme-inset above for why */
-.board__cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.board__cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .board__cell span {
   font-size: calc(22 * var(--s));
   font-weight: 700;
@@ -357,11 +393,12 @@ body {
    that already exists. deck.js removes any inset whose file isn't in
    assets/deck/ yet, so a missing meme leaves the slide exactly as it was
    instead of leaving a hole. */
+/* Unframed like everything else — no border, no plate behind it. The dashed
+   frame below belongs to the EMPTY state only, where it is a working marker
+   rather than decoration. */
 .meme-inset {
   position: absolute;                /* inset:0 on the image sidesteps the
                                         percentage-height problem entirely */
-  background: var(--white);
-  border: calc(3 * var(--s)) solid var(--ink);
   overflow: hidden;
 }
 .meme-inset img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -370,8 +407,7 @@ body {
    you build the deck. It is NOT filled white — an empty white box would read
    as a broken image rather than as a slot. */
 .meme-inset.is-empty {
-  background: transparent;
-  border-style: dashed;
+  border: calc(3 * var(--s)) dashed var(--ink);
   display: grid;
   place-items: center;
 }
@@ -400,6 +436,37 @@ body {
 /* the wide open room under "Thank you!" — the biggest space in the deck, so
    the four-panel one goes here where its text is actually legible */
 .meme-inset--thanks { left: calc(36 * var(--s));   top: calc(340 * var(--s)); width: calc(900 * var(--s)); height: calc(576 * var(--s)); }
+/* the good-morning forward: centred and near full height, portrait like the
+   original. `contain` (inherited above) means any crop of it fits untouched. */
+.meme-inset--morning { left: calc(710 * var(--s)); top: calc(95 * var(--s)); width: calc(500 * var(--s)); height: calc(890 * var(--s)); }
+/* the couch shot is square (1024×1024) — centred, near full height */
+.meme-inset--scroll  { left: calc(495 * var(--s)); top: calc(45 * var(--s)); width: calc(930 * var(--s)); height: calc(930 * var(--s)); }
+/* the Weavy canvas: near full width, `contain` so whatever crop she saves fits
+   whole rather than being cut to a box I guessed */
+.meme-inset--weavy   { left: calc(110 * var(--s)); top: calc(45 * var(--s)); width: calc(1700 * var(--s)); height: calc(930 * var(--s)); }
+
+/* A hamsa over the credit count — warding off the number rather than showing
+   it. Sits at the same spot on both Weavy shots: the credits pill is ~0.91
+   across and ~0.05 down in each, and the image fills its box exactly, so one
+   position covers both. */
+.hamsa {
+  left: calc(1529 * var(--s));
+  top:  calc(31 * var(--s));
+  font-size: calc(120 * var(--s));
+  line-height: 1;
+  z-index: 5;
+}
+
+/* It arrives the way a 2003 slideshow would do it: from a dot far away,
+   spinning in, and in visible chunks rather than smoothly — steps() is doing
+   the dated part of the work. Replays every time the slide is shown. */
+@keyframes retro-arrive {
+  from { transform: scale(0.02) rotate(-720deg); }
+  to   { transform: scale(1)    rotate(0deg); }
+}
+.slide[data-node="morning"].is-active .meme-inset--morning {
+  animation: retro-arrive 1500ms steps(14, end) 150ms both;
+}
 
 /* ══ 07 VISUAL LANGUAGE ════════════════════════════════════════════════ */
 .tiles {
@@ -517,6 +584,33 @@ body {
   font-weight: 700;
 }
 
+/* ══ TYPOGRAPHY — the dashed-outline close-up + the colour bars ═════════ */
+/* box cut to the shot's own 3456×2234 (1.547) so `cover` crops nothing */
+.type-shot {
+  left: calc(36 * var(--s));
+  top:  calc(230 * var(--s));
+  width:  calc(1160 * var(--s));
+  height: calc(750 * var(--s));
+  overflow: hidden;
+  background: var(--white);
+}
+.type-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* colour as bars down the right edge, not chips — the red then reads at the
+   same weight it carries everywhere else in the deck */
+.cbar {
+  left: calc(1240 * var(--s));
+  width: calc(644 * var(--s));
+  height: calc(140 * var(--s));
+  border: calc(3 * var(--s)) solid var(--ink);
+  display: flex;
+  align-items: flex-end;
+  padding: calc(12 * var(--s));
+  font-size: calc(22 * var(--s));
+  font-weight: 700;
+  letter-spacing: calc(-0.4 * var(--s));
+}
+
 /* ══ 09 UX / FLOW  and  10 AI PROCESS ══════════════════════════════════ */
 .flow {
   left: calc(36 * var(--s));
@@ -607,8 +701,159 @@ body {
   letter-spacing: calc(-1 * var(--s));
 }
 
-/* ══ 12 THANK YOU ══════════════════════════════════════════════════════ */
+/* ══ SPECTRUM ADS ══════════════════════════════════════════════════════
+   Two phone screenshots, unframed, side by side and centred. Both are
+   738×1600 (0.4612), so the boxes are cut to that and `cover` fills them
+   without cropping a pixel. 880 tall clears the footer at 1015. */
+/* Shown whole, nothing cropped away — both are full 738×1600 screenshots and
+   the boxes are cut to exactly that ratio (0.4612), so every pixel is visible.
+   Unframed. 880 tall clears the footer at 1015. */
+.ad { top: calc(70 * var(--s)); width: calc(406 * var(--s)); height: calc(880 * var(--s)); overflow: hidden; }
+.ad img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ad--1 { left: calc(524 * var(--s)); }
+.ad--2 { left: calc(990 * var(--s)); }
+
+/* step 1 is the right-hand ad on its own; the left one joins on step 2 without
+   either of them moving */
+.ads[data-step="1"] .ad--1 { display: none; }
+
+/* ══ THE SPECTRUM BUILD ════════════════════════════════════════════════
+   Three slides sharing one composition, revealed in steps via data-step.
+   Deliberately WORDLESS — no title, no number, no captions: Noa narrates
+   these, so anything on screen would just compete with her.
+
+   Geometry: the two poles sit hard against the 36 margins, the line runs
+   between them at the vertical centre (y 540), and the five dots are the
+   tool's five spectrum steps — dot 1 IS the left pole, dot 5 IS the right. */
+/* Each pole is cut to its own photo's aspect — the portrait is 1280×1656 and
+   the palm shot is 1280×942, so one box for both would crop a face or throw
+   away the plate. Different sizes, both centred on the line, reads deliberate. */
+/* No frame, no plate behind them — the photos sit straight on the red. Each box
+   is already cut to its own image's ratio, so `cover` fills it without cropping
+   and there is nothing to letterbox. */
+/* ── the spectrum stated in colour only ─────────────────────────────────
+   Two blocks and the exact average of them. The middle square is #7F7F7F —
+   literally half of black and half of white — and it is a square, not a photo,
+   so the claim stays abstract until the next slide makes it concrete. */
+.pole-block {
+  top: calc(346 * var(--s));
+  width:  calc(300 * var(--s));
+  height: calc(388 * var(--s));
+}
+.pole-block--a { left: calc(36 * var(--s));   background: var(--ink); }
+.pole-block--b { left: calc(1584 * var(--s)); background: var(--white); }
+.mid-square {
+  left: calc(870 * var(--s));
+  top:  calc(450 * var(--s));
+  width:  calc(180 * var(--s));
+  height: calc(180 * var(--s));
+  background: #7F7F7F;
+}
+/* this slide's line spans between the two blocks rather than the photo poles */
+.slide[data-node="grey"] .spectrum-line {
+  left: calc(366 * var(--s));
+  width: calc(1188 * var(--s));
+}
+
+.pole { overflow: hidden; }
+.pole img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Same height for both so they read as a matched pair; the widths differ
+   because each follows its own image — the portrait is 0.773, the cut-out can
+   is 0.603. */
+.pole--a { left: calc(36 * var(--s));   top: calc(346 * var(--s)); width: calc(300 * var(--s)); height: calc(388 * var(--s)); }
+.pole--b { left: calc(1650 * var(--s)); top: calc(346 * var(--s)); width: calc(234 * var(--s)); height: calc(388 * var(--s)); }
+
+.spectrum-line {
+  left: calc(366 * var(--s));
+  top:  calc(540 * var(--s));
+  width: calc(1254 * var(--s));
+  height: 0;
+  border-top: calc(3 * var(--s)) solid var(--ink);
+  transform-origin: left center;
+}
+
+/* The line draws itself, left to right, only on the first of the two slides —
+   the delay lets both pictures land in the eye first, and the ease is
+   front-loaded-out (fast start, long settle) so it glides rather than snaps.
+   Scoped to .is-active so it replays every time the slide is shown, and NOT
+   applied on step 2, where a second redraw would read as a glitch. */
+@keyframes draw-line {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.spectrum[data-step="1"].is-active .spectrum-line {
+  animation: draw-line 1100ms cubic-bezier(0.22, 1, 0.36, 1) 400ms both;
+}
+
+/* What sits at a step. The two intermediate ones hang ABOVE the line and the
+   middle one drops BELOW it — alternating keeps them from colliding and gives
+   the midpoint the most room, since it is the one the whole talk is about. */
+/* also unframed — the GIF carries its own background */
+.reveal { overflow: hidden; }
+.reveal img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* One box, dead centre on the middle dot, hanging below the line — the only
+   thing on this spectrum, so it gets real size. Cut to the GIF's own 800×751
+   (1.065) so nothing crops, and sized to clear the footer. */
+.reveal--mid { left: calc(773 * var(--s)); top: calc(560 * var(--s)); width: calc(440 * var(--s)); height: calc(413 * var(--s)); }
+
+/* ── the four-beat build ────────────────────────────────────────────────
+   Every step carries the same markup; this hides what has not arrived yet, so
+   nothing can shift position between one slide and the next. Each piece fades
+   and rises a little as it lands — the same easing as the line, so the whole
+   sequence feels like one movement rather than four cuts. */
+.spectrum[data-step="1"] .pole,
+.spectrum[data-step="1"] .reveal,
+.spectrum[data-step="2"] .pole--a,
+.spectrum[data-step="2"] .reveal,
+.spectrum[data-step="3"] .reveal { display: none; }
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(calc(26 * var(--s))); }
+  to   { opacity: 1; transform: none; }
+}
+.spectrum.is-active .pole,
+.spectrum.is-active .reveal {
+  animation: arrive 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* only the piece that is NEW on this step animates — the ones already on screen
+   stay put, otherwise the whole slide would re-enter on every click */
+.spectrum[data-step="2"].is-active .pole--b,
+.spectrum[data-step="3"].is-active .pole--a,
+.spectrum[data-step="4"].is-active .reveal--mid { animation-delay: 120ms; }
+.spectrum[data-step="3"].is-active .pole--b,
+.spectrum[data-step="4"].is-active .pole { animation: none; }
+
+/* The other Noa, landing ON the word — it crosses the title and runs off the
+   top of the slide, cropped by the stage. Deliberate: the overlap is the joke,
+   so it is not politely placed beside the type. Box is the trimmed bottle's own
+   368×958 (0.384) so nothing squashes; it paints above the title because it
+   comes after it in the DOM. */
+/* Scaled against the type, not against the slide: the title's cap height at
+   220px is ~160 units and the bottle stands ~5× that, so it reads as a word in
+   the same sentence rather than as a picture parked next to one. Box is the
+   trimmed bottle's own 368×958 (0.384), so nothing squashes. */
+.noa-bottle {
+  left: calc(392 * var(--s));
+  top:  calc(105 * var(--s));
+  width:  calc(319 * var(--s));
+  height: calc(830 * var(--s));
+  display: block;
+}
+
+/* ══ HI · THE LINK · THANK YOU — the big-type slides ═══════════════════ */
+.hi .title,
 .thanks .title { font-size: calc(220 * var(--s)); letter-spacing: calc(-11 * var(--s)); }
+/* 22 characters of uppercase Helvetica Bold run ~0.68em each, so 1848 units of
+   column allows about 110 — nowrap makes a wrap impossible rather than unlikely */
+.link .title {
+  font-size: calc(110 * var(--s));
+  letter-spacing: calc(-4 * var(--s));
+  white-space: nowrap;
+  width: auto;
+}
+.link__url { color: inherit; text-decoration: none; }
+.link__url:hover { text-decoration: underline; text-underline-offset: calc(14 * var(--s)); }
 
 /* speaker notes live in the file but never render */
 .notes { display: none; }

@@ -368,19 +368,25 @@ h1 { font-size: 21px; margin: 0 0 6px; }
   display: flex; flex-direction: column;
   transform-origin: center;
 }
-.mixwin__hero { position: relative; flex: 0 0 71.2%; background: #fff; overflow: hidden; }
+.mixwin__hero { position: relative; flex: 0 0 71.18%; background: #f0f0f0; overflow: hidden; }
 .mixwin__big { position: absolute; left: 2%; top: 3%; width: 96%; height: 94%; object-fit: contain; object-position: center; }
 .mixwin__article { position: absolute; top: 1cqw; left: 1.4cqw; width: 24cqw; color: #000; }
 .mixwin__title { margin: 0 0 1cqw; font-weight: 700; font-size: 2.07cqw; line-height: .9; text-transform: uppercase; }
 .mixwin__body { font-weight: 400; font-size: 1.33cqw; line-height: 1.3cqw; }
 .mixwin__body p { margin: 0 0 1.24cqw; }
 .mixwin__body .u { text-decoration: underline; }
+.mixwin__spec { position: absolute; left: 3.729cqw; font-weight: 500; font-size: 1.326cqw; line-height: 1; color: #000; white-space: nowrap; }
+.mixwin__spec--size   { top: 16.444cqw; }
+.mixwin__spec--weight { top: 21.834cqw; }
+.mixwin__spec-label { display: block; }
+.mixwin__spec-value { display: block; position: absolute; top: 2.071cqw; left: 0; }
+.mixwin__spec-rule  { position: absolute; top: 1.326cqw; left: -2.403cqw; width: 6.462cqw; border-top: 1px solid #000; }
 .mixwin__actions { position: absolute; top: 1cqw; right: 1.2cqw; display: flex; align-items: center; gap: .8cqw; z-index: 3; }
 .mixwin__dl {
   font: inherit; font-weight: 700; font-size: 2.07cqw; line-height: 1;
   text-transform: uppercase; letter-spacing: .05cqw; color: #000;
-  background: #11B32E; border: 1px solid #000; border-radius: 999px;
-  padding: .55cqw 1.2cqw .7cqw;
+  background: var(--yellow); border: 1px solid #000; border-radius: 0.953cqw;
+  padding: 0 1.2cqw; height: 2.40cqw; display: inline-flex; align-items: center;
 }
 .mixwin__x {
   display: flex; align-items: center; justify-content: center;
@@ -392,13 +398,20 @@ h1 { font-size: 21px; margin: 0 0 6px; }
 .mixwin__strip { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid #000; }
 .mixwin__cell {
   position: relative; display: flex; flex-direction: column; align-items: center;
-  padding: 1.5cqw 6% .9cqw; border: 0; border-right: 1px solid #0a0000;
-  background: #fff; font: inherit;
+  padding: 1.15cqw 6% .9cqw; border: 0; border-right: 1px solid #0a0000;
+  background: #f0f0f0; font: inherit;
 }
 .mixwin__cell:last-child { border-right: 0; }
-.mixwin__cell.is-selected { background: var(--yellow); }
-.mixwin__tick { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 1px; height: .8cqw; background: #000; }
-.mixwin__num { font-weight: 700; font-size: 1.16cqw; line-height: 1; margin-bottom: .6cqw; }
+.mixwin__cell.is-selected { background: #cc0000; }
+.mixwin__tick { display: none; }   /* the numbered badge sits on the line instead */
+.mixwin__num {
+  position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: 2.071cqw; height: 2.071cqw; border-radius: 50%;
+  background: var(--yellow); border: 1px solid #000;
+  font-weight: 700; font-size: 1.33cqw; line-height: 1; padding-top: .06em;
+}
+.mixwin__cell.is-selected .mixwin__num { background: #11B32E; }
 .mixwin__cell img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
 
 /* ═══ החדש: היציאה מהקערה ══════════════════════════════════════════
@@ -585,7 +598,7 @@ h1 { font-size: 21px; margin: 0 0 6px; }
           <span class="bowl-gauge__num">0%</span>
           <span class="bowl-gauge__ready">ready</span>
         </div>
-        <div class="robj"><img src="assets/mix/thumb-03.png" alt=""></div>
+        <div class="robj"><img src="assets/mix/n-03.png" alt=""></div>
         <div class="bowl-floor"></div>
       </div>
     </div>
@@ -593,19 +606,24 @@ h1 { font-size: 21px; margin: 0 0 6px; }
     <div class="mixwin">
       <div class="mixwin__card">
         <div class="mixwin__hero">
-          <img class="mixwin__big" src="assets/mix/thumb-03.png" alt="">
+          <img class="mixwin__big" src="assets/mix/n-03.png" alt="">
           <div class="mixwin__article">
-            <h2 class="mixwin__title">Perforated metal penguin</h2>
+            <h2 class="mixwin__title">Wing dryer</h2>
             <div class="mixwin__body">
-              <p>Perforated metal bird figure</p>
-              <p>The perforated metal bird figure is a small pressed-metal object,
-                 approximately 9&nbsp;cm in height, pierced on the front by a circular
-                 perforated panel. The species depicted has not been identified.</p>
-              <p><span class="u">Description</span></p>
-              <p>The body is hollow and ovoid. Eleven hemispherical studs are
-                 distributed across it. Two are where the eyes would be. Nine are not.</p>
-              <p><span class="u">Function</span></p>
-              <p>Not documented.[1]</p>
+              <p><span class="u">Insect accessory</span></p>
+              <p>A wing dryer is an object used for drying the wings of large
+                 insects. The body is rounded and compact, with a raised upper
+                 section. The insect is placed on the surface while the wings dry.</p>
+            </div>
+            <div class="mixwin__spec mixwin__spec--size">
+              <span class="mixwin__spec-label">Size</span>
+              <span class="mixwin__spec-rule"></span>
+              <span class="mixwin__spec-value">12 cm × 8 cm</span>
+            </div>
+            <div class="mixwin__spec mixwin__spec--weight">
+              <span class="mixwin__spec-label">Weight</span>
+              <span class="mixwin__spec-rule"></span>
+              <span class="mixwin__spec-value">180 g</span>
             </div>
           </div>
           <div class="mixwin__actions">
@@ -619,11 +637,11 @@ h1 { font-size: 21px; margin: 0 0 6px; }
           </div>
         </div>
         <div class="mixwin__strip">
-          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">01</span><img src="assets/mix/thumb-01.png" alt=""></span>
-          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">02</span><img src="assets/mix/thumb-02.png" alt=""></span>
-          <span class="mixwin__cell is-selected"><span class="mixwin__tick"></span><span class="mixwin__num">03</span><img src="assets/mix/thumb-03.png" alt=""></span>
-          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">04</span><img src="assets/mix/thumb-04.png" alt=""></span>
-          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">05</span><img src="assets/mix/thumb-05.png" alt=""></span>
+          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">01</span><img src="assets/mix/n-01.png" alt=""></span>
+          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">02</span><img src="assets/mix/n-02.png" alt=""></span>
+          <span class="mixwin__cell is-selected"><span class="mixwin__tick"></span><span class="mixwin__num">03</span><img src="assets/mix/n-03.png" alt=""></span>
+          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">04</span><img src="assets/mix/n-04.png" alt=""></span>
+          <span class="mixwin__cell"><span class="mixwin__tick"></span><span class="mixwin__num">05</span><img src="assets/mix/n-05.png" alt=""></span>
         </div>
       </div>
     </div>
