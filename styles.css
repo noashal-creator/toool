@@ -8,6 +8,10 @@
 
 :root {
   --red:    #FE0000;
+  /* the upload squares' yellow. It is its own token because the colour panel
+     (color-edit.js - slotbg) repaints the slots at runtime, and the fish band
+     is meant to stay the SAME yellow as those squares rather than drift. */
+  --slot-bg: #FFEA00;
   --yellow: #FFFF00;   /* type yellow — "mix", the % gauge, badge numerals. Set to the upload slots' exact #FFFF00 (was #FFFF01) so all the yellows are identical */
   --panel:  #FFFFFF;   /* baked-in per user's colour-panel pick (was #FFFF00) */
   --gray:   #8A8A8A;
@@ -105,7 +109,7 @@ img { display: block; }
   margin: 0;
   padding: 0;
   border: 0;
-  background: #FFFF00;   /* baked-in per user's colour-panel pick (was #fff) */
+  background: var(--slot-bg);   /* baked-in per user's colour-panel pick (was #fff) */
   font: inherit;
   color: var(--black);
   cursor: pointer;
@@ -1222,12 +1226,67 @@ img { display: block; }
   display: block;
 }
 
-/* cut-outs trailing the cursor — full-bleed, same frame as the green cow band */
+/* tooth → troll band — a second cow: same structure and mechanism as .hero
+   (hero.js drives both via [data-pan-band]), distinct classes so it keeps its
+   own red ground and is never touched by the cow's green colour control. */
+.tband { position: relative; --band: calc(1150 * var(--sc)); }
+.tband__sticky {
+  position: relative;
+  height: var(--band);
+  overflow: hidden;
+  background: var(--troll-bg, #E4002B);   /* the mixwin result red */
+}
+/* sideways: fill the 100dvh slide like the cow, so the figures read full-height
+   instead of the shorter normal-mode --band */
+body.sideways #troll-band,
+body.sideways #troll-band .tband__sticky { height: 100dvh; }
+.tband__track {
+  display: flex;
+  align-items: center;                /* figures share a centre line */
+  gap: calc(96 * var(--sc));          /* EQUAL space between the five figures */
+  padding: 0 calc(110 * var(--sc));   /* breathing room at both ends of the row */
+  width: max-content;
+  height: 100%;
+  will-change: transform;
+}
+
+/* Sized by VISUAL MASS, not by a shared height. All five are registered on the
+   same 760px canvas but differ hugely in width, so one height made the narrow
+   troll read tiny and the wide tooth read enormous. These per-figure heights
+   equalize each cut-out's opaque AREA (height ∝ 1/√area, measured from the
+   PNGs), which is what the eye actually compares — so the row reads evenly
+   weighted. The tallest is 82%, leaving room for the bob + cursor grow. */
+.tband__fig {
+  height: 82%;
+  width: auto;
+  max-width: none;
+  display: block;
+  transform-origin: center center;    /* grow symmetrically so the top never clips */
+  will-change: transform;
+  pointer-events: none;               /* reaction is computed from cursor position */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.tband__fig:nth-child(1) { height: 82.0%; }   /* troll doll  — narrow, so tallest */
+.tband__fig:nth-child(2) { height: 74.1%; }
+.tband__fig:nth-child(3) { height: 63.5%; }
+.tband__fig:nth-child(4) { height: 56.4%; }
+.tband__fig:nth-child(5) { height: 61.1%; }   /* tooth — wide, so shorter */
+@media (max-width: 860px) {
+  .tband { height: auto !important; }
+  .tband__sticky { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tband__track { transform: none !important; }
+  .tband__fig { transform: none !important; }
+}
+
+/* cut-outs trailing the cursor — full-bleed, same frame as the green cow band.
+   The ground is a FIXED pink, picked live and then baked (the colour control was
+   authoring-only and has been removed). */
 .hero-chase {
   position: relative;
   width: 100%;
   height: calc(1150 * var(--sc));      /* = the hero band height */
-  background: #000 url(assets/chase-bg.jpg) center / cover no-repeat;  /* the uploaded starfield */
+  background: #FF00DD;
   overflow: hidden;
   cursor: none;
   touch-action: pan-y;
@@ -1282,9 +1341,13 @@ img { display: block; }
    that cost everything else in the frame.
 
    On .hc-cur only, never on .hero-chase, so the uploaded background is
-   untouched. */
+   untouched.
+
+   DISABLED: the set is now the Figma lips → lips-car → ride-on designs
+   (chase-1…5.png), which are meant to read in their own colours, so the
+   warm→purple recolour is off. Restore by swapping `none` for the filter url. */
 .hero-chase .hc-cur {
-  filter: url(#warm-to-purple);
+  filter: none;
 }
 /* The panel rides the VISIBLE part of the band. In normal scrolling the band is
    taller than the viewport, so its bottom-left corner — where this used to sit —
@@ -1320,6 +1383,15 @@ img { display: block; }
 .hc-controls input[type=range] {
   width: calc(120 * var(--sc));
   accent-color: #fff;
+  cursor: pointer;
+}
+.hc-controls input[type=color] {
+  width: calc(34 * var(--sc));
+  height: calc(22 * var(--sc));
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: calc(4 * var(--sc));
+  background: none;
   cursor: pointer;
 }
 .hc-controls .hc-btn {
@@ -2353,6 +2425,32 @@ body.sideways .reel__pin {
   z-index: 1;
 }
 
+/* NO DOUBLED BLACK LINE AT THE SIDEBAR.
+   The sidebar's rule sits immediately left of this viewport, and every slide
+   carries its own separator of the SAME weight (2·--s) drawn inside its right
+   edge. Mid-transition a separator glides right up against the sidebar's rule
+   and the two abutting 2·--s lines read as one 4·--s bar — a stray thick black
+   line that appears and vanishes as you scroll.
+
+   The fix draws the boundary ONCE, on top: the sidebar's own rule is dropped in
+   this mode and this bar takes its place at the camera's left edge, above the
+   slides. Any slide separator that reaches the edge passes UNDERNEATH it, so the
+   boundary is always exactly 2·--s — never doubled.
+   (Clipping the camera instead was wrong: it cut the pin away and exposed the
+   page behind it as a white gap beside the rule.) */
+body.sideways .sidebar::after { display: none; }
+body.sideways .reel__pin::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  /* border, not a filled box — same device-pixel snapping as .sidebar::after
+     and the horizontal section rules, so all the lines keep the same weight */
+  width: 0;
+  border-left: calc(2 * var(--s)) solid var(--black);
+  z-index: 60;
+  pointer-events: none;
+}
+
 /* vertical stage: the logo banner (its NORMAL short height) stacked over the
    reel viewport (100dvh) below it; sideways.js translateY's it up by the logo's
    own height for the logo→slide-0 step. height:auto so it's exactly logo+row. */
@@ -2622,3 +2720,53 @@ body.recording .roll-controls { display: none !important; }
   cursor: pointer;
 }
 .roll-size output { min-width: calc(38 * var(--sc)); text-align: end; font-variant-numeric: tabular-nums; }
+
+/* ── 14 · school — the fish that multiplies ────────────────────────────────
+   Flat yellow field, one photographic cut-out swimming after the cursor. The
+   yellow is var(--yellow), NOT the #FFFF01 the Figma frame carries: this file
+   already records (see --yellow above) that the site was deliberately unified
+   onto #FFFF00 so every yellow matches, and pasting the raw Figma value back
+   in would quietly undo that.
+
+   The whole toy is one canvas because it is meant to breed without a ceiling —
+   see toys.js · 13 · FISH. */
+
+/* ── school: the fish that multiplies ──────────────────────────────────────
+   Flat yellow field from Figma node 3260:17, holding a <canvas> the fish are
+   drawn into. See toys.js · 13 · FISH.
+
+   var(--yellow) and NOT the #FFFF01 the Figma frame reports: the note on
+   --yellow above records that it was deliberately set to #FFFF00 "so all the
+   yellows are identical". Pasting the raw design value back in would quietly
+   reintroduce the very mismatch that decision removed. */
+.toy--fish {
+  /* The BOWL's red, and bound to the bowl's own token rather than a literal —
+     so the colour panel moves the ground with the bowl instead of letting them
+     drift. Note --bowl-color (#cc0000) is NOT --red (#FE0000); "like the bowl"
+     means the bowl's colour, and the two reds are genuinely different. */
+  background: var(--bowl-color, #cc0000);
+  /* crosshair, not the default arrow: the shoal spreads into a RING around the
+     pointer rather than sitting on it, so you are aiming at a point that has no
+     fish on it — the cursor has to stay visible and read as a sight. */
+  cursor: crosshair;
+  /* pan-y so a touch drag can still scroll the page past this band; the tank
+     deliberately does NOT set touch-action:none, which would trap the scroll */
+  touch-action: pan-y;
+}
+/* on red the site's default label (yellow with a black stroke) is exactly right,
+   so this no longer overrides it — only the stacking */
+.toy--fish .toy__label { z-index: 2; }
+
+/* Fills the band. The canvas carries its own width/height attributes in device
+   pixels (set from devicePixelRatio in toys.js) while CSS holds it at the band's
+   size, so the sprite stays sharp on a retina screen instead of being upscaled. */
+.fish-tank {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the caption sits over the water */
+.toy--fish .toy__label { z-index: 2; }

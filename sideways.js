@@ -58,7 +58,13 @@
        · toy-pop-converge — the lollipops gather and scatter again.
      Without a dwell the animation only has the slide's own entry/exit to play
      against, so standing on the slide and scrolling did nothing at all. */
-  const DWELL_VH = { 'hero': 1.5, 'toy-pop-converge': 1.5 };
+  /* 2.0 for the roll bands, not the 1.5 the other two use: those play one
+     continuous arc, while each roll band HOLDS on five discrete poses across its
+     dwell (STEPS in roll.js). 1.5 screens split five ways is ~280px a pose,
+     too tight for a hold to register. */
+  const DWELL_VH = {
+    'hero': 1.5, 'toy-pop-converge': 1.5,
+  };
   /* how much of a dwell one pixel of wheel covers — geared down so a single
      flick advances part of the animation instead of crossing all of it. Was
      0.2, which meant sweeping the ~1.5-screen cow→tomato dwell needed ~6 screens

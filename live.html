@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TOOOL — Midpoint Generator</title>
+<title>TOOOL LIVE — Midpoint Generator</title>
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
-<link rel="stylesheet" href="styles.css?v=pink1">
+<link rel="stylesheet" href="styles.css?v=fish2">
+<link rel="stylesheet" href="live.css?v=1">
 </head>
 <body>
 
@@ -241,7 +242,223 @@
          it — "clear" returns to the default photo, or to the painted ground -->
     <img class="pop-photo" alt="" aria-hidden="true" hidden>
     <div class="pop-actors" aria-hidden="true"></div>
+    <div class="pop-controls" aria-hidden="true">
+      <button type="button" class="pop-btn" data-pop-upload>upload background</button>
+      <button type="button" class="pop-btn" data-pop-clear hidden>clear</button>
+      <input type="file" accept="image/*" data-pop-file hidden>
+    </div>
     </div><!-- /.pop-stage -->
+  </section>
+
+  <!-- cut-outs trailing the cursor — the lips → lips-car → ride-on set (Figma
+       3257:2–6), on the starfield. Only two live controls remain: background
+       COLOUR (tints the space behind the stars) and the cut-out SIZE. Follow /
+       zoom are baked to their tuned values in hero-chase.js. -->
+  <section class="hero-chase" id="hero-chase" aria-label="Cut-outs chasing the cursor">
+    <img class="hc-cur" src="assets/chase-1.png?v=lips1" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-2.png?v=lips1" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-3.png?v=lips1" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-4.png?v=lips1" alt="" aria-hidden="true">
+    <img class="hc-cur" src="assets/chase-5.png?v=lips1" alt="" aria-hidden="true">
+    <div class="hc-controls" aria-hidden="true">
+      <label>size <input type="range" id="hc-size" min="3" max="60" value="45"></label>
+      <label class="hc-color">background
+        <input type="color" id="hc-bg-color" value="#000000"></label>
+    </div>
+  </section>
+
+  <!-- tooth → troll, cow-style: ONE wide strip panned by scroll, exactly like
+       the green cow→tomato band (#hero). Built from the high-quality result-
+       window spectrum (assets/mix/n-01…05 composed into troll-row.png). hero.js
+       runs its band logic on every [data-pan-band], so this gets the cow's idle
+       drift + scroll-driven sweep + pin for free. Red ground, echoing the mixwin
+       result. -->
+  <div class="tband" id="troll-band" data-pan-band
+       aria-label="A spectrum of objects morphing from a tooth into a troll">
+    <div class="tband__sticky">
+      <div class="tband__track">
+        <img src="assets/troll-row.png?v=1"
+             alt="A spectrum of objects morphing from a tooth into a troll">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── tooth → troll, three ways ────────────────────────────────────────
+       Three candidates to pick ONE from, then delete the other two sections.
+       Each is pinned like the cow band and scrolls sideways: the <section> is
+       only the runway (height JS-owned), .roll-stage holds still inside it,
+       and the strip is wider than the stage so the world pans past.
+
+       Five cut-outs IS the transition, so every one of them runs 1→5 exactly
+       once across its pin. Flat colour ground — the swatches in the corner
+       change it. See roll.js. Markup ships empty; roll.js fills .roll-actors. -->
+  <section class="toy toy--roll" id="toy-roll-somersault" data-roll="somersault"
+           aria-label="A tooth tumbling across the frame and becoming a troll as you scroll">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="toy toy--roll" id="toy-roll-trail" data-roll="trail"
+           aria-label="A tooth walking past and leaving each earlier form of itself standing behind">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="toy toy--roll" id="toy-roll-stomp" data-roll="stomp"
+           aria-label="A tooth stomping across the frame, changing on every landing, and becoming a troll">
+    <div class="roll-stage">
+      <div class="roll-strip">
+        <div class="roll-ground"></div>
+        <div class="roll-actors" aria-hidden="true"></div>
+      </div>
+      <div class="roll-controls" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- generated midpoint object, cascaded -->
+  <section class="stage" id="stage" aria-label="Generated midpoint object">
+    <div class="cascade">
+      <img style="--l:10.170%; --t:58.052%; --w:20.807%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:11.180%; --t:53.745%; --w:22.120%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:13.432%; --t:49.438%; --w:23.510%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:17.003%; --t:45.131%; --w:24.984%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:17.857%; --t:24.064%; --w:26.560%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:29.814%; --t:19.850%; --w:28.238%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:43.012%; --t:15.730%; --w:30.016%" src="assets/midpoint.jpg" alt="">
+      <img style="--l:57.764%; --t:10.393%; --w:31.910%"
+           src="assets/midpoint.jpg" alt="The generated midpoint object">
+    </div>
+  </section>
+
+  <!-- the two source objects -->
+  <section class="objects" aria-label="Source objects">
+    <figure class="objects__a">
+      <img id="out-a" src="assets/object-a.jpg" alt="Object 1">
+    </figure>
+    <figure class="objects__b">
+      <img id="out-b" src="assets/object-b.jpg" alt="Object 2">
+    </figure>
+  </section>
+
+  <!-- the game: move the printer left/right to catch falling ladybugs -->
+  <section class="game" id="game" tabindex="0"
+           aria-label="Ladybug catcher — move the printer to catch falling ladybugs">
+    <p class="game__score" id="game-score" aria-live="polite">0</p>
+    <div class="game__field" id="game-field" aria-hidden="true"></div>
+    <img class="game__printer" id="game-printer" src="assets/printer.png"
+         alt="" draggable="false" aria-hidden="true">
+  </section>
+
+  <!-- ══ toys: short things to play with while a midpoint is found ══════ -->
+
+  <!-- 1 · reveal — scratch tiles away to uncover A meeting B -->
+  <section class="toy toy--reveal" id="toy-reveal"
+           aria-label="Reveal toy — wipe the tiles to uncover the objects beneath">
+    <div class="reveal-bg" aria-hidden="true">
+      <img class="reveal-a" src="assets/object-a.jpg" alt="">
+      <img class="reveal-b" src="assets/object-b.jpg" alt="">
+    </div>
+    <div class="reveal-tiles" id="reveal-tiles" aria-hidden="true"></div>
+    <p class="toy__label">scratch to reveal</p>
+  </section>
+
+  <!-- 2 · morph — a slider that cross-fades A into B -->
+  <section class="toy toy--morph" id="toy-morph" tabindex="0"
+           role="slider" aria-label="Blend slider — drag to morph between the two objects"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <img class="morph-img" id="morph-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="morph-img" id="morph-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="morph-handle" id="morph-handle" aria-hidden="true"></span>
+    <p class="toy__label">drag to blend</p>
+  </section>
+
+  <!-- 3 · jelly — a blob you drag and that springs back -->
+  <section class="toy toy--jelly" id="toy-jelly"
+           aria-label="Jelly toy — drag the blob and let it spring back">
+    <span class="jelly-blob" id="jelly-blob" aria-hidden="true"></span>
+    <p class="toy__label">pull me</p>
+  </section>
+
+  <!-- 4 · particles — the midpoint shattered into dots that scatter + regroup -->
+  <section class="toy toy--particles" id="toy-particles"
+           aria-label="Particle toy — scatter the dots and watch them regroup">
+    <canvas class="particles-canvas" id="particles-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">scatter · regroup</p>
+  </section>
+
+  <!-- 5 · swap — click two tiles to trade their place in the picture -->
+  <section class="toy toy--swap" id="toy-swap"
+           aria-label="Swap toy — click two tiles to trade their place">
+    <div class="swap-grid" id="swap-grid"></div>
+    <p class="toy__label">swap two tiles</p>
+  </section>
+
+  <!-- 6 · wipe — a spatial curtain that sweeps A across into B -->
+  <section class="toy toy--wipe" id="toy-wipe" tabindex="0"
+           role="slider" aria-label="Wipe transition — drag to sweep from A to B"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <img class="wipe-img" id="wipe-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="wipe-img" id="wipe-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="wipe-seam" id="wipe-seam" aria-hidden="true"></span>
+    <p class="toy__label">wipe A → B</p>
+  </section>
+
+  <!-- 7 · dissolve — A melts into B tile by random tile as you drag -->
+  <section class="toy toy--dissolve" id="toy-dissolve" tabindex="0"
+           role="slider" aria-label="Dissolve transition — drag to melt A into B"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+    <div class="dissolve-grid" id="dissolve-grid" aria-hidden="true"></div>
+    <p class="toy__label">dissolve</p>
+  </section>
+
+  <!-- 8 · flip — a 3D card turning from A through its edge to B -->
+  <section class="toy toy--flip" id="toy-flip"
+           aria-label="Flip transition — drag to turn the card from A to B">
+    <div class="flip-card" id="flip-card" aria-hidden="true">
+      <img class="flip-face flip-front" src="assets/object-a.jpg" alt="">
+      <img class="flip-face flip-back"  src="assets/object-b.jpg" alt="">
+    </div>
+    <p class="toy__label">flip through</p>
+  </section>
+
+  <!-- 9 · brush — smear B into A with your hand -->
+  <section class="toy toy--brush" id="toy-brush"
+           aria-label="Paint the morph — drag to smear one image into the other">
+    <canvas class="brush-canvas" id="brush-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">paint the morph</p>
+  </section>
+
+  <!-- 10 · tug — flick the puck along the spectrum; it springs to the midpoint -->
+  <section class="toy toy--tug" id="toy-tug"
+           aria-label="Tug of war — drag the puck; it springs back to the midpoint">
+    <img class="tug-img" id="tug-a" src="assets/object-a.jpg" alt="" aria-hidden="true">
+    <img class="tug-img" id="tug-b" src="assets/object-b.jpg" alt="" aria-hidden="true">
+    <span class="tug-rope" aria-hidden="true"></span>
+    <span class="tug-puck" id="tug-puck" aria-hidden="true"></span>
+    <p class="toy__label">tug of war</p>
+  </section>
+
+  <!-- 11 · melt — hold to melt A down and reveal B -->
+  <section class="toy toy--melt" id="toy-melt"
+           aria-label="Melt — hold to melt the top image down and reveal the one beneath">
+    <canvas class="melt-canvas" id="melt-canvas" aria-hidden="true"></canvas>
+    <p class="toy__label">melt</p>
+  </section>
+
+  <!-- chase toy — upload a background + 5 cursor-chasing cut-outs (embedded) -->
+  <section class="toy toy--brigitte" id="toy-brigitte" aria-label="Chase toy — upload a background and five cut-outs that chase the cursor">
+    <iframe class="toy__frame" src="chase.html"
+            title="Chase toy — cut-outs that follow the cursor" loading="lazy"></iframe>
   </section>
 
   <!-- 14 · school — one fish chases the cursor; every time a fish is pushed
@@ -257,16 +474,10 @@
     <p class="toy__label">school</p>
   </section>
 
-  <!-- cut-outs trailing the cursor — the lips → lips-car → ride-on set (Figma
-       3257:2–6) on the baked pink ground (#FF00DD, styles.css). All tuning
-       controls (size / speed / background) were authoring-only and are gone;
-       the chosen values are baked in hero-chase.js. -->
-  <section class="hero-chase" id="hero-chase" aria-label="Cut-outs chasing the cursor">
-    <img class="hc-cur" src="assets/chase-1.png?v=lips3" alt="" aria-hidden="true">
-    <img class="hc-cur" src="assets/chase-2.png?v=lips3" alt="" aria-hidden="true">
-    <img class="hc-cur" src="assets/chase-3.png?v=lips3" alt="" aria-hidden="true">
-    <img class="hc-cur" src="assets/chase-4.png?v=lips3" alt="" aria-hidden="true">
-    <img class="hc-cur" src="assets/chase-5.png?v=lips3" alt="" aria-hidden="true">
+  <!-- the game: alien object decoder (self-contained, embedded) -->
+  <section class="toy toy--game" id="toy-game" aria-label="Alien object decoder game">
+    <iframe class="toy__frame" src="alien-decoder.html"
+            title="Alien object decoder" loading="lazy"></iframe>
   </section>
 
   </div></div></div></div><!-- /.reel__row /.reel__vstage /.reel__pin /.reel -->
@@ -321,10 +532,6 @@
                   stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
           </svg>
         </button>
-        <button type="button" class="mixwin__play" id="mixwin-play" aria-label="Play">
-          <svg class="i-play" viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4 L21 13 L7 22 Z" fill="currentColor"/></svg>
-          <svg class="i-pause" viewBox="0 0 26 26" aria-hidden="true"><rect x="6" y="4" width="5.4" height="18" fill="currentColor"/><rect x="14.6" y="4" width="5.4" height="18" fill="currentColor"/></svg>
-        </button>
         <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
           <svg viewBox="0 0 26 26" aria-hidden="true">
             <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
@@ -334,33 +541,10 @@
       </div>
     </div>
 
-    <div class="mixwin__strip" id="mixwin-strip">
-      <button type="button" class="mixwin__cell" data-i="0">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">01</span>
-        <img src="assets/mix/n-01.png" alt="Spectrum step 1">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="1">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">02</span>
-        <img src="assets/mix/n-02.png" alt="Spectrum step 2">
-      </button>
-      <button type="button" class="mixwin__cell is-selected" data-i="2">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">03</span>
-        <img src="assets/mix/n-03.png" alt="Spectrum step 3 — the midpoint">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="3">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">04</span>
-        <img src="assets/mix/n-04.png" alt="Spectrum step 4">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="4">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">05</span>
-        <img src="assets/mix/n-05.png" alt="Spectrum step 5">
-      </button>
-    </div>
+    <!-- LIVE variant: no play button, no spectrum strip — one real generated
+         image (Figma node 3263:78). The status line reports the generation
+         state under the image while fal is still working / if it failed. -->
+    <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
 
   </div>
 </div>
@@ -374,17 +558,17 @@
 
 <input type="file" id="picker" accept="image/*" hidden>
 
-<script src="app.js?v=17"></script>
+<script src="app.js?v=16"></script>
 <script src="clean.js?v=1"></script>
 <script src="hero.js?v=bands1"></script>
 <script src="logo.js?v=opt2"></script>
 <script src="game.js?v=1"></script>
-<script src="toys.js?v=stars1"></script>
+<script src="toys.js?v=fish2"></script>
 <script src="roll.js?v=roll9"></script>
-<script src="hero-chase.js?v=hc7"></script>
-<script src="grid-crop.js?v=2"></script>
-<script src="mix-modal.js?v=hold3"></script>
-<script src="color-edit.js?v=slotbg1"></script>
+<script src="hero-chase.js?v=hc4"></script>
+<!-- LIVE variant: the real fal + Claude pipeline replaces the demo modal -->
+<script src="mix-live.js?v=1"></script>
+<script src="color-edit.js?v=7"></script>
 <!-- call-to-action nudge: sequential badge hop → hands off to MIX (cta.js) -->
 <script src="cta.js?v=3"></script>
 
@@ -395,6 +579,6 @@
 <script src="sideways.js?v=gear14"></script>
 <!-- scripted, cursor-less demo for screen capture — opened with ?rec (recording.js) -->
 <script src="recording.js?v=gif2"></script>
-<script src="auto-mix.js?v=4"></script>
+<script src="auto-mix.js?v=3"></script>
 </body>
 </html>

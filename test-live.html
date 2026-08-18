@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL LIVE — generation test bench</title>
+<!-- the REAL window styles, so what we approve here is what ships -->
+<link rel="stylesheet" href="styles.css?v=fish2">
+<link rel="stylesheet" href="live.css?v=1">
+<style>
+  /* the bench itself — deliberately plain; only the result window matters.
+     styles.css styles the whole site, so the bench pins its own layer. */
+  .bench {
+    position: fixed; inset: 0; z-index: 50;
+    background: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 18px; padding-top: 7vh;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  .bench h1 { margin: 0; font-size: 22px; }
+  .bench .note { margin: 0; font-size: 13px; color: #666; }
+  .bench .uploads { display: flex; gap: 18px; }
+  .bench label.up {
+    width: 180px; height: 180px;
+    border: 1px dashed #000; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; overflow: hidden; background: #fafafa;
+    font-size: 14px; text-align: center;
+  }
+  .bench label.up img { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .bench label.up.has img { display: block; }
+  .bench label.up.has span { display: none; }
+  .bench input[type=file] { display: none; }
+  .bench #run {
+    padding: 12px 34px; border: 1px solid #000; border-radius: 24px;
+    background: #FFE500; font: 700 16px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    cursor: pointer; text-transform: uppercase;
+  }
+  .bench #run:disabled { opacity: .35; cursor: not-allowed; }
+  .bench #bench-log { margin: 0; font-size: 13px; color: #333; min-height: 1.2em; }
+  /* the window sits over the bench; the bench has no fixed sidebar, so drop
+     the sidebar-width padding the site layout adds */
+  .mixwin { padding-left: 2.5vw; z-index: 100; }
+</style>
+</head>
+<body>
+
+<div class="bench">
+  <h1>TOOOL LIVE — test bench</h1>
+  <p class="note">Upload two images → GENERATE. The window opens immediately and shows the live state.</p>
+
+  <div class="uploads">
+    <!-- ids + classes mirror the real site so mix-live.js runs UNCHANGED -->
+    <label class="up" id="slot-a">
+      <span>image 1</span>
+      <img class="slot__preview" alt="">
+      <input type="file" id="file-a" accept="image/*">
+    </label>
+    <label class="up" id="slot-b">
+      <span>image 2</span>
+      <img class="slot__preview" alt="">
+      <input type="file" id="file-b" accept="image/*">
+    </label>
+  </div>
+
+  <button type="button" id="run" disabled>Generate</button>
+  <p id="bench-log"></p>
+</div>
+
+<!-- the REAL simplified result window — identical markup to live.html -->
+<div class="mixwin" id="mixwin" hidden>
+  <div class="mixwin__card" role="dialog" aria-modal="true" tabindex="-1"
+       aria-label="Generated midpoint result">
+
+    <div class="mixwin__hero">
+      <img class="mixwin__big" id="mixwin-big" src="assets/mix/n-03.png"
+           alt="The generated midpoint object">
+
+      <div class="mixwin__article">
+        <h2 class="mixwin__title">Wing dryer</h2>
+        <div class="mixwin__body">
+          <p class="mixwin__kind"><span class="u">Insect accessory</span></p>
+          <p class="mixwin__desc">A wing dryer is an object used for drying the wings of
+             large insects. The body is rounded and compact, with a raised upper section.
+             The insect is placed on the surface while the wings dry.</p>
+        </div>
+        <div class="mixwin__spec mixwin__spec--size">
+          <span class="mixwin__spec-label">Size</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-size">12 cm × 8 cm</span>
+        </div>
+        <div class="mixwin__spec mixwin__spec--weight">
+          <span class="mixwin__spec-label">Weight</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-weight">180 g</span>
+        </div>
+      </div>
+
+      <div class="mixwin__actions">
+        <button type="button" class="mixwin__dl" id="mixwin-dl" aria-label="Download">
+          <svg class="mixwin__dl-word" viewBox="0 0 151 30" aria-hidden="true">
+            <text x="75.5" y="24" text-anchor="middle" textLength="143" lengthAdjust="spacing"
+                  font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="25"
+                  fill="#000" stroke="#000" stroke-width="0.7"
+                  stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
+          </svg>
+        </button>
+        <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
+          <svg viewBox="0 0 26 26" aria-hidden="true">
+            <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
+            <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
+
+  </div>
+</div>
+
+<!-- the exact production pipeline -->
+<script src="mix-live.js?v=1"></script>
+<script>
+/* bench glue: previews + enabling GENERATE + opening the window right away
+   (the real site opens it after the ~30s stir; here we watch it live) */
+(() => {
+  const log = document.getElementById('bench-log');
+  const run = document.getElementById('run');
+  const slots = [
+    { label: document.getElementById('slot-a'), input: document.getElementById('file-a') },
+    { label: document.getElementById('slot-b'), input: document.getElementById('file-b') },
+  ];
+  const ready = () => slots.every(s => s.label.classList.contains('has'));
+
+  slots.forEach(s => {
+    s.input.addEventListener('change', () => {
+      const f = s.input.files && s.input.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      s.label.querySelector('.slot__preview').src = url;
+      s.label.classList.add('has');
+      run.disabled = !ready();
+    });
+  });
+
+  run.addEventListener('click', () => {
+    if (!ready()) return;
+    log.textContent = 'Working… the window shows the live state.';
+    /* mix-live.js starts the pipeline off this same click;
+       open the window now so the whole journey is visible */
+    setTimeout(() => window.openMixWindow && window.openMixWindow(), 150);
+  });
+})();
+</script>
+</body>
+</html>

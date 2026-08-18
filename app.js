@@ -343,7 +343,9 @@ runBtn.addEventListener('click', () => {
     return;
   }
 
-  stage.classList.add('is-working');
+  /* the cascade stage section is optional (it was cut from the reel);
+     the mix must run fine without it */
+  stage?.classList.add('is-working');
   say('Generating midpoint…');
   playStir();
 
@@ -390,12 +392,11 @@ runBtn.addEventListener('click', () => {
 
     for (const frame of frames) frame.src = url;
 
-    slots.a.out.src = slots.a.url;
-    slots.a.out.alt = 'Object 1';
-    slots.b.out.src = slots.b.url;
-    slots.b.out.alt = 'Object 2';
+    /* the "two source objects" section is optional too (also cut) */
+    if (slots.a.out) { slots.a.out.src = slots.a.url; slots.a.out.alt = 'Object 1'; }
+    if (slots.b.out) { slots.b.out.src = slots.b.url; slots.b.out.alt = 'Object 2'; }
 
-    stage.classList.remove('is-working');
+    stage?.classList.remove('is-working');
     say('Midpoint generated.');
 
     // .is-done deliberately STAYS: it holds the bowl full and the gauge on

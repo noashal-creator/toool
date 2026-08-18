@@ -46,8 +46,11 @@
       css: v => ':root { --panel: ' + v + '; }' },
     { key: 'slotbg', name: 'רקע ריבועי ההעלאה',
       get: () => { const s = $('.slot'); return s ? getComputedStyle(s).backgroundColor : '#fff'; },
-      apply: v => $$('.slot').forEach(el => el.style.backgroundColor = v),
-      css: v => '.slot { background: ' + v + '; }' },
+      /* also drives --slot-bg, which the fish band's ground reads: the two are
+         meant to be the same yellow, so one pick moves both */
+      apply: v => { $$('.slot').forEach(el => el.style.backgroundColor = v);
+                    document.documentElement.style.setProperty('--slot-bg', v); },
+      css: v => ':root { --slot-bg: ' + v + '; }\n.slot { background: ' + v + '; }' },
     { key: 'frame', name: 'קו המסגרת המקווקו',
       get: () => { const r = $('.slot__frame rect'); return r ? (r.style.stroke || r.getAttribute('stroke') || '#000') : '#000'; },
       apply: v => $$('.slot__frame rect').forEach(r => r.style.stroke = v),

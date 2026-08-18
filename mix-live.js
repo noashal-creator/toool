@@ -1,0 +1,215 @@
+/* ─────────────────────────────────────────────────────────────────────
+   mix-live.js — TOOOL LIVE: the real generation pipeline (live.html only).
+
+   Replaces mix-modal.js in the live variant. On MIX it sends the user's
+   two uploads to the server proxy (/.netlify/functions/mix-api), which
+   holds the secret keys and forwards to fal (one midpoint image via the
+   queue API) and to Claude (the catalogue text, same lengths as the demo
+   copy). The existing ~30s stir animation in app.js doubles as the
+   loading screen; app.js calls window.openMixWindow() when it finishes,
+   exactly as it does for the demo modal.
+
+   States: while fal is still working the window opens with a pulsing
+   placeholder + status line; when the result lands it swaps in. If
+   anything fails, the demo midpoint (assets/mix/n-03.png) and the fixed
+   demo text stand in, with a quiet note — the window is never empty.   */
+
+(() => {
+  const API = '/.netlify/functions/mix-api';
+  const POLL_MS = 2500;
+  const MAX_POLLS = 60;                    /* ~2.5 min ceiling, then fallback */
+
+  const win     = document.getElementById('mixwin');
+  const big     = document.getElementById('mixwin-big');
+  const status  = document.getElementById('mixwin-status');
+  const dlBtn   = document.getElementById('mixwin-dl');
+  const xBtn    = document.getElementById('mixwin-x');
+  const title   = win?.querySelector('.mixwin__title');
+  const kind    = win?.querySelector('.mixwin__kind .u');
+  const desc    = win?.querySelector('.mixwin__desc');
+  const sizeEl  = document.getElementById('mixwin-size');
+  const weightEl = document.getElementById('mixwin-weight');
+  const runBtn  = document.getElementById('run');
+  if (!win || !big || !runBtn) return;
+
+  const FALLBACK_IMG = 'assets/mix/n-03.png';
+
+  /* one generation per MIX press */
+  const gen = {
+    running: false,
+    done: false,
+    failed: false,
+    imgSrc: null,       /* data-URL of the 4:3-cropped result (or fal URL) */
+    dlSrc: null,        /* what DOWNLOAD saves */
+    text: null,         /* {name, kind, desc, size, weight} */
+  };
+
+  /* ── helpers ── */
+
+  const api = async (payload) => {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || ('api ' + r.status));
+    return data;
+  };
+
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+  const loadImg = (src, cors) => new Promise((res, rej) => {
+    const im = new Image();
+    if (cors) im.crossOrigin = 'anonymous';
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('image load failed: ' + src.slice(0, 60)));
+    im.src = src;
+  });
+
+  /* downscale an upload to ≤1024px and return a JPEG data-URL (small enough
+     for the function's request-body limit; fal accepts data URIs) */
+  async function shrink(src) {
+    const im = await loadImg(src);
+    const k = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(im.naturalWidth * k);
+    c.height = Math.round(im.naturalHeight * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
+  /* centre-crop the generated photo to exactly 4:3, so the displayed image
+     IS the downloaded image. Falls back to the raw URL on a tainted canvas. */
+  async function cropTo43(url) {
+    try {
+      const im = await loadImg(url, true);
+      const sw = im.naturalWidth, sh = im.naturalHeight;
+      let w = sw, h = Math.round(sw * 3 / 4);
+      if (h > sh) { h = sh; w = Math.round(sh * 4 / 3); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(im, (sw - w) / 2, (sh - h) / 2, w, h, 0, 0, w, h);
+      return c.toDataURL('image/png');
+    } catch (e) {
+      console.warn('[mix-live] 4:3 crop unavailable, using raw image:', e.message);
+      return url;
+    }
+  }
+
+  /* ── the pipeline (starts on MIX, races the ~30s stir animation) ── */
+
+  async function generate() {
+    /* getAttribute, not .src — an empty src attribute resolves to the page URL */
+    const a = document.querySelector('#slot-a .slot__preview')?.getAttribute('src');
+    const b = document.querySelector('#slot-b .slot__preview')?.getAttribute('src');
+    if (!a || !b) return;                 /* app.js already scolds the user */
+    if (gen.running) return;
+    gen.running = true; gen.done = false; gen.failed = false;
+    gen.imgSrc = null; gen.dlSrc = null; gen.text = null;
+
+    try {
+      const [ua, ub] = await Promise.all([shrink(a), shrink(b)]);
+      const sub = await api({ action: 'submit', image_urls: [ua, ub] });
+      const id = sub.request_id;
+      if (!id) throw new Error('no request_id from fal');
+
+      let resultUrl = null;
+      for (let i = 0; i < MAX_POLLS; i++) {
+        await sleep(POLL_MS);
+        const st = await api({ action: 'status', request_id: id });
+        if (st.status === 'COMPLETED') {
+          const out = await api({ action: 'result', request_id: id });
+          resultUrl = out?.images?.[0]?.url || out?.response?.images?.[0]?.url;
+          break;
+        }
+        if (st.status === 'FAILED' || st.status === 'CANCELLED')
+          throw new Error('generation ' + st.status.toLowerCase());
+      }
+      if (!resultUrl) throw new Error('generation timed out');
+
+      gen.imgSrc = await cropTo43(resultUrl);
+      gen.dlSrc = gen.imgSrc;
+      gen.done = true;
+      render();                            /* window may already be open */
+
+      /* the text is a bonus — its failure must not kill the image */
+      try {
+        gen.text = await api({ action: 'describe', image_url: resultUrl });
+      } catch (e) {
+        console.warn('[mix-live] describe failed, keeping demo text:', e.message);
+      }
+      render();
+    } catch (e) {
+      console.error('[mix-live] generation failed:', e);
+      gen.failed = true;
+      render();
+    } finally {
+      gen.running = false;
+    }
+  }
+
+  runBtn.addEventListener('click', generate);
+
+  /* ── the window ── */
+
+  function setStatus(msg) {
+    if (!status) return;
+    if (msg) { status.textContent = msg; status.hidden = false; }
+    else status.hidden = true;
+  }
+
+  function render() {
+    if (!win.classList.contains('is-open')) return;
+    if (gen.done && gen.imgSrc) {
+      big.src = gen.imgSrc;
+      big.classList.remove('is-waiting');
+      setStatus('');
+      const t = gen.text;
+      if (t) {
+        if (t.name && title) title.textContent = t.name;
+        if (t.kind && kind) kind.textContent = t.kind;
+        if (t.desc && desc) desc.textContent = t.desc;
+        if (t.size && sizeEl) sizeEl.textContent = t.size;
+        if (t.weight && weightEl) weightEl.textContent = t.weight;
+      }
+    } else if (gen.failed) {
+      big.src = FALLBACK_IMG;
+      big.classList.remove('is-waiting');
+      setStatus('The archive could not develop this specimen — showing a reference print.');
+    } else if (gen.running) {
+      big.src = FALLBACK_IMG;
+      big.classList.add('is-waiting');
+      setStatus('The specimen is still developing…');
+    }
+  }
+
+  function open() {
+    win.hidden = false;
+    /* force the pop animation to replay on every open */
+    const card = win.querySelector('.mixwin__card');
+    if (card) { card.style.animation = 'none'; void card.offsetWidth; card.style.animation = ''; }
+    win.classList.add('is-open');
+    render();
+    card?.focus?.();
+  }
+  function close() {
+    win.classList.remove('is-open');
+    win.hidden = true;
+  }
+  window.openMixWindow = open;            /* app.js calls this after the stir */
+
+  xBtn?.addEventListener('click', close);
+  win.addEventListener('click', (e) => { if (e.target === win) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && win.classList.contains('is-open')) close();
+  });
+
+  dlBtn?.addEventListener('click', () => {
+    const src = gen.dlSrc || big.src;
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = 'toool-midpoint.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+})();

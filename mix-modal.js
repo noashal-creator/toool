@@ -18,25 +18,28 @@
   if (!win || !big || !strip) return;
 
   /* The five spectrum steps, exported straight from Figma (node 2949:83) —
-     1200x896 transparent PNGs, used as-is. Step 03 (the midpoint) opens first. */
+     1200x896 transparent PNGs, used as-is. Step 03 (the midpoint) opens first.
+     Reversed from the original Figma export order so the strip runs
+     troll -> tooth (starts with the troll, ends with the tooth). */
   const LARGE = [
-    'assets/mix/n-01.png',
-    'assets/mix/n-02.png',
-    'assets/mix/n-03.png',
-    'assets/mix/n-04.png',
     'assets/mix/n-05.png',
+    'assets/mix/n-04.png',
+    'assets/mix/n-03.png',
+    'assets/mix/n-02.png',
+    'assets/mix/n-01.png',
   ];
 
-  /* Size and Weight per step. The spectrum runs tooth -> troll, so the objects
-     grow across it, while the WEIGHT peaks in the middle: the hybrid is dense
-     flesh-and-bone, and the plastic doll at the end is hollow and light. Step 03
-     keeps the Figma's own numbers. */
+  /* Size and Weight per step, reversed to match LARGE above. The spectrum
+     runs troll -> tooth, so the objects shrink across it, while the WEIGHT
+     peaks in the middle: the hybrid is dense flesh-and-bone, and the plastic
+     doll at the start is hollow and light. Step 03 keeps the Figma's own
+     numbers. */
   const SPECS = [
-    { size: '2.5 cm × 1.8 cm', weight: '4 g'   },
-    { size: '5 cm × 3 cm',     weight: '18 g'  },
-    { size: '12 cm × 8 cm',    weight: '180 g' },   // Figma 3234:272
-    { size: '13 cm × 9 cm',    weight: '120 g' },
     { size: '14 cm × 9 cm',    weight: '70 g'  },
+    { size: '13 cm × 9 cm',    weight: '120 g' },
+    { size: '12 cm × 8 cm',    weight: '180 g' },   // Figma 3234:272
+    { size: '5 cm × 3 cm',     weight: '18 g'  },
+    { size: '2.5 cm × 1.8 cm', weight: '4 g'   },
   ];
   const sizeEl   = document.getElementById('mixwin-size');
   const weightEl = document.getElementById('mixwin-weight');

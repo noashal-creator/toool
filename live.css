@@ -1,0 +1,52 @@
+/* ─────────────────────────────────────────────────────────────────────
+   live.css — overrides for TOOOL LIVE (live.html) ONLY.
+   Loaded AFTER styles.css; nothing here touches the main site.
+
+   The simplified result window (Figma node 3263:78): the same 1207×975
+   card, but the spectrum strip and play button are gone, so the hero
+   grows to the full card and one generated image sits in a 4:3 box in
+   the middle. Article text and the DOWNLOAD/✕ pair keep their existing
+   Figma positions from styles.css unchanged.                            */
+
+/* the strip is gone from the markup — the hero owns the whole card */
+.mixwin__hero { flex: 1 1 100%; }
+
+/* one generated image, displayed in a 4:3 box centred in the card.
+   796×597 of 1207×975 (ratio 4:3), top edge at y=188 — measured off the
+   3263:78 render. object-fit keeps the photo un-distorted inside it. */
+.mixwin__big {
+  left: 17.02%;                 /* (1207 − 796) / 2 = 205.5 */
+  top: 19.28%;                  /* y = 188 of 975 */
+  width: 65.95%;                /* 796 of 1207 */
+  height: 61.23%;               /* 597 of 975 */
+  object-fit: contain;
+  object-position: center;
+}
+
+/* generation status line, centred under the image box */
+.mixwin__status {
+  position: absolute;
+  left: 17.02%;
+  width: 65.95%;
+  top: 82.5%;                   /* just below the 4:3 box */
+  margin: 0;
+  z-index: 2;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 1.33cqw;
+  line-height: 1.4;
+  text-align: center;
+  color: #000;
+}
+.mixwin__status[hidden] { display: none; }
+
+/* while the specimen is still developing, the placeholder pulses gently */
+.mixwin__big.is-waiting { animation: livewait 1.6s ease-in-out infinite; }
+@keyframes livewait {
+  0%, 100% { opacity: .35; }
+  50%      { opacity: .7; }
+}
+
+/* mix-live.js has no bowl-flight choreography (that lives in mix-modal.js),
+   so the card uses the simple pop that styles.css keeps as a fallback */
+.mixwin__card { animation: mixpop 340ms cubic-bezier(.34, 1.56, .64, 1) both; }

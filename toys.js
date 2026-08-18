@@ -796,7 +796,7 @@
        That cost a debugging round once already, and again when the remembered
        background was added — hence every constant wireUpload touches lives
        here, above the loop that calls it. */
-    const DEFAULT_BG = 'assets/pop-bg-default.jpg?v=2';
+    const DEFAULT_BG = 'assets/pop-bg-default.jpg?v=2';   // crystal-star night sky — the band's baked background
     const BG_KEY     = 'toool.pop.bg';     // remembered upload, survives reloads
     const BG_MAX_W   = 1920;               // plenty for a full-bleed band
     const BG_QUALITY = 0.82;
@@ -1030,11 +1030,16 @@
     }
 
     function wireUpload(sec) {
+      /* The upload/clear controls were authoring-only and are gone from the
+         markup; the band now ALWAYS shows its chosen background (the starfield
+         sky). Saved uploads from the tuning days are deliberately ignored —
+         the look is baked, not remembered. The photo layer alone is required;
+         if the button/file inputs happen to exist they still work. */
       const btn   = sec.querySelector('[data-pop-upload]');
       const clear = sec.querySelector('[data-pop-clear]');
       const file  = sec.querySelector('[data-pop-file]');
       const photo = sec.querySelector('.pop-photo');
-      if (!btn || !file || !photo) return;
+      if (!photo) return;
 
       function show(src) {
         photo.onload  = () => { photo.hidden = false; };
@@ -1042,10 +1047,9 @@
         photo.src = src;
       }
 
-      let saved = null;
-      try { saved = localStorage.getItem(BG_KEY); } catch (e) {}   // private mode
-      show(saved || DEFAULT_BG);                 // an absent file simply never loads
-      if (clear) clear.hidden = !saved;
+      show(DEFAULT_BG);                          // an absent file simply never loads
+
+      if (!btn || !file) return;                 // controls removed — baked background only
 
       btn.addEventListener('click', () => file.click());
 
@@ -1278,6 +1282,200 @@
         retime();
       }
     }
+  })();
+
+  /* ══ 13 · FISH ═══════════════════════════════════════════════════════
+     One fish chases the pointer. Push a fish into the edge of the frame
+     and another appears, the same size, with no ceiling — it is meant to
+     multiply endlessly, which is the joke.
+
+     Drawn to a <canvas>, not to elements, for exactly that reason: one
+     drawImage per fish stays cheap into the thousands where a thousand
+     transformed <img>s would not.
+
+     Sprite: assets/fish-cut/fish.png — the collage from Figma node 3260:17,
+     trimmed to its OPAQUE bounds (on the alpha channel alone; getbbox() on
+     RGBA counts transparent-but-coloured pixels and trims nothing). The trim
+     matters twice over: the edge test below fires on the fish's visible
+     pixels, so leftover canvas margin would make a fish "hit" a wall while
+     still visibly short of it. */
+  (function fish() {
+    const section = document.getElementById('toy-fish');
+    const canvas  = document.getElementById('fish-tank');
+    if (!section || !canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const sprite = new Image();
+    sprite.src = 'assets/fish-cut/fish.png';
+
+    /* Height as a share of the band. The Figma artboard shows ONE fish filling
+       half the frame; this is a shoal, so the size is a gameplay decision, not
+       a measurement taken off the design. The sprite's own aspect is the thing
+       the design does fix. */
+    const FISH_H   = 0.15;    // of stage height
+    /* Gain and top speed. Both were far too low to start with: the pull is
+       proportional to the distance, so at 0.055 with a 2.6–6 cap the fish took
+       several seconds to cross the band and never really pressed into a wall. */
+    const ACCEL    = 0.19;    // pull toward the pointer
+    const DRAG     = 0.94;
+    const WOBBLE   = 2.6;     // degrees of undulation across the heading
+    const BREED_MS = 130;     // one birth per contact, however many fish land at once
+
+    let w = 0, h = 0, dpr = 1;
+    const school = [];
+    let px = 0, py = 0, hasPointer = false;
+    let raf = 0, visible = false, lastBreed = -1e9;
+
+    function fishW() { return h * FISH_H * (sprite.naturalWidth / sprite.naturalHeight || 1.69); }
+
+    function add(x, y, vx, vy) {
+      school.push({
+        x, y, vx, vy,
+        /* its own speed and drag, so they string out into a comet tail behind
+           the cursor instead of collapsing onto a single point */
+        max:  8 + Math.random() * 7,
+        drag: DRAG - Math.random() * 0.03,
+        ph:   Math.random() * Math.PI * 2,
+        /* its own station in the shoal. Every fish chases the same cursor, so
+           without this they all converge on the identical point and nine fish
+           read as one. A fixed offset per fish spreads them AROUND the pointer
+           instead of into it — and it is O(1) per fish, unlike neighbour
+           separation, which is what lets the shoal stay unbounded. */
+        ang:  Math.random() * Math.PI * 2,
+        rad:  0.35 + Math.random() * 0.65,
+        touching: false            // edge contact is edge-TRIGGERED, see below
+      });
+    }
+
+    function resize() {
+      const r = section.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      canvas.width  = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width  = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!school.length) add(w * 0.5, h * 0.5, 0, 0);
+      draw();
+    }
+
+    /* the simulation, split out from the rAF pump on purpose: it can be driven
+       a tick at a time, which is what makes the breeding rule verifiable
+       without depending on a focused tab (a backgrounded tab throttles rAF to
+       nothing, and the fish simply never move). */
+    function advance(now) {
+      const fw = fishW(), fh = h * FISH_H;
+      const hx = fw / 2, hy = fh / 2;
+
+      for (const f of school) {
+        if (hasPointer) {
+          // the shoal spreads as it grows, so a big school occupies more water
+          // sqrt(n-1), so a LONE fish rides the pointer exactly (offset 0) and
+          // the ring only opens up once there is a shoal to spread
+          const spread = Math.min(w, h) * 0.07 * Math.sqrt(Math.max(0, school.length - 1));
+          const tx = px + Math.cos(f.ang) * spread * f.rad;
+          const ty = py + Math.sin(f.ang) * spread * f.rad;
+          const dx = tx - f.x, dy = ty - f.y;
+          const d = Math.hypot(dx, dy) || 1;
+          f.vx += (dx / d) * ACCEL * d * 0.02;
+          f.vy += (dy / d) * ACCEL * d * 0.02;
+        }
+        f.vx *= f.drag; f.vy *= f.drag;
+        const sp = Math.hypot(f.vx, f.vy);
+        if (sp > f.max) { f.vx = f.vx / sp * f.max; f.vy = f.vy / sp * f.max; }
+        f.x += f.vx; f.y += f.vy;
+
+        /* Edge contact on the VISIBLE half-extents, and edge-TRIGGERED: it
+           fires on the transition into contact, never every frame while the
+           fish is held there. Both guards are needed — every fish chases the
+           same point, so they arrive at a wall together; without the shared
+           refractory below, one push against a wall would spawn a whole clump
+           at once and the population would double per touch. */
+        let hit = false;
+        if (f.x < hx)     { f.x = hx;     f.vx =  Math.abs(f.vx); hit = true; }
+        if (f.x > w - hx) { f.x = w - hx; f.vx = -Math.abs(f.vx); hit = true; }
+        if (f.y < hy)     { f.y = hy;     f.vy =  Math.abs(f.vy); hit = true; }
+        if (f.y > h - hy) { f.y = h - hy; f.vy = -Math.abs(f.vy); hit = true; }
+
+        if (hit && !f.touching && now - lastBreed > BREED_MS) {
+          lastBreed = now;
+          // the newborn starts nudged inward with a heading off the wall, so it
+          // cannot immediately re-trigger the edge it was born against
+          add(clamp(f.x - f.vx * 6, hx, w - hx),
+              clamp(f.y - f.vy * 6, hy, h - hy),
+              -f.vx * 0.6, -f.vy * 0.6);
+        }
+        f.touching = hit;
+        f.ph += 0.12;
+      }
+    }
+
+    function step(now) {
+      raf = 0;
+      advance(now);
+      draw();
+      if (visible && !REDUCED) raf = requestAnimationFrame(step);
+    }
+
+    function draw() {
+      if (!w || !h) return;
+      ctx.clearRect(0, 0, w, h);
+      if (!sprite.naturalWidth) return;
+      const fw = fishW(), fh = h * FISH_H;
+      for (const f of school) {
+        const sp = Math.hypot(f.vx, f.vy);
+        // the sprite's head is on the LEFT, so it is mirrored to swim right
+        const right = f.vx > 0;
+        const tilt = (sp > 0.2 ? Math.atan2(f.vy, right ? f.vx : -f.vx) * 0.35 : 0)
+                     + Math.sin(f.ph) * (WOBBLE * Math.PI / 180);
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(tilt);
+        if (right) ctx.scale(-1, 1);
+        ctx.drawImage(sprite, -fw / 2, -fh / 2, fw, fh);
+        ctx.restore();
+      }
+    }
+
+    function kick() { if (!raf && visible && !REDUCED) raf = requestAnimationFrame(step); }
+
+    /* Tracked on the WINDOW, not on the section, and deliberately NOT cleared
+       when the pointer leaves the band.
+
+       The whole game is pushing a fish into the edge of the yellow, and the
+       cursor can only ever be inside that yellow — so listening on the section
+       alone meant the fish always stopped at the cursor, short of the wall, and
+       `pointerleave` killed the chase at the exact moment you tried to reach an
+       edge. Aiming from outside is what lets the target sit BEYOND the frame, so
+       the fish swims hard into the wall and breeds. The coordinates stay
+       relative to the band, so the target simply goes out of range. */
+    addEventListener('pointermove', e => {
+      const r = section.getBoundingClientRect();
+      px = e.clientX - r.left; py = e.clientY - r.top;
+      hasPointer = true;
+      kick();
+    }, { passive: true });
+
+    sprite.addEventListener('load', () => { resize(); kick(); });
+    window.addEventListener('resize', resize);
+
+    whileVisible(section,
+      () => { visible = true; kick(); },
+      () => { visible = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } });
+
+    resize();
+    // handy for tuning, and the seam the verification pass drives
+    window.fishToy = {
+      school, add, draw,
+      get count() { return school.length; },
+      get bounds() { return { w, h, fw: fishW(), fh: h * FISH_H }; },
+      aim(x, y) { px = x; py = y; hasPointer = true; },
+      blur() { hasPointer = false; },
+      tick(now) { advance(now); draw(); },
+      reset() { school.length = 0; add(w * 0.5, h * 0.5, 0, 0); draw(); }
+    };
   })();
 
 })();
