@@ -79,23 +79,10 @@
     return c.toDataURL('image/jpeg', 0.85);
   }
 
-  /* centre-crop the generated photo to exactly 4:3, so the displayed image
-     IS the downloaded image. Falls back to the raw URL on a tainted canvas. */
-  async function cropTo43(url) {
-    try {
-      const im = await loadImg(url, true);
-      const sw = im.naturalWidth, sh = im.naturalHeight;
-      let w = sw, h = Math.round(sw * 3 / 4);
-      if (h > sh) { h = sh; w = Math.round(sh * 4 / 3); }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(im, (sw - w) / 2, (sh - h) / 2, w, h, 0, 0, w, h);
-      return c.toDataURL('image/png');
-    } catch (e) {
-      console.warn('[mix-live] 4:3 crop unavailable, using raw image:', e.message);
-      return url;
-    }
-  }
+  /* the photo is used EXACTLY as fal returned it — uncut (user decision).
+     The display fills the whole card with object-fit: cover (live.css);
+     the prompt keeps the specimen centered with wide margins so nothing
+     of it is ever trimmed. */
 
   /* ── the pipeline (starts on MIX, races the ~30s stir animation) ── */
 
@@ -128,10 +115,13 @@
       }
       if (!resultUrl) throw new Error('generation timed out');
 
-      gen.imgSrc = await cropTo43(resultUrl);
-      gen.dlSrc = gen.imgSrc;
+      /* pre-load so the window pops with the image already painted */
+      await loadImg(resultUrl).catch(() => {});
+      gen.imgSrc = resultUrl;              /* uncut, exactly as fal returned it */
+      gen.dlSrc = resultUrl;
       gen.done = true;
-      render();                            /* window may already be open */
+      if (wantOpen) reallyOpen();          /* the stir already ended — pop now */
+      else render();                       /* window may already be open */
 
       /* the text is a bonus — its failure must not kill the image */
       try {
@@ -143,7 +133,8 @@
     } catch (e) {
       console.error('[mix-live] generation failed:', e);
       gen.failed = true;
-      render();
+      if (wantOpen) reallyOpen();          /* a parked open still gets its window */
+      else render();
     } finally {
       gen.running = false;
     }
@@ -184,7 +175,13 @@
     }
   }
 
-  function open() {
+  /* The window NEVER pops mid-generation: if the result isn't in yet, the
+     open request is parked and honoured the moment the image lands (or the
+     run fails and the fallback is ready). No waiting screen. */
+  let wantOpen = false;
+
+  function reallyOpen() {
+    wantOpen = false;
     win.hidden = false;
     /* force the pop animation to replay on every open */
     const card = win.querySelector('.mixwin__card');
@@ -192,6 +189,10 @@
     win.classList.add('is-open');
     render();
     card?.focus?.();
+  }
+  function open() {
+    if (gen.running && !gen.done && !gen.failed) { wantOpen = true; return; }
+    reallyOpen();
   }
   function close() {
     win.classList.remove('is-open');
@@ -205,11 +206,20 @@
     if (e.key === 'Escape' && win.classList.contains('is-open')) close();
   });
 
-  dlBtn?.addEventListener('click', () => {
+  dlBtn?.addEventListener('click', async () => {
     const src = gen.dlSrc || big.src;
-    const a = document.createElement('a');
-    a.href = src;
-    a.download = 'toool-midpoint.png';
-    document.body.appendChild(a); a.click(); a.remove();
+    try {
+      /* cross-origin URLs ignore the download attribute — pull the bytes
+         first so the browser saves a file instead of navigating */
+      const blob = await (await fetch(src)).blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'toool-midpoint.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch (e) {
+      window.open(src, '_blank');          /* last resort: open the image */
+    }
   });
 })();

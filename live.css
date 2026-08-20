@@ -11,15 +11,16 @@
 /* the strip is gone from the markup — the hero owns the whole card */
 .mixwin__hero { flex: 1 1 100%; }
 
-/* one generated image, displayed in a 4:3 box centred in the card.
-   796×597 of 1207×975 (ratio 4:3), top edge at y=188 — measured off the
-   3263:78 render. object-fit keeps the photo un-distorted inside it. */
+/* the generated photo fills the ENTIRE dashed card edge to edge (user
+   decision after the first live round). `cover` may trim a sliver of the
+   photo's own grey backdrop at the sides — never the specimen: the prompt
+   forces the specimen centered with generous margins, so it stays whole. */
 .mixwin__big {
-  left: 17.02%;                 /* (1207 − 796) / 2 = 205.5 */
-  top: 19.28%;                  /* y = 188 of 975 */
-  width: 65.95%;                /* 796 of 1207 */
-  height: 61.23%;               /* 597 of 975 */
-  object-fit: contain;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   object-position: center;
 }
 
