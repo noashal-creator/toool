@@ -81,6 +81,9 @@ export default async (req) => {
           image_urls,
           num_images: 1,
           output_format: 'png',
+          /* landscape 4:3 — closest to the 1207×975 result card, so the
+             full-bleed cover trims only background, never the specimen */
+          image_size: 'landscape_4_3',
         }),
       });
       return json(await r.json(), r.status);
