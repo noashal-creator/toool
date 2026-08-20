@@ -126,10 +126,11 @@ export default async (req) => {
         }),
       });
       const data = await r.json();
+      if (data?.error) return json({ error: 'anthropic: ' + (data.error.message || data.error.type) }, 502);
       const text = data?.content?.[0]?.text || '';
       /* the model answers with bare JSON; tolerate stray fencing */
       const m = text.match(/\{[\s\S]*\}/);
-      if (!m) return json({ error: 'no json in reply' }, 502);
+      if (!m) return json({ error: 'no json in reply', raw: text.slice(0, 200) }, 502);
       return json(JSON.parse(m[0]));
     }
 
