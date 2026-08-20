@@ -103,34 +103,55 @@ export default async (req) => {
     }
 
     if (action === 'describe') {
-      if (!ANTHROPIC_API_KEY) return json({ error: 'ANTHROPIC_API_KEY not configured' }, 500);
       const imageUrl = String(body.image_url || '');
       if (!/^https:\/\//.test(imageUrl)) return json({ error: 'bad image_url' }, 400);
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',   /* fast — fits the 10s window */
-          max_tokens: 300,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'url', url: imageUrl } },
-              { type: 'text', text: DESCRIBE_PROMPT },
-            ],
-          }],
-        }),
-      });
-      const data = await r.json();
-      if (data?.error) return json({ error: 'anthropic: ' + (data.error.message || data.error.type) }, 502);
-      const text = data?.content?.[0]?.text || '';
+
+      let text = '';
+      if (ANTHROPIC_API_KEY) {
+        /* preferred path — direct Anthropic vision (needs a valid key) */
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',   /* fast — fits the 10s window */
+            max_tokens: 300,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'url', url: imageUrl } },
+                { type: 'text', text: DESCRIBE_PROMPT },
+              ],
+            }],
+          }),
+        });
+        const data = await r.json();
+        if (!data?.error) text = data?.content?.[0]?.text || '';
+      }
+      if (!text) {
+        /* fal path — vision through the SAME FAL_KEY the images use, so no
+           extra account is ever needed. any-llm relays to a vision model. */
+        if (!FAL_KEY) return json({ error: 'FAL_KEY not configured' }, 500);
+        const r = await fetch('https://fal.run/fal-ai/any-llm/vision', {
+          method: 'POST',
+          headers: { Authorization: 'Key ' + FAL_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'anthropic/claude-3.5-sonnet',
+            prompt: DESCRIBE_PROMPT,
+            image_url: imageUrl,
+          }),
+        });
+        const data = await r.json();
+        if (data?.detail || data?.error)
+          return json({ error: 'fal-llm: ' + JSON.stringify(data.detail || data.error).slice(0, 200) }, 502);
+        text = data?.output || '';
+      }
       /* the model answers with bare JSON; tolerate stray fencing */
       const m = text.match(/\{[\s\S]*\}/);
-      if (!m) return json({ error: 'no json in reply', raw: text.slice(0, 200) }, 502);
+      if (!m) return json({ error: 'no json in reply', raw: String(text).slice(0, 200) }, 502);
       return json(JSON.parse(m[0]));
     }
 
