@@ -20,6 +20,9 @@
 
 const FAL_MODEL = 'openai/gpt-image-2/edit';
 const FAL_QUEUE = 'https://queue.fal.run/' + FAL_MODEL;
+/* fal queues requests under the BASE model id — the /edit subpath exists only
+   on submit. Its own submit response points status_url at .../gpt-image-2/... */
+const FAL_QUEUE_BASE = 'https://queue.fal.run/openai/gpt-image-2';
 
 const PROMPT = `Unedited analog photograph of a previously unknown transitional evolutionary form between the two uploaded subjects. The resulting entity should feel like an impossible discovery that somehow exists in the real world. Do not simply merge, blend, overlap, or split the two subjects. Avoid literal combinations and avoid choosing the most obvious visual similarities. Instead, invent an entirely new form that feels like an irrational evolutionary accident or a surreal mutation with its own strange internal logic. The connection between the original subjects should only become recognizable after careful observation.
 Reject safe, elegant, or expected ideas. Deliberately avoid the first, second, and third obvious solution. Favor the weirdest, least predictable interpretation possible. Surprise is more important than realism of function. The entity should feel awkward, uncanny, bizarre, slightly ridiculous, and unexpectedly humorous without becoming cartoonish. Make bold, irrational design decisions. Invent impossible transitions, misplaced structures, unnecessary appendages, conflicting materials, strange proportions, unexpected textures, absurd anatomical or mechanical features, and surreal morphological choices that no human designer would intentionally create. It should look like evolution made a series of questionable decisions that somehow resulted in a stable form. The viewer's first reaction should be confusion, followed by curiosity, and only later recognition of the original subjects.
@@ -86,7 +89,7 @@ export default async (req) => {
       if (!FAL_KEY) return json({ error: 'FAL_KEY not configured' }, 500);
       const id = String(body.request_id || '');
       if (!/^[\w-]+$/.test(id)) return json({ error: 'bad request_id' }, 400);
-      const url = FAL_QUEUE + '/requests/' + id + (action === 'status' ? '/status' : '');
+      const url = FAL_QUEUE_BASE + '/requests/' + id + (action === 'status' ? '/status' : '');
       const r = await fetch(url, { headers: { Authorization: 'Key ' + FAL_KEY } });
       return json(await r.json(), r.status);
     }
