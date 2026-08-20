@@ -9,7 +9,31 @@
 <link rel="stylesheet" href="live.css?v=1">
 <style>
   /* the bench itself — deliberately plain; only the result window matters.
-     styles.css styles the whole site, so the bench pins its own layer. */
+     styles.css styles the whole site, so first WIPE its effects inside the
+     bench (all:revert = back to browser defaults), then style it fresh.
+     The .mixwin window is outside .bench and keeps styles.css untouched. */
+  .bench, .bench * { all: revert; }
+  /* styles.css targets the site's slots and MIX button BY ID (#slot-a,
+     #slot-b, #run) with the sidebar geometry — ID beats any class rule, so
+     the bench must fight back at ID level. This sheet loads after
+     styles.css, so equal-specificity declarations here win. */
+  #slot-a, #slot-b {
+    position: relative; inset: auto; transform: none; margin: 0; padding: 0;
+    width: 180px; height: 180px; flex: none;
+    border: 1px dashed #000; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; overflow: hidden; background: #fafafa;
+    font-size: 14px; text-align: center;
+  }
+  #run {
+    position: static; inset: auto; transform: none; margin: 0; flex: none;
+    width: auto; height: auto;
+    padding: 12px 34px; border: 1px solid #000; border-radius: 24px;
+    background: #FFE500; color: #000;
+    font: 700 16px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    cursor: pointer; text-transform: uppercase;
+  }
+  #run::before, #run::after { content: none; }
   .bench {
     position: fixed; inset: 0; z-index: 50;
     background: #fff;
@@ -21,14 +45,24 @@
   .bench .note { margin: 0; font-size: 13px; color: #666; }
   .bench .uploads { display: flex; gap: 18px; }
   .bench label.up {
+    position: relative;           /* pin the preview INSIDE the square */
     width: 180px; height: 180px;
     border: 1px dashed #000; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; overflow: hidden; background: #fafafa;
     font-size: 14px; text-align: center;
   }
-  .bench label.up img { width: 100%; height: 100%; object-fit: cover; display: none; }
-  .bench label.up.has img { display: block; }
+  /* styles.css defines .slot__preview as absolute + opacity:0 (revealed only
+     inside the site's .slot.is-filled). Here the preview must anchor to its
+     own square and show as soon as a file is picked — override both. */
+  .bench label.up .slot__preview {
+    display: none;
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 1; z-index: 1;
+  }
+  .bench label.up.has .slot__preview { display: block; }
   .bench label.up.has span { display: none; }
   .bench input[type=file] { display: none; }
   .bench #run {
