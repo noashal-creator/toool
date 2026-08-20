@@ -33,6 +33,11 @@
   if (!win || !big || !runBtn) return;
 
   const FALLBACK_IMG = 'assets/mix/n-03.png';
+  /* the article text is generated LIVE per creature: mix-api's `describe`
+     action shows the finished image to Claude vision, which writes a name,
+     kind, description and specs that fit THIS specimen (same boxes and
+     lengths as the demo copy). No pre-written pool — the text always
+     matches the image. If describe fails, the demo copy stands in. */
 
   /* one generation per MIX press */
   const gen = {
