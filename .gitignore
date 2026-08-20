@@ -17,3 +17,6 @@ LIVE-PLAN.md
 
 # Netlify local state
 .netlify/
+
+# function dependencies are installed by Netlify at deploy time
+node_modules/

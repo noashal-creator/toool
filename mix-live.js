@@ -124,17 +124,25 @@
       await loadImg(resultUrl).catch(() => {});
       gen.imgSrc = resultUrl;              /* uncut, exactly as fal returned it */
       gen.dlSrc = resultUrl;
-      gen.done = true;
-      if (wantOpen) reallyOpen();          /* the stir already ended — pop now */
-      else render();                       /* window may already be open */
 
-      /* the text is a bonus — its failure must not kill the image */
+      /* the text is written BEFORE the mix counts as done, so the bowl keeps
+         stirring until the window can open complete — image AND article.
+         Its failure must not kill the image, though. */
       try {
         gen.text = await api({ action: 'describe', image_url: resultUrl });
       } catch (e) {
         console.warn('[mix-live] describe failed, keeping demo text:', e.message);
       }
-      render();
+
+      gen.done = true;
+      if (wantOpen) reallyOpen();          /* the stir already ended — pop now */
+      else render();                       /* window may already be open */
+
+      /* archive the whole mix (uploads + result + text) — fire and forget,
+         a logging failure must never touch the user's experience */
+      api({ action: 'archive', a: ua, b: ub, result_url: resultUrl, text: gen.text })
+        .then((r) => console.log('[mix-live] archived as', r?.id))
+        .catch((e) => console.warn('[mix-live] archive failed:', e.message));
     } catch (e) {
       console.error('[mix-live] generation failed:', e);
       gen.failed = true;
@@ -257,6 +265,10 @@
     win.hidden = true;
   }
   window.openMixWindow = open;            /* app.js calls this after the stir */
+  /* app.js gates the end of the stir on this: keep churning while the real
+     generation is still cooking; done, failed, or never-started all count as
+     "ready" so the choreography can always land. */
+  window.mixLiveReady = () => !gen.running || gen.done || gen.failed;
 
   xBtn?.addEventListener('click', close);
   win.addEventListener('click', (e) => { if (e.target === win) close(); });

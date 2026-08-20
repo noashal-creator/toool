@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — Archive</title>
+<meta name="robots" content="noindex">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 4vw 80px;
+    background: #f0f0f0; color: #000;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  h1 { margin: 0 0 4px; font-size: 28px; text-transform: uppercase; }
+  .sub { margin: 0 0 32px; font-size: 13px; color: #555; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px; }
+  .mix {
+    background: #fff; border: 1px dashed #000; border-radius: 12px;
+    padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .mix .result {
+    width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+    border-radius: 8px; background: #e6e6e6; display: block;
+  }
+  .mix .pair { display: flex; gap: 8px; }
+  .mix .pair img {
+    width: 64px; height: 64px; object-fit: cover;
+    border-radius: 6px; border: 1px solid #ccc; background: #e6e6e6;
+  }
+  .mix .pair .arrow { align-self: center; font-size: 18px; }
+  .mix h2 { margin: 0; font-size: 17px; text-transform: uppercase; }
+  .mix .kind { margin: 0; font-size: 12px; text-decoration: underline; }
+  .mix .desc { margin: 0; font-size: 12px; line-height: 1.35; color: #333; }
+  .mix .facts { font-size: 11px; color: #666; }
+  .mix .when { font-size: 11px; color: #999; }
+  .mix a.dl { font-size: 12px; color: #000; }
+  #empty, #err { font-size: 14px; color: #666; }
+</style>
+</head>
+<body>
+
+<h1>TOOOL — Archive</h1>
+<p class="sub">Every mix made on the site: the two uploads, the specimen, and its entry. Newest first.</p>
+
+<p id="empty" hidden>The archive is empty — no mixes have been made yet.</p>
+<p id="err" hidden></p>
+<div class="grid" id="grid"></div>
+
+<script>
+(() => {
+  const API = '/.netlify/functions/mix-api';
+  /* if an ARCHIVE_KEY env var is set on the server, pass it as ?k=... */
+  const K = new URLSearchParams(location.search).get('k') || undefined;
+
+  const api = async (payload) => {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, k: K }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || ('api ' + r.status));
+    return data;
+  };
+
+  const grid = document.getElementById('grid');
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function card(item) {
+    const el = document.createElement('article');
+    el.className = 'mix';
+    const t = item.text || {};
+    el.innerHTML =
+      '<img class="result" alt="Generated specimen">' +
+      '<div class="pair">' +
+        '<img class="in-a" alt="Upload 1"><span class="arrow">→</span><img class="in-b" alt="Upload 2">' +
+      '</div>' +
+      '<h2>' + esc(t.name || 'Untitled specimen') + '</h2>' +
+      (t.kind ? '<p class="kind">' + esc(t.kind) + '</p>' : '') +
+      (t.desc ? '<p class="desc">' + esc(t.desc) + '</p>' : '') +
+      '<p class="facts">' + [t.size, t.weight].filter(Boolean).map(esc).join(' · ') + '</p>' +
+      '<p class="when">' + new Date(item.at || 0).toLocaleString() + '</p>' +
+      '<a class="dl" download="toool-' + esc(item.id) + '.png" hidden>Download result</a>';
+    return el;
+  }
+
+  /* images are heavy (full records) — fetch each card's record only when it
+     scrolls into view */
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      const id = e.target.dataset.id;
+      api({ action: 'archive-get', id }).then((rec) => {
+        const res = rec.result || rec.result_url;
+        const img = e.target.querySelector('.result');
+        img.src = res;
+        e.target.querySelector('.in-a').src = rec.a || '';
+        e.target.querySelector('.in-b').src = rec.b || '';
+        const dl = e.target.querySelector('.dl');
+        dl.href = res; dl.hidden = false;
+      }).catch(() => {});
+    }
+  }, { rootMargin: '400px' });
+
+  api({ action: 'archive-list' }).then(({ items }) => {
+    if (!items.length) { document.getElementById('empty').hidden = false; return; }
+    for (const item of items) {
+      const el = card(item);
+      el.dataset.id = item.id;
+      grid.appendChild(el);
+      io.observe(el);
+    }
+  }).catch((e) => {
+    const err = document.getElementById('err');
+    err.textContent = 'Could not load the archive: ' + e.message;
+    err.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

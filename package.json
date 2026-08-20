@@ -1,0 +1,8 @@
+{
+  "name": "toool",
+  "private": true,
+  "description": "Static site; dependencies exist only for Netlify Functions bundling.",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

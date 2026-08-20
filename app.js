@@ -354,56 +354,72 @@ runBtn.addEventListener('click', () => {
      up, all at once. It now lands in two beats: first the gauge completes and
      the spoon LIFTS out of the bowl, then a moment later the result arrives, so
      it reads as a consequence rather than a jump cut. */
-  /* the scene starts slowing BEFORE it finishes — added ON TOP of is-mixing so
-     the fill keeps running underneath, with only the stir and jiggle swapped
-     for their calmer variants (see the -calm rules in styles.css) */
-  setTimeout(() => {
+  /* The choreography no longer races the real generation: at FINISH_AT the
+     scene asks mix-live whether the result is actually in (window.mixLiveReady)
+     and simply KEEPS STIRRING until it is — the bowl never finishes cooking
+     before the dish. Only then the ending plays, with the original beats at
+     their original distances. Without the live pipeline the gate is always
+     open, so the timing is byte-identical to before. */
+  const resultIsIn = () => (window.mixLiveReady ? window.mixLiveReady() : true);
+  const whenResultIsIn = (cb) => {
+    if (resultIsIn()) return cb();
+    const poll = setInterval(() => {
+      if (resultIsIn()) { clearInterval(poll); cb(); }
+    }, 400);
+  };
+
+  setTimeout(() => whenResultIsIn(() => {
+    /* the scene starts slowing BEFORE it finishes — added ON TOP of is-mixing so
+       the fill keeps running underneath, with only the stir and jiggle swapped
+       for their calmer variants (see the -calm rules in styles.css) */
     for (const el of [spoonRig, runBtn, bowl]) el.classList.add('is-finishing');
     settleMix(MIX_SCALE_EASE, FINISH_MS);   // first stage of the calm-down
-  }, FINISH_AT);
 
-  setTimeout(() => {
-    for (const el of [spoonRig, runBtn, bowl]) {
-      el.classList.remove('is-mixing', 'is-finishing');
-      el.classList.add('is-done');       // spoon lifts out; gauge fades to "ready"
-    }
-    stopGauge();
-    gaugeNum.textContent = '100%';       // land on a round number under the fade
-    settleMix(MIX_SCALE_REST, SETTLE_MS);// second stage, from the already-eased value
-    say('Midpoint ready.');
+    /* FINISH_MS later — exactly the original DESCEND+FILL boundary */
+    setTimeout(() => {
+      for (const el of [spoonRig, runBtn, bowl]) {
+        el.classList.remove('is-mixing', 'is-finishing');
+        el.classList.add('is-done');       // spoon lifts out; gauge fades to "ready"
+      }
+      stopGauge();
+      gaugeNum.textContent = '100%';       // land on a round number under the fade
+      settleMix(MIX_SCALE_REST, SETTLE_MS);// second stage, from the already-eased value
+      say('Midpoint ready.');
 
-    /* READY is a moment, not a state — it fades a few seconds later. The window
-       closing normally clears it (see the observer above); this covers the case
-       where the window is never opened, so it can't sit there indefinitely. */
-    clearTimeout(readyFade);
-    readyFade = setTimeout(() => {
-      // if the window did open, the observer above has already handled this
-      if (mixWin && mixWin.classList.contains('is-open')) return;
-      windDownAfterResult();
-    }, READY_HOLD_MS);
-  }, DESCEND_MS + FILL_MS);
+      /* READY is a moment, not a state — it fades a few seconds later. The window
+         closing normally clears it (see the observer above); this covers the case
+         where the window is never opened, so it can't sit there indefinitely. */
+      clearTimeout(readyFade);
+      readyFade = setTimeout(() => {
+        // if the window did open, the observer above has already handled this
+        if (mixWin && mixWin.classList.contains('is-open')) return;
+        windDownAfterResult();
+      }, READY_HOLD_MS);
+    }, FINISH_MS);
 
-  /* …and only then the result itself. */
-  setTimeout(() => {
-    const url = composeMidpoint(slots.a.image, slots.b.image);
+    /* …and only then the result itself — at the original distance from the
+       calm-down (MIX_MS - FINISH_AT = FINISH_MS + LIFT_MS + READY_BEAT). */
+    setTimeout(() => {
+      const url = composeMidpoint(slots.a.image, slots.b.image);
 
-    if (resultUrl) URL.revokeObjectURL(resultUrl);
-    resultUrl = url;
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
+      resultUrl = url;
 
-    for (const frame of frames) frame.src = url;
+      for (const frame of frames) frame.src = url;
 
-    /* the "two source objects" section is optional too (also cut) */
-    if (slots.a.out) { slots.a.out.src = slots.a.url; slots.a.out.alt = 'Object 1'; }
-    if (slots.b.out) { slots.b.out.src = slots.b.url; slots.b.out.alt = 'Object 2'; }
+      /* the "two source objects" section is optional too (also cut) */
+      if (slots.a.out) { slots.a.out.src = slots.a.url; slots.a.out.alt = 'Object 1'; }
+      if (slots.b.out) { slots.b.out.src = slots.b.url; slots.b.out.alt = 'Object 2'; }
 
-    stage?.classList.remove('is-working');
-    say('Midpoint generated.');
+      stage?.classList.remove('is-working');
+      say('Midpoint generated.');
 
-    // .is-done deliberately STAYS: it holds the bowl full and the gauge on
-    // "ready" behind the window. The drain is triggered when the window closes
-    // (see the MutationObserver above).
-    window.openMixWindow?.();
-  }, MIX_MS);
+      // .is-done deliberately STAYS: it holds the bowl full and the gauge on
+      // "ready" behind the window. The drain is triggered when the window closes
+      // (see the MutationObserver above).
+      window.openMixWindow?.();
+    }, MIX_MS - FINISH_AT);
+  }), FINISH_AT);
 });
 
 function composeMidpoint(imageA, imageB) {

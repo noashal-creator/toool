@@ -5,11 +5,18 @@
    they are never in the repo and never reach the browser. The browser talks
    only to this function; this function talks to fal / Anthropic.
 
-   Four actions (POST JSON {action, ...}):
-     submit   {image_urls:[a,b]}      → fal queue submit  → {request_id}
-     status   {request_id}            → fal queue status  → {status}
-     result   {request_id}            → fal queue result  → {images:[{url}]}
-     describe {image_url}             → Anthropic vision  → {name,kind,desc,size,weight}
+   Actions (POST JSON {action, ...}):
+     submit       {image_urls:[a,b]}  → fal queue submit  → {request_id}
+     status       {request_id}        → fal queue status  → {status}
+     result       {request_id}        → fal queue result  → {images:[{url}]}
+     describe     {image_url}         → vision model      → {name,kind,desc,size,weight}
+     archive      {a,b,result_url,text} → stores the whole mix in Netlify Blobs
+     archive-list {k?}                → index of stored mixes (no images)
+     archive-get  {id,k?}             → one full stored mix (with images)
+   The archive lives in Netlify Blobs (store "mixes") — part of this same
+   Netlify project, no extra account. The result image is fetched server-side
+   and stored as bytes, so records outlive fal's hosted URLs. If an
+   ARCHIVE_KEY env var is set, archive-list/-get require k to match it.
 
    The fal PROMPT and both model choices are pinned HERE, server-side, so a
    stranger who discovers the endpoint cannot spend the keys on arbitrary
@@ -17,6 +24,8 @@
    short (submit/status/result are quick; describe is one small vision call)
    to stay inside Netlify's ~10s synchronous-function ceiling; the slow part
    (fal generation, 15–40s) happens on fal's queue between our polls.       */
+
+import { getStore } from '@netlify/blobs';
 
 const FAL_MODEL = 'openai/gpt-image-2/edit';
 const FAL_QUEUE = 'https://queue.fal.run/' + FAL_MODEL;
@@ -153,6 +162,75 @@ export default async (req) => {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) return json({ error: 'no json in reply', raw: String(text).slice(0, 200) }, 502);
       return json(JSON.parse(m[0]));
+    }
+
+    if (action === 'archive') {
+      const { a, b, result_url, text } = body;
+      if (!/^data:image\//.test(a || '') || !/^data:image\//.test(b || ''))
+        return json({ error: 'bad uploads' }, 400);
+      if (!/^https:\/\//.test(result_url || '')) return json({ error: 'bad result_url' }, 400);
+
+      const store = getStore('mixes');
+      /* ISO timestamp leads the id so a plain key-sort is chronological */
+      const id = new Date().toISOString().replace(/[:.]/g, '-') +
+                 '-' + Math.random().toString(36).slice(2, 8);
+
+      /* pull the result bytes NOW — fal's hosted URLs are not forever */
+      let resultData = null;
+      try {
+        const r = await fetch(result_url);
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer());
+          const mime = r.headers.get('content-type') || 'image/png';
+          resultData = 'data:' + mime + ';base64,' + buf.toString('base64');
+        }
+      } catch { /* keep the URL-only record rather than losing the mix */ }
+
+      await store.set(id + '/a', a);
+      await store.set(id + '/b', b);
+      if (resultData) await store.set(id + '/result', resultData);
+      await store.setJSON(id + '/meta', {
+        at: new Date().toISOString(),
+        result_url,
+        has_result_copy: !!resultData,
+        text: text || null,
+      });
+      return json({ ok: true, id });
+    }
+
+    if (action === 'archive-list' || action === 'archive-get' || action === 'archive-delete') {
+      const gate = process.env.ARCHIVE_KEY;
+      if (gate && body.k !== gate) return json({ error: 'wrong key' }, 403);
+      const store = getStore('mixes');
+
+      if (action === 'archive-delete') {
+        const id = String(body.id || '');
+        if (!/^[\w-]+$/.test(id)) return json({ error: 'bad id' }, 400);
+        await Promise.all(['/meta', '/a', '/b', '/result'].map((s) =>
+          store.delete(id + s).catch(() => {})));
+        return json({ ok: true, deleted: id });
+      }
+
+      if (action === 'archive-list') {
+        const { blobs } = await store.list();
+        const ids = [...new Set(blobs.map((b) => b.key.split('/')[0]))].sort().reverse();
+        const items = await Promise.all(ids.slice(0, 200).map(async (id) => {
+          const meta = await store.get(id + '/meta', { type: 'json' }).catch(() => null);
+          return { id, ...(meta || {}) };
+        }));
+        return json({ items });
+      }
+
+      const id = String(body.id || '');
+      if (!/^[\w-]+$/.test(id)) return json({ error: 'bad id' }, 400);
+      const [meta, a, b, result] = await Promise.all([
+        store.get(id + '/meta', { type: 'json' }).catch(() => null),
+        store.get(id + '/a').catch(() => null),
+        store.get(id + '/b').catch(() => null),
+        store.get(id + '/result').catch(() => null),
+      ]);
+      if (!meta) return json({ error: 'not found' }, 404);
+      return json({ id, ...meta, a, b, result });
     }
 
     return json({ error: 'unknown action' }, 400);
