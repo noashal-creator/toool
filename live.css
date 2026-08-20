@@ -48,6 +48,7 @@
   50%      { opacity: .7; }
 }
 
-/* mix-live.js has no bowl-flight choreography (that lives in mix-modal.js),
-   so the card uses the simple pop that styles.css keeps as a fallback */
-.mixwin__card { animation: mixpop 340ms cubic-bezier(.34, 1.56, .64, 1) both; }
+/* mix-live.js now carries the full bowl-flight choreography (ported from
+   mix-modal.js), so the card keeps styles.css's card-fly-smooth animation.
+   Pages with no bowl (the test bench) still pop: with no --dx/--dy set the
+   flight simply plays in place. */

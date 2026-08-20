@@ -6,6 +6,7 @@
 <title>TOOOL — Midpoint Generator</title>
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=pink1">
+<link rel="stylesheet" href="live.css?v=3">
 </head>
 <body>
 
@@ -321,10 +322,6 @@
                   stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
           </svg>
         </button>
-        <button type="button" class="mixwin__play" id="mixwin-play" aria-label="Play">
-          <svg class="i-play" viewBox="0 0 26 26" aria-hidden="true"><path d="M7 4 L21 13 L7 22 Z" fill="currentColor"/></svg>
-          <svg class="i-pause" viewBox="0 0 26 26" aria-hidden="true"><rect x="6" y="4" width="5.4" height="18" fill="currentColor"/><rect x="14.6" y="4" width="5.4" height="18" fill="currentColor"/></svg>
-        </button>
         <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
           <svg viewBox="0 0 26 26" aria-hidden="true">
             <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
@@ -334,33 +331,11 @@
       </div>
     </div>
 
-    <div class="mixwin__strip" id="mixwin-strip">
-      <button type="button" class="mixwin__cell" data-i="0">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">01</span>
-        <img src="assets/mix/n-01.png" alt="Spectrum step 1">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="1">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">02</span>
-        <img src="assets/mix/n-02.png" alt="Spectrum step 2">
-      </button>
-      <button type="button" class="mixwin__cell is-selected" data-i="2">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">03</span>
-        <img src="assets/mix/n-03.png" alt="Spectrum step 3 — the midpoint">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="3">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">04</span>
-        <img src="assets/mix/n-04.png" alt="Spectrum step 4">
-      </button>
-      <button type="button" class="mixwin__cell" data-i="4">
-        <span class="mixwin__tick" aria-hidden="true"></span>
-        <span class="mixwin__num">05</span>
-        <img src="assets/mix/n-05.png" alt="Spectrum step 5">
-      </button>
-    </div>
+    <!-- LIVE: no play button, no spectrum strip — one real generated image
+         (Figma node 3263:78). The status line reports the generation state
+         if it ever fails; while fal works, the bowl churn IS the wait and
+         the window only opens once the result is ready (mix-live.js). -->
+    <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
 
   </div>
 </div>
@@ -382,8 +357,8 @@
 <script src="toys.js?v=stars1"></script>
 <script src="roll.js?v=roll9"></script>
 <script src="hero-chase.js?v=hc7"></script>
-<script src="grid-crop.js?v=2"></script>
-<script src="mix-modal.js?v=hold3"></script>
+<!-- LIVE: the real fal + describe pipeline replaces the timed demo modal -->
+<script src="mix-live.js?v=5"></script>
 <script src="color-edit.js?v=slotbg1"></script>
 <!-- call-to-action nudge: sequential badge hop → hands off to MIX (cta.js) -->
 <script src="cta.js?v=3"></script>

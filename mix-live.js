@@ -185,21 +185,74 @@
      run fails and the fallback is ready). No waiting screen. */
   let wantOpen = false;
 
+  /* ── the card flies OUT OF THE BOWL (ported verbatim from mix-modal.js) ──
+     Sets --dx/--dy/--sc so card-fly-smooth (styles.css) starts the card
+     inside the bowl's liquid, and raises a cloned bowl "curtain" above the
+     modal layer so the card genuinely emerges from it. Narrow viewports
+     (and pages with no bowl, like the test bench) skip it — styles.css
+     falls back to the plain pop there. */
+  const FLIGHT_MS = 1150;                  // must match card-fly-smooth in styles.css
+  const narrow = () => window.matchMedia('(max-width: 860px)').matches;
+  let curtain = null, curtainTimer = 0;
+
+  function dropCurtain() {
+    clearTimeout(curtainTimer);
+    curtain?.remove();
+    curtain = null;
+  }
+
+  function launchFromBowl(card) {
+    const bowlEl = document.querySelector('.bowl');
+    const fillEl = document.querySelector('.bowl-fill');
+    if (!card || !bowlEl || !fillEl || narrow()) return;
+
+    // measure with the animation suppressed — otherwise we would read the
+    // transformed box and the card would aim at the wrong place
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    const cardBox = card.getBoundingClientRect();
+    const fillBox = fillEl.getBoundingClientRect();
+    if (!cardBox.width || !fillBox.width) { card.style.animation = ''; return; }
+
+    // start from inside the liquid, sized to about half the bowl's width
+    const ox = fillBox.left + fillBox.width / 2;
+    const oy = fillBox.top + fillBox.height * 0.42;
+    card.style.setProperty('--dx', (ox - (cardBox.left + cardBox.width / 2)).toFixed(2) + 'px');
+    card.style.setProperty('--dy', (oy - (cardBox.top + cardBox.height / 2)).toFixed(2) + 'px');
+    card.style.setProperty('--sc', (fillBox.width * 0.5 / cardBox.width).toFixed(4));
+
+    dropCurtain();
+    curtain = document.createElement('div');
+    curtain.className = 'mixwin-clone';
+    curtain.setAttribute('aria-hidden', 'true');
+    const bowlCopy = bowlEl.cloneNode(true);
+    bowlCopy.classList.add('is-carrying');   // the copy's level empties in step
+    curtain.append(bowlCopy, fillEl.cloneNode(true));
+    document.body.appendChild(curtain);
+    curtainTimer = setTimeout(dropCurtain, FLIGHT_MS);
+
+    card.style.animation = '';               // now let it fly
+  }
+
   function reallyOpen() {
     wantOpen = false;
     win.hidden = false;
-    /* force the pop animation to replay on every open */
-    const card = win.querySelector('.mixwin__card');
-    if (card) { card.style.animation = 'none'; void card.offsetWidth; card.style.animation = ''; }
     win.classList.add('is-open');
-    render();
-    card?.focus?.();
+    render();                                /* content first, then the flight */
+    const card = win.querySelector('.mixwin__card');
+    if (card) {
+      /* re-trigger the animation each time, then aim it at the bowl */
+      card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+      launchFromBowl(card);
+      card.focus({ preventScroll: true });
+    }
   }
   function open() {
     if (gen.running && !gen.done && !gen.failed) { wantOpen = true; return; }
     reallyOpen();
   }
   function close() {
+    dropCurtain();               /* never leave a stale bowl copy over the page */
     win.classList.remove('is-open');
     win.hidden = true;
   }
