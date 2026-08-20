@@ -16,8 +16,8 @@
 
 (() => {
   const API = '/.netlify/functions/mix-api';
-  const POLL_MS = 2500;
-  const MAX_POLLS = 60;                    /* ~2.5 min ceiling, then fallback */
+  const POLL_MS = 1200;                    /* tight poll — catch the result the moment it lands */
+  const MAX_POLLS = 125;                   /* ~2.5 min ceiling, then fallback */
 
   const win     = document.getElementById('mixwin');
   const big     = document.getElementById('mixwin-big');
@@ -71,7 +71,7 @@
      for the function's request-body limit; fal accepts data URIs) */
   async function shrink(src) {
     const im = await loadImg(src);
-    const k = Math.min(1, 1024 / Math.max(im.naturalWidth, im.naturalHeight));
+    const k = Math.min(1, 800 / Math.max(im.naturalWidth, im.naturalHeight));
     const c = document.createElement('canvas');
     c.width = Math.round(im.naturalWidth * k);
     c.height = Math.round(im.naturalHeight * k);

@@ -42,7 +42,7 @@ const DESCRIBE_PROMPT = `You are writing a dry, encyclopedic catalogue entry for
   "size": "plausible size in the format 'NN cm × NN cm'",
   "weight": "plausible weight in the format 'NNN g'"
 }
-Tone: deadpan, matter-of-fact, subtly absurd. Never mention photography, AI, or that the object is strange.`;
+Tone: deadpan, matter-of-fact, subtly absurd. Never mention photography, AI, or that the object is strange. Invent a NEW, different object identity every time — never reuse "wing dryer" or any previous name; derive the identity from what THIS specific specimen looks like.`;
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -84,6 +84,10 @@ export default async (req) => {
           /* landscape 4:3 — closest to the 1207×975 result card, so the
              full-bleed cover trims only background, never the specimen */
           image_size: 'landscape_4_3',
+          /* medium renders noticeably faster (and cheaper) than the default;
+             at the card's ~1200px display size the difference is invisible.
+             Flip back to 'high' if the analog grain ever suffers. */
+          quality: 'medium',
         }),
       });
       return json(await r.json(), r.status);
