@@ -26,6 +26,7 @@
    (fal generation, 15–40s) happens on fal's queue between our polls.       */
 
 import { getStore } from '@netlify/blobs';
+import { createHash } from 'node:crypto';
 
 const FAL_MODEL = 'openai/gpt-image-2/edit';
 const FAL_QUEUE = 'https://queue.fal.run/' + FAL_MODEL;
@@ -199,8 +200,13 @@ export default async (req) => {
     }
 
     if (action === 'archive-list' || action === 'archive-get' || action === 'archive-delete') {
-      const gate = process.env.ARCHIVE_KEY;
-      if (gate && body.k !== gate) return json({ error: 'wrong key' }, 403);
+      /* READING the archive is private — always. The gate is ARCHIVE_KEY if
+         set, otherwise a one-way hash derived from FAL_KEY, so no extra env
+         var is needed and the value never appears in this public repo. The
+         owner opens archive.html?k=<gate>; without it, 403. */
+      const gate = process.env.ARCHIVE_KEY ||
+        (FAL_KEY ? createHash('sha256').update(FAL_KEY).digest('hex').slice(0, 16) : null);
+      if (!gate || body.k !== gate) return json({ error: 'private archive — key required' }, 403);
       const store = getStore('mixes');
 
       if (action === 'archive-delete') {

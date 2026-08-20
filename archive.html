@@ -116,7 +116,9 @@
     }
   }).catch((e) => {
     const err = document.getElementById('err');
-    err.textContent = 'Could not load the archive: ' + e.message;
+    err.textContent = /key/.test(e.message)
+      ? 'This archive is private — open it with your key link (archive.html?k=…).'
+      : 'Could not load the archive: ' + e.message;
     err.hidden = false;
   });
 })();
