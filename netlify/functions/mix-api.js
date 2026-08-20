@@ -139,7 +139,7 @@ export default async (req) => {
           method: 'POST',
           headers: { Authorization: 'Key ' + FAL_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'anthropic/claude-3.5-sonnet',
+            model: 'google/gemini-flash-1.5',
             prompt: DESCRIBE_PROMPT,
             image_url: imageUrl,
           }),
