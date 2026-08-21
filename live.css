@@ -11,6 +11,14 @@
 /* the strip is gone from the markup — the hero owns the whole card */
 .mixwin__hero { flex: 1 1 100%; }
 
+/* The card is WHITE here, not the base grey (#f0f0f0). In the Figma the
+   specimen photo's own backdrop matched the card, so the object read as
+   floating across the whole window. The live prompt now produces a WHITE
+   backdrop, so a grey card drew a hard rectangle around the photo — the
+   "strange frame" — and on a big screen that empty grey ring only grew.
+   Matching the card to the photo dissolves the frame at every size. */
+.mixwin__card, .mixwin__hero { background: #fff; }
+
 /* the generated photo sits in the design's FIXED 4:3 box, centred in the
    card — per the "חלון תוצאה" agreement the window never expands and the
    photo doesn't either. Measured off the Figma 3263:78 render (796×597 of
