@@ -11,16 +11,17 @@
 /* the strip is gone from the markup — the hero owns the whole card */
 .mixwin__hero { flex: 1 1 100%; }
 
-/* the generated photo fills the ENTIRE dashed card edge to edge (user
-   decision after the first live round). `cover` may trim a sliver of the
-   photo's own grey backdrop at the sides — never the specimen: the prompt
-   forces the specimen centered with generous margins, so it stays whole. */
+/* the generated photo sits in the design's FIXED 4:3 box, centred in the
+   card — per the "חלון תוצאה" agreement the window never expands and the
+   photo doesn't either. Measured off the Figma 3263:78 render (796×597 of
+   1207×975, top y=188). fal returns 4:3 (landscape_4_3), so `contain`
+   lands it in the box one-to-one: uncut, un-stretched. */
 .mixwin__big {
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  left: 17.02%;                 /* (1207 − 796) / 2 */
+  top: 19.28%;                  /* y = 188 of 975 */
+  width: 65.95%;                /* 796 of 1207 */
+  height: 61.23%;               /* 597 of 975 — an exact 4:3 box */
+  object-fit: contain;
   object-position: center;
 }
 

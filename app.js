@@ -104,7 +104,13 @@ function startGauge() {
   const step = () => {
     const pct = fillLevel.getBoundingClientRect().height
               / fillBox.getBoundingClientRect().height * 100;
-    gaugeNum.textContent = Math.max(0, Math.min(100, Math.round(pct))) + '%';
+    let shown = Math.max(0, Math.min(100, Math.round(pct)));
+    /* the gauge never claims done while the dish is still cooking: while the
+       real generation (mix-live.js) is unfinished it holds at 98%, and the
+       ending beat lands the honest 100% only when the result is truly in */
+    const ready = window.mixLiveReady ? window.mixLiveReady() : true;
+    if (shown > 98 && !ready) shown = 98;
+    gaugeNum.textContent = shown + '%';
     gaugeRaf = requestAnimationFrame(step);
   };
   step();
