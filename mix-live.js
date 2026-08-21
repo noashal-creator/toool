@@ -171,9 +171,18 @@
       setStatus('');
       const t = gen.text;
       if (t) {
+        /* the article boxes are absolutely positioned per the Figma, so an
+           over-long description physically collides with the Size block —
+           clamp to the demo copy's footprint at a sentence boundary */
+        let d = t.desc;
+        if (d && d.length > 190) {
+          const cut = d.slice(0, 190);
+          const dot = cut.lastIndexOf('.');
+          d = dot > 80 ? cut.slice(0, dot + 1) : cut + '…';
+        }
         if (t.name && title) title.textContent = t.name;
         if (t.kind && kind) kind.textContent = t.kind;
-        if (t.desc && desc) desc.textContent = t.desc;
+        if (d && desc) desc.textContent = d;
         if (t.size && sizeEl) sizeEl.textContent = t.size;
         if (t.weight && weightEl) weightEl.textContent = t.weight;
       }

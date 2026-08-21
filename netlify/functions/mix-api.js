@@ -48,7 +48,7 @@ const DESCRIBE_PROMPT = `You are writing a dry, encyclopedic catalogue entry for
 {
   "name": "invented object name, 1-2 words, max 14 characters (like 'Wing dryer')",
   "kind": "category phrase, 2 words, max 20 characters (like 'Insect accessory')",
-  "desc": "35-45 words, three dry factual sentences describing what it is, its form, and how it is used (like: 'A wing dryer is an object used for drying the wings of large insects. The body is rounded and compact, with a raised upper section. The insect is placed on the surface while the wings dry.')",
+  "desc": "three SHORT dry factual sentences describing what it is, its form, and how it is used — HARD LIMIT 190 characters total, aim for 25-32 words (like: 'A wing dryer is an object used for drying the wings of large insects. The body is rounded and compact. The insect is placed on the surface while the wings dry.')",
   "size": "plausible size in the format 'NN cm × NN cm'",
   "weight": "plausible weight in the format 'NNN g'"
 }
