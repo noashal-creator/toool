@@ -3,45 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TOOOL — Archive</title>
+<title>TOOOL — Specimen Archive</title>
 <meta name="robots" content="noindex">
 <style>
+  /* The archive borrows the result window's own visual language: grey ground,
+     white dashed cards, Helvetica spec-sheet type, the yellow pill and the
+     label/rule/value stack from .mixwin__spec. Private page — the key rides
+     in the URL (?k=…). */
+  :root {
+    --grey: #f0f0f0;
+    --yellow: #FFE500;
+    --red: #E02020;
+    --ink: #000;
+  }
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 40px 4vw 80px;
-    background: #f0f0f0; color: #000;
+    margin: 0;
+    padding: 46px 5vw 90px;
+    background: var(--grey);
+    color: var(--ink);
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { margin: 0 0 4px; font-size: 28px; text-transform: uppercase; }
-  .sub { margin: 0 0 32px; font-size: 13px; color: #555; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px; }
+
+  /* ── masthead ── */
+  header { max-width: 1500px; margin: 0 auto 34px; }
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 4.4vw, 54px);
+    font-weight: 700;
+    line-height: .96;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+  }
+  .rule { height: 1px; background: var(--ink); margin: 14px 0 12px; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline;
+    font-size: 13px;
+  }
+  .count {
+    display: inline-flex; align-items: center;
+    height: 25px; padding: 0 11px;
+    background: var(--yellow);
+    border: 1px solid var(--ink);
+    border-radius: 12.5px;
+    font-weight: 700; font-size: 13px;
+  }
+  .meta .note { color: #666; }
+
+  /* ── grid of specimens ── */
+  .grid {
+    max-width: 1500px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(348px, 1fr));
+    gap: 26px;
+  }
   .mix {
-    background: #fff; border: 1px dashed #000; border-radius: 12px;
-    padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    background: #fff;
+    border: 1px dashed var(--ink);
+    border-radius: 11px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
   }
-  .mix .result {
-    width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
-    border-radius: 8px; background: #e6e6e6; display: block;
+
+  /* the specimen photo — full-bleed at the top of the card, like the result
+     window: 4:3, no inner frame */
+  .shot {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #fff;
+    border-bottom: 1px dashed var(--ink);
   }
-  .mix .pair { display: flex; gap: 8px; }
-  .mix .pair img {
-    width: 64px; height: 64px; object-fit: cover;
-    border-radius: 6px; border: 1px solid #ccc; background: #e6e6e6;
+  .shot .result {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
-  .mix .pair .arrow { align-self: center; font-size: 18px; }
-  .mix h2 { margin: 0; font-size: 17px; text-transform: uppercase; }
-  .mix .kind { margin: 0; font-size: 12px; text-decoration: underline; }
-  .mix .desc { margin: 0; font-size: 12px; line-height: 1.35; color: #333; }
-  .mix .facts { font-size: 11px; color: #666; }
-  .mix .when { font-size: 11px; color: #999; }
-  .mix a.dl { font-size: 12px; color: #000; }
-  #empty, #err { font-size: 14px; color: #666; }
+  .shot .idx {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    min-width: 25px; height: 25px; padding: 0 7px;
+    background: var(--yellow);
+    border: 1px solid var(--ink);
+    border-radius: 12.5px;
+    font-weight: 700; font-size: 13px;
+  }
+  /* the two uploads, small, bottom-right of the photo — the recipe */
+  .pair {
+    position: absolute; right: 9px; bottom: 9px; z-index: 2;
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 7px;
+    background: rgba(255,255,255,.9);
+    border: 1px solid var(--ink);
+    border-radius: 8px;
+  }
+  .pair img {
+    width: 34px; height: 34px; object-fit: cover;
+    border: 1px solid var(--ink); border-radius: 4px; background: var(--grey);
+    display: block;
+  }
+  .pair .plus { font-weight: 700; font-size: 13px; }
+
+  /* ── the entry ── */
+  .body { padding: 15px 17px 17px; display: flex; flex-direction: column; gap: 9px; }
+  .mix h2 {
+    margin: 0;
+    font-size: 19px; font-weight: 700; line-height: 1.05;
+    text-transform: uppercase;
+  }
+  .kind { margin: 0; font-size: 13px; text-decoration: underline; }
+  .desc { margin: 0; font-size: 13px; line-height: 1.4; color: #222; }
+
+  /* label / rule / value — the result window's spec stack */
+  .specs { display: flex; gap: 30px; margin-top: 3px; }
+  .spec { min-width: 96px; }
+  .spec .k { display: block; font-size: 13px; font-weight: 500; padding-left: 24px; }
+  .spec .r { display: block; width: 78px; height: 0; border-top: 1px solid var(--ink); margin: 4px 0 4px; }
+  .spec .v { display: block; font-size: 13px; font-weight: 500; padding-left: 24px; }
+
+  footer.card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: 4px;
+  }
+  .when { font-size: 11px; color: #999; }
+  a.dl {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 25px; padding: 0 13px;
+    background: var(--yellow);
+    border: 1px solid var(--ink);
+    border-radius: 11px;
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    text-decoration: none; color: var(--ink);
+  }
+  a.dl:hover { filter: brightness(1.06); }
+  a.dl[hidden] { display: none; }
+
+  /* skeleton while a record's images stream in */
+  .mix.is-loading .shot { background: repeating-linear-gradient(45deg,#fafafa 0 10px,#f2f2f2 10px 20px); }
+
+  #empty, #err {
+    max-width: 1500px; margin: 0 auto;
+    padding: 18px 20px;
+    background: #fff; border: 1px dashed var(--ink); border-radius: 11px;
+    font-size: 14px;
+  }
+  #err { border-color: var(--red); }
 </style>
 </head>
 <body>
 
-<h1>TOOOL — Archive</h1>
-<p class="sub">Every mix made on the site: the two uploads, the specimen, and its entry. Newest first.</p>
+<header>
+  <h1>Specimen archive</h1>
+  <div class="rule"></div>
+  <div class="meta">
+    <span class="count" id="count">—</span>
+    <span class="note">Every mix made on the site: the two uploads, the specimen, and its entry. Newest first. Private.</span>
+  </div>
+</header>
 
 <p id="empty" hidden>The archive is empty — no mixes have been made yet.</p>
 <p id="err" hidden></p>
@@ -50,7 +170,7 @@
 <script>
 (() => {
   const API = '/.netlify/functions/mix-api';
-  /* if an ARCHIVE_KEY env var is set on the server, pass it as ?k=... */
+  /* the archive is private: the gate rides in the URL as ?k=… */
   const K = new URLSearchParams(location.search).get('k') || undefined;
 
   const api = async (payload) => {
@@ -65,61 +185,80 @@
   };
 
   const grid = document.getElementById('grid');
-
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  function card(item) {
-    const el = document.createElement('article');
-    el.className = 'mix';
+  const when = (iso) => {
+    const d = new Date(iso || 0);
+    return isNaN(d) ? '' : d.toLocaleString([], {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+    });
+  };
+
+  function card(item, n) {
     const t = item.text || {};
+    const el = document.createElement('article');
+    el.className = 'mix is-loading';
     el.innerHTML =
-      '<img class="result" alt="Generated specimen">' +
-      '<div class="pair">' +
-        '<img class="in-a" alt="Upload 1"><span class="arrow">→</span><img class="in-b" alt="Upload 2">' +
+      '<div class="shot">' +
+        '<span class="idx">' + String(n).padStart(2, '0') + '</span>' +
+        '<img class="result" alt="Generated specimen">' +
+        '<span class="pair">' +
+          '<img class="in-a" alt="Upload 1"><span class="plus">+</span><img class="in-b" alt="Upload 2">' +
+        '</span>' +
       '</div>' +
-      '<h2>' + esc(t.name || 'Untitled specimen') + '</h2>' +
-      (t.kind ? '<p class="kind">' + esc(t.kind) + '</p>' : '') +
-      (t.desc ? '<p class="desc">' + esc(t.desc) + '</p>' : '') +
-      '<p class="facts">' + [t.size, t.weight].filter(Boolean).map(esc).join(' · ') + '</p>' +
-      '<p class="when">' + new Date(item.at || 0).toLocaleString() + '</p>' +
-      '<a class="dl" download="toool-' + esc(item.id) + '.png" hidden>Download result</a>';
+      '<div class="body">' +
+        '<h2>' + esc(t.name || 'Untitled specimen') + '</h2>' +
+        (t.kind ? '<p class="kind">' + esc(t.kind) + '</p>' : '') +
+        (t.desc ? '<p class="desc">' + esc(t.desc) + '</p>' : '') +
+        '<div class="specs">' +
+          '<span class="spec"><span class="k">Size</span><span class="r"></span>' +
+            '<span class="v">' + esc(t.size || '—') + '</span></span>' +
+          '<span class="spec"><span class="k">Weight</span><span class="r"></span>' +
+            '<span class="v">' + esc(t.weight || '—') + '</span></span>' +
+        '</div>' +
+        '<footer class="card-foot">' +
+          '<span class="when">' + esc(when(item.at)) + '</span>' +
+          '<a class="dl" download="toool-' + esc(item.id) + '.png" hidden>Download</a>' +
+        '</footer>' +
+      '</div>';
     return el;
   }
 
-  /* images are heavy (full records) — fetch each card's record only when it
-     scrolls into view */
+  /* full records carry the images, so fetch each one only as it nears view */
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       io.unobserve(e.target);
-      const id = e.target.dataset.id;
-      api({ action: 'archive-get', id }).then((rec) => {
+      api({ action: 'archive-get', id: e.target.dataset.id }).then((rec) => {
         const res = rec.result || rec.result_url;
-        const img = e.target.querySelector('.result');
-        img.src = res;
+        e.target.querySelector('.result').src = res;
         e.target.querySelector('.in-a').src = rec.a || '';
         e.target.querySelector('.in-b').src = rec.b || '';
         const dl = e.target.querySelector('.dl');
         dl.href = res; dl.hidden = false;
-      }).catch(() => {});
+        e.target.classList.remove('is-loading');
+      }).catch(() => e.target.classList.remove('is-loading'));
     }
-  }, { rootMargin: '400px' });
+  }, { rootMargin: '500px' });
 
   api({ action: 'archive-list' }).then(({ items }) => {
+    document.getElementById('count').textContent =
+      items.length + (items.length === 1 ? ' specimen' : ' specimens');
     if (!items.length) { document.getElementById('empty').hidden = false; return; }
-    for (const item of items) {
-      const el = card(item);
+    items.forEach((item, i) => {
+      const el = card(item, items.length - i);
       el.dataset.id = item.id;
       grid.appendChild(el);
       io.observe(el);
-    }
+    });
   }).catch((e) => {
     const err = document.getElementById('err');
-    err.textContent = /key/.test(e.message)
+    err.textContent = /key/i.test(e.message)
       ? 'This archive is private — open it with your key link (archive.html?k=…).'
       : 'Could not load the archive: ' + e.message;
     err.hidden = false;
+    document.getElementById('count').textContent = '—';
   });
 })();
 </script>

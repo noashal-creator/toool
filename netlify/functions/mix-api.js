@@ -49,9 +49,10 @@ const DESCRIBE_PROMPT = `You are writing a dry, encyclopedic catalogue entry for
   "name": "invented object name, 1-2 words, max 14 characters (like 'Wing dryer')",
   "kind": "category phrase, 2 words, max 20 characters (like 'Insect accessory')",
   "desc": "three SHORT dry factual sentences describing what it is, its form, and how it is used — HARD LIMIT 190 characters total, aim for 25-32 words (like: 'A wing dryer is an object used for drying the wings of large insects. The body is rounded and compact. The insect is placed on the surface while the wings dry.')",
-  "size": "plausible size in the format 'NN cm × NN cm'",
-  "weight": "plausible weight in the format 'NNN g'"
+  "size": "FIRST judge how big this thing really is in the world from the photo, then state it as 'NN cm × NN cm' — or 'N.N m × N.N m' once either dimension passes 100 cm",
+  "weight": "MUST follow physically from the size above and the material you can see: estimate the volume, multiply by a believable density. Format 'NNN g' below one kilo, 'N.N kg' above it"
 }
+PHYSICAL CONSISTENCY IS MANDATORY. Sanity anchors: palm-sized (5-15 cm) = 20-500 g; desk-sized (20-40 cm) = 0.3-3 kg; body- or furniture-sized (0.8-2 m) = 15-150 kg. NEVER state a weight that could not physically belong to the stated size — a 1.8 m creature can not weigh 750 g. Vary the numbers between specimens: never repeat 750 g, 180 g, or any round value you would reach for by default.
 Tone: deadpan, matter-of-fact, subtly absurd. Never mention photography, AI, or that the object is strange. Invent a NEW, different object identity every time — never reuse "wing dryer" or any previous name; derive the identity from what THIS specific specimen looks like.`;
 
 const json = (obj, status = 200) =>

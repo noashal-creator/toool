@@ -63,3 +63,22 @@
    mix-modal.js), so the card keeps styles.css's card-fly-smooth animation.
    Pages with no bowl (the test bench) still pop: with no --dx/--dy set the
    flight simply plays in place. */
+
+/* ══ the card is a FIXED size — never "responsive" ═══════════════════════
+   styles.css sizes the card off --s (100dvh/1080), so going full screen made
+   it grow, and its --fit ceiling shrank it again on narrow-aspect windows:
+   the same window kept arriving at a different size. The user asked for one
+   size, always.
+
+   0.874px is exactly the scale she already sees on her own screen
+   (1512×944 measured 1055×852), so locking it changes nothing visually — it
+   only stops it moving. The two calc() terms are an OVERFLOW GUARD ONLY, for
+   windows too small to hold 1055×852; one shared factor drives both axes, so
+   the 1207:975 ratio can never distort. */
+.mixwin__card {
+  --u: min(0.874px,
+           calc((100vw - var(--sbw) - 4vw) / 1207),
+           calc((100dvh - 4vh) / 975));
+  width: calc(1207 * var(--u));
+  height: calc(975 * var(--u));
+}
