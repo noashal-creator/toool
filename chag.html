@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — חג</title>
+<link rel="stylesheet" href="assets/fonts/spikes-font.css">
+<link rel="stylesheet" href="styles.css?v=mid1">
+<link rel="stylesheet" href="live.css?v=9">
+<link rel="stylesheet" href="chag.css?v=32">
+</head>
+<body>
+
+<!-- ══ fixed left sidebar ═══════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="panel">
+
+    <!-- ══ FINAL holiday sidebar — Figma 3399:379: yellow panel, the site's
+         dashed-stroke title glyph (the frame uses the same lettering), two
+         numbered purple circles, the instructions, the hand-with-spoon
+         pointing DOWN into a purple MIX ellipse, purple/red bowl. ══ -->
+    <!-- every text block is the frame's own dashed-stroke lettering, exported
+         as pixels — CSS text-stroke has no dasharray, so live type can't do it -->
+    <p class="sb-title"><img src="assets/chag/sym2/txt-title.png" alt="Let's make something"></p>
+
+    <span class="chag-step chag-step--1" aria-hidden="true"><span>1</span></span>
+    <p class="chag-instr chag-instr--1"><img src="assets/chag/sym2/txt-select.png" alt="Select two objects"></p>
+
+    <span class="chag-step chag-step--2" aria-hidden="true"><span>2</span></span>
+    <p class="chag-instr chag-instr--2"><img src="assets/chag/sym2/txt-clickmix.png" alt="Click mix to combine"></p>
+
+    <!-- the two upload slots stay in the DOM (app.js fills them and feeds the
+         bowl churn from them) but they are fully invisible in this design -->
+    <button type="button" class="slot" id="slot-a" aria-describedby="slot-a-label">
+      <span class="slot__num" aria-hidden="true"><span class="slot__num-d">1</span></span>
+      <span class="slot__label" id="slot-a-label">object 1</span>
+      <img class="slot__preview" alt="">
+    </button>
+    <button type="button" class="slot" id="slot-b" aria-describedby="slot-b-label">
+      <span class="slot__num" aria-hidden="true"><span class="slot__num-d">2</span></span>
+      <span class="slot__label" id="slot-b-label">object 2</span>
+      <img class="slot__preview" alt="">
+    </button>
+
+    <!-- the hand, the spoon's round handle-end, and the MIX ellipse are ONE
+         RIGID UNIT (her spec: "הכף והכפתור מיקס הם מקשה אחת") — the button
+         lives INSIDE the rig so every descend/stir/lift moves them together
+         and they can never drift apart. -->
+    <div class="spoon-rig" id="spoon-rig">
+      <span class="hand" aria-hidden="true">
+        <!-- the hand + tan handle-end cap, composited at 10× from the frame's
+             own crop numbers (hand-unit.png) — no CSS crop math to drift -->
+        <img src="assets/chag/sym2/hand-unit.png?v=1" alt="">
+      </span>
+      <button type="button" class="run" id="run" aria-label="MIX"><span class="run__label" aria-hidden="true">mix</span></button>
+    </div>
+
+    <div class="bowl" aria-hidden="true">
+      <!-- HOLIDAY VARIATION: the picked symbols sit IN the bowl — ABOVE the
+           red rim (z1) and BELOW the purple body (z22), so the rim shows
+           behind them and the body covers their feet. chag-pick.js fills
+           the two imgs. -->
+      <div class="chag-bowl-picks" aria-hidden="true">
+        <img class="chag-bowl-picks__a" alt="">
+        <img class="chag-bowl-picks__b" alt="">
+      </div>
+      <!-- inlined (not <img>) so .bowl's `color` can drive the fill via
+           currentColor — the colour panel's "bowl" swatch needs a real CSS
+           colour to target, which an externally-referenced SVG can't expose -->
+      <svg class="bowl__body" preserveAspectRatio="none" overflow="visible" width="239.639" height="117.143" viewBox="0 0 239.639 117.143" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g id="Subtract">
+          <mask id="path-1-inside-1_0_4" fill="white">
+            <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z"/>
+          </mask>
+          <path d="M1.9043 0C1.90523 8.94165 55.4181 16.1904 121.429 16.1904C181.4 16.1904 231.054 10.2061 239.639 2.40625L177.039 117.143H63.9131L0 0H1.9043Z" fill="currentColor"/>
+          <path d="M1.9043 0L2.9043 -0.000103812L2.90419 -1H1.9043V0ZM121.429 16.1904V17.1904V17.1904V16.1904ZM239.639 2.40625L240.517 2.8852L238.966 1.66612L239.639 2.40625ZM177.039 117.143V118.143H177.633L177.917 117.622L177.039 117.143ZM63.9131 117.143L63.0352 117.622L63.3195 118.143H63.9131V117.143ZM0 0V-1H-1.68476L-0.877842 0.478951L0 0ZM1.9043 0L0.904297 0.000103812C0.904468 1.64816 2.1244 3.00028 3.78095 4.09678C5.48534 5.22496 7.9342 6.2749 10.9926 7.25437C17.1235 9.21777 25.9427 10.9715 36.7786 12.4393C58.4652 15.3769 88.393 17.1904 121.429 17.1904V16.1904V15.1904C88.4538 15.1904 58.6199 13.3796 37.0471 10.4574C26.2534 8.99529 17.5685 7.26024 11.6026 5.34966C8.6127 4.39213 6.365 3.40877 4.88487 2.42904C3.3569 1.41764 2.90436 0.587255 2.9043 -0.000103812L1.9043 0ZM121.429 16.1904V17.1904C151.443 17.1904 178.89 15.6931 199.921 13.2164C210.434 11.9783 219.363 10.4933 226.217 8.82213C229.643 7.98668 232.569 7.10038 234.923 6.16761C237.259 5.24166 239.106 4.24176 240.311 3.14638L239.639 2.40625L238.966 1.66612C238.026 2.52071 236.442 3.41403 234.186 4.3083C231.947 5.19573 229.116 6.05662 225.743 6.87906C218.998 8.52368 210.157 9.99716 199.687 11.2301C178.751 13.6956 151.385 15.1904 121.429 15.1904V16.1904ZM239.639 2.40625L238.761 1.9273L176.161 116.664L177.039 117.143L177.917 117.622L240.517 2.8852L239.639 2.40625ZM177.039 117.143V116.143H63.9131V117.143V118.143H177.039V117.143ZM63.9131 117.143L64.7909 116.664L0.877842 -0.478951L0 0L-0.877842 0.478951L63.0352 117.622L63.9131 117.143ZM0 0V1H1.9043V0V-1H0V0Z" fill="black" mask="url(#path-1-inside-1_0_4)"/>
+        </g>
+      </svg>
+      <svg class="bowl__rim" preserveAspectRatio="none" overflow="visible" width="239" height="33" viewBox="0 0 239 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path id="Ellipse 64" d="M119.5 0.5C152.483 0.5 182.334 2.34623 203.931 5.32812C214.733 6.8196 223.449 8.59236 229.454 10.5527C232.46 11.534 234.757 12.5528 236.293 13.5889C237.85 14.6396 238.5 15.6216 238.5 16.5C238.5 17.3784 237.85 18.3604 236.293 19.4111C234.757 20.4472 232.46 21.466 229.454 22.4473C223.449 24.4076 214.733 26.1804 203.931 27.6719C182.334 30.6538 152.483 32.5 119.5 32.5C86.5166 32.5 56.6656 30.6538 35.0693 27.6719C24.2675 26.1804 15.5511 24.4076 9.5459 22.4473C6.53996 21.466 4.24256 20.4472 2.70703 19.4111C1.14985 18.3604 0.5 17.3784 0.5 16.5C0.5 15.6216 1.14985 14.6396 2.70703 13.5889C4.24256 12.5528 6.53996 11.534 9.5459 10.5527C15.5511 8.59236 24.2675 6.8196 35.0693 5.32812C56.6656 2.34623 86.5166 0.5 119.5 0.5Z" fill="currentColor" stroke="black"/>
+      </svg>
+    </div>
+    <!-- The bowl fills with a churning blend of the two uploads rather than a
+         flat colour. .bowl-mix is pinned to the BOWL, not to the level, so the
+         rising level reveals it like liquid instead of stretching it. It is
+         deliberately much larger than the bowl (380×240 against 239.64×117.14):
+         the displacement filter below peaks at scale 110, i.e. it shoves pixels
+         up to ±55 units, and anything smaller lets the red show at the sides.
+         app.js points the two <img>s at the user's own uploads on MIX. -->
+    <div class="bowl-fill" aria-hidden="true">
+      <span class="bowl-fill__level">
+        <span class="bowl-mix">
+          <img class="bowl-mix__a" alt="">
+          <img class="bowl-mix__b" alt="">
+          <!-- image 1 again, on top, showing only through stripes. The bowl's
+               displacement filter warps those stripes into swirling veins, so
+               image 1's own COLOURS come back into the mix instead of only its
+               light. hard-light alone let the top layer own the palette —
+               measured at 83% of pixels — which is why the bowl read as one
+               image. See .bowl-mix__vein in styles.css. -->
+          <img class="bowl-mix__vein" alt="">
+        </span>
+        <span class="bowl-wave"></span>
+      </span>
+    </div>
+    <!-- feTurbulence builds a noise field; feDisplacementMap pushes every pixel
+         of the blend by it. Animating baseFrequency, seed AND the scale is what
+         keeps it churning instead of sitting as a frozen distortion. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="bowl-marble" x="-40%" y="-40%" width="180%" height="180%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.006 0.012" numOctaves="4" seed="5" result="noise">
+          <animate attributeName="baseFrequency" dur="6s" repeatCount="indefinite"
+                   values="0.006 0.012; 0.014 0.006; 0.006 0.012"/>
+          <animate attributeName="seed" dur="6s" repeatCount="indefinite" values="5;13;5"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" xChannelSelector="R" yChannelSelector="G" scale="60">
+          <animate attributeName="scale" dur="6s" repeatCount="indefinite" values="45;110;45"/>
+        </feDisplacementMap>
+      </filter>
+
+      <!-- Turns ONLY the warm pixels purple, in the chase band's cut-outs.
+           A plain CSS hue-rotate() would do the yellow and the red correctly —
+           and greys are immune to it, so black tyres and white highlights are
+           safe either way — but it would also swing the car's GREEN bumper
+           round to red. Nothing in CSS can rotate one hue and not another, so
+           the selection happens here.
+
+           HOW THE SELECTION WORKS. warmth = R − B, written into alpha by the
+           first matrix. That one subtraction separates the set cleanly:
+             yellow .92   red .64   |   green .31   skin .31   grey/white 0
+           feComponentTransfer then hardens it into a switch — the ramp sits in
+           the gap between .31 and .64, so warm goes to 1 and everything else to
+           roughly 0. Intersecting with SourceAlpha keeps the cut-out's own
+           transparent margin out of the mask.
+
+           Then the rotated copy is punched to that mask and laid back over the
+           untouched original, so only the warm areas change. -->
+      <filter id="warm-to-purple" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" result="warmth"
+                       values="1 0 0 0 0
+                               0 1 0 0 0
+                               0 0 1 0 0
+                               1 0 -1 0 0"/>
+        <feComponentTransfer in="warmth" result="warmSoft">
+          <feFuncA type="table" tableValues="0 0 0 0.35 1 1 1 1"/>
+        </feComponentTransfer>
+        <feComposite in="warmSoft" in2="SourceAlpha" operator="in" result="warmMask"/>
+
+        <feColorMatrix in="SourceGraphic" type="hueRotate" values="266" result="rotated"/>
+        <feComposite in="rotated" in2="warmMask" operator="in" result="rotatedWarm"/>
+
+        <feMerge>
+          <feMergeNode in="SourceGraphic"/>
+          <feMergeNode in="rotatedWarm"/>
+        </feMerge>
+      </filter>
+    </svg>
+    <!-- visible loading read-out. The spoken version lives in #status, which is
+         screen-reader-only — this is the sighted equivalent, and the two say the
+         same thing. app.js drives the number off the DRAWN level, never off a
+         second timer, so it can't disagree with the bowl. -->
+    <div class="bowl-gauge" aria-hidden="true">
+      <span class="bowl-gauge__num">0%</span>
+      <span class="bowl-gauge__ready">ready</span>
+    </div>
+    <div class="bowl-floor" aria-hidden="true"></div>
+
+  </div>
+</aside>
+
+<!-- ══ main content — HOLIDAY VARIATION ═════════════════════════════════
+     No cow spectrum, no toy sections, no sideways reel. Just the logo band
+     and, beneath it, the picker: a big grid of the 8 holiday symbols. Pick
+     two → the two hidden slots in the sidebar fill → MIX → the bowl stirs →
+     the pre-prepared result opens. -->
+<main class="content chag-main">
+
+  <!-- the blue band with the interlocking-rings "toool" lockup. This is the
+       EXPORTED RENDER of the Figma text node (3399:305): the local cut of the
+       Spikes Mono font draws the o's ring wider than Figma's, so live type
+       merged the rings where the frame shows them crossing with a gap — the
+       frame's own pixels are the only exact reproduction. -->
+  <div class="chag-logoband" aria-hidden="true">
+    <img class="chag-logo" src="assets/chag/sym2/logo.png?v=3" alt="">
+  </div>
+  <h1 class="sr-only">toool</h1>
+
+  <!-- the 4×2 symbol grid — white cells split by 1px black 3-3 dashed rules;
+       a picked cell's background turns red (#E60000). chag-pick.js fills it
+       from CHAG_GRID. -->
+  <section class="chag-stage" id="chag-stage" aria-label="בחרו שני סימני חג">
+    <div class="chag-picker" id="chag-picker"></div>
+  </section>
+
+</main>
+
+<!-- ══ mix result popup — pops up ~10s after MIX (Figma node 3062:4) ═════ -->
+<div class="mixwin" id="mixwin" hidden>
+  <div class="mixwin__card" role="dialog" aria-modal="true" tabindex="-1"
+       aria-label="Generated midpoint result">
+
+    <div class="mixwin__hero">
+      <img class="mixwin__big" id="mixwin-big" src="assets/mix/n-03.png"
+           alt="The generated midpoint object">
+
+      <!-- the spec sheet (Figma 3234:272/273 + the two Line 5 rules). Title,
+           kind, desc, Size and Weight are written live per generation by
+           mix-live.js (describe → image-aware text). -->
+      <div class="mixwin__article">
+        <h2 class="mixwin__title">Wing dryer</h2>
+        <div class="mixwin__body">
+          <p class="mixwin__kind"><span class="u">Insect accessory</span></p>
+          <p class="mixwin__desc">A wing dryer is an object used for drying the wings of
+             large insects. The body is rounded and compact, with a raised upper section.
+             The insect is placed on the surface while the wings dry.</p>
+        </div>
+        <!-- label, then the rule, then the value: measured off the Figma render,
+             the 78-wide rule sits BETWEEN the two (y=215 / y=279) while the text
+             is indented to x=45 and the rule starts back at x=16. -->
+        <div class="mixwin__spec mixwin__spec--size">
+          <span class="mixwin__spec-label">Size</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-size">12 cm × 8 cm</span>
+        </div>
+        <div class="mixwin__spec mixwin__spec--weight">
+          <span class="mixwin__spec-label">Weight</span>
+          <span class="mixwin__spec-rule" aria-hidden="true"></span>
+          <span class="mixwin__spec-value" id="mixwin-weight">180 g</span>
+        </div>
+      </div>
+
+      <div class="mixwin__actions">
+        <button type="button" class="mixwin__dl" id="mixwin-dl" aria-label="Download">
+          <!-- The word carries a DASHED outline on the letterforms (Figma 3229:179).
+               CSS cannot dash a text stroke, and a flattened PNG went coarse once
+               scaled down, so it is drawn as SVG text: real type, real dashed
+               stroke, crisp at any size. textLength pins it to the Figma 151. -->
+          <svg class="mixwin__dl-word" viewBox="0 0 151 30" aria-hidden="true">
+            <text x="75.5" y="24" text-anchor="middle" textLength="143" lengthAdjust="spacing"
+                  font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="25"
+                  fill="#000" stroke="#000" stroke-width="0.7"
+                  stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
+          </svg>
+        </button>
+        <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
+          <svg viewBox="0 0 26 26" aria-hidden="true">
+            <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
+            <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- LIVE: no play button, no spectrum strip — one real generated image
+         (Figma node 3263:78). The status line reports the generation state
+         if it ever fails; while fal works, the bowl churn IS the wait and
+         the window only opens once the result is ready (mix-live.js). -->
+    <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
+
+  </div>
+</div>
+
+<p class="status" id="status" role="status" aria-live="polite"></p>
+
+<input type="file" id="picker" accept="image/*" hidden>
+
+<!-- HOLIDAY VARIATION: only the mixing engine + the logo + the picker.
+     The cow spectrum, the toy sections and the sideways reel are gone, so
+     their scripts (hero / game / toys / roll / hero-chase / intro-loop /
+     sideways / recording / clip-stage / auto-mix) are dropped. -->
+<script src="app.js?v=20"></script>
+<script src="chag-data.js?v=6"></script>
+<script src="chag-pick.js?v=8"></script>
+<script src="chag-live.js?v=2"></script>
+<!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the
+     grid cells, gridlines and page background. -->
+<script src="chag-color-edit.js?v=3"></script>
+</body>
+</html>

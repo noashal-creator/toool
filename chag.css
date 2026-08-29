@@ -1,0 +1,381 @@
+/* ─────────────────────────────────────────────────────────────────────
+   chag.css — the holiday variation, FINAL design (Figma frame 3399:379).
+
+   Every length here is the frame's own number × var(--s): the frame is
+   1921×1080 and the site's unit is --s = 100dvh/1080, so a Figma pixel
+   maps 1:1 to one design unit. Values were pulled from the frame's data
+   (get_design_context) and from the exported SVGs themselves — including
+   stroke widths and the 3-3 dash of the grid rules.
+
+   Layout: yellow sidebar (348) with live type + numbered steps + hand +
+   purple MIX + purple/red bowl · blue logo band (374 tall) with the
+   interlocking live-type lockup · 4×2 white grid split by dashed rules.
+   A picked cell's background turns #E60000.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* ── palette (the frame's own fills) ── */
+:root {
+  --panel: #FFFF01;          /* sidebar yellow  (Rectangle 152) */
+  --chag-red:    #E60000;    /* picked cell + logo red          */
+  --chag-blue:   #0048FF;    /* logo band      (Rectangle 81)   */
+  --chag-purple: #560476;    /* circles, MIX, bowl body         */
+  /* The LIQUID is red, the BOWL is purple — the inverse of the main site's
+     red-bowl/purple-liquid, same readable contrast. Purple-on-purple (tried)
+     made the rising level invisible: it read as a purple curtain coming
+     DOWN. The red liquid also ties to the red rim — the bowl's inside.
+     --bowl-color drives the waterline (.bowl-wave); the body's purple is
+     pinned separately on .bowl below. */
+  --bowl-color: #FE0000;
+}
+
+/* ── the LIQUID, aligned to THIS bowl. The frame puts the bowl at x=54; the
+      site's fill/gauge were authored for x=57 — without these the whole
+      liquid sat 3u right of the bowl ("התכולה לא תואמת לשוליים"). ── */
+.bowl-fill  { left: calc(54 * var(--s)); }
+.bowl-gauge { left: calc(54 * var(--s)); }
+
+/* the liquid under the blend */
+.bowl-fill__level { background: #FE0000; }
+
+/* THE WAVE IS THE BLEND'S OWN EDGE — no coloured strip. The level's top is
+   masked into the site's wave silhouette, so the photos themselves end in a
+   wavy surface ("צריך גל למעלה" אבל "למה קו אדום") — and the red strip
+   element is off. Two mask layers union: the scalloped top tile + a solid
+   sheet below it. */
+.bowl-fill__level {
+  --wave-crest: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='13' viewBox='0 0 60 13' preserveAspectRatio='none'><path d='M0 7 Q 7.5 1 15 7 T 30 7 T 45 7 T 60 7 L60 13 L0 13 Z' fill='black'/></svg>");
+  -webkit-mask-image: var(--wave-crest), linear-gradient(#000, #000);
+          mask-image: var(--wave-crest), linear-gradient(#000, #000);
+  -webkit-mask-repeat: repeat-x, no-repeat;
+          mask-repeat: repeat-x, no-repeat;
+  -webkit-mask-size: calc(60 * var(--s)) calc(13 * var(--s)), 100% calc(100% - 12 * var(--s));
+          mask-size: calc(60 * var(--s)) calc(13 * var(--s)), 100% calc(100% - 12 * var(--s));
+  -webkit-mask-position: 0 0, 0 calc(12 * var(--s));
+          mask-position: 0 0, 0 calc(12 * var(--s));
+}
+.bowl-wave { display: none !important; }
+
+/* ═══ SIDEBAR ═══════════════════════════════════════════════════════ */
+
+/* the frame's sidebar stroke is 1px — the site's 2u rule is too heavy here */
+.sidebar::after { border-right-width: 1px; }
+
+/* the three text blocks are the FRAME'S OWN dashed-stroke lettering, exported
+   as transparent PNGs (txt-*.png) and pinned at each node's ink box:
+     title ink 290×86 centred on x=174, block top 45 →   (29, 47)
+     "SELECT TWO OBJECTS" ink 304×81, block top 250  → (21.5, 259)
+     "CLICK MIX TO COMBINE" ink 303×81, block top 465 →  (22, 474)   */
+.sb-title, .chag-instr { position: absolute; margin: 0; z-index: 2; }
+.sb-title img, .chag-instr img { width: 100%; height: auto; display: block; }
+.sb-title       { left: calc(29 * var(--s));   top: calc(47 * var(--s));  width: calc(290 * var(--s)); height: auto; }
+.chag-instr--1  { left: calc(21.5 * var(--s)); top: calc(259 * var(--s)); width: calc(304 * var(--s)); }
+.chag-instr--2  { left: calc(22 * var(--s));   top: calc(474 * var(--s)); width: calc(303 * var(--s)); }
+
+/* the numbered purple circles (Ellipse 73: 50×63, #560476, 1px black) */
+.chag-step {
+  position: absolute;
+  left: calc(149 * var(--s)); width: calc(50 * var(--s)); height: calc(63 * var(--s));
+  background: var(--chag-purple);
+  border: 1px solid #000;
+  border-radius: 50%;
+  z-index: 2;
+}
+.chag-step--1 { top: calc(166 * var(--s)); }
+.chag-step--2 { top: calc(375 * var(--s)); }
+.chag-step span {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%);
+  color: #fff; font-weight: 700;
+  font-size: calc(47 * var(--s)); line-height: 1;
+}
+
+/* ── the two slots: pure machinery now (app.js feeds the bowl from them) —
+      completely invisible, out of the way, but still in the layout tree ── */
+#slot-a, #slot-b {
+  left: 0; top: 0; width: 1px; height: 1px;
+  opacity: 0; pointer-events: none; overflow: hidden;
+  background: none; border: none;
+}
+.slot__frame { display: none; }
+
+/* ── the hand with the spoon, pointing DOWN into the MIX ellipse.
+      Figma: hand box (137,609.5) 73.6×251.8, rotated 180. The MIX button is
+      a CHILD of this rig (one rigid unit), so its own site animations are
+      switched off below and the rig's transform carries everything. ── */
+.spoon-rig {
+  left: calc(137 * var(--s));
+  top: calc(602 * var(--s));
+  width: calc(73.6 * var(--s));
+  height: calc(259.4 * var(--s));      /* cap top (602) → spoon head (861.4) */
+  transform-origin: 50% 30%;          /* the grip — the unit pivots at the fist */
+}
+/* the frame's own crop, verbatim: the BOX is rotated 180 and clips; inside
+   it the photo is oversized (196.15% wide, pushed left 43.59%) so only the
+   wrist + spoon show, big, the spoon head meeting the MIX ellipse below. */
+/* the hand + tan cap are ONE pre-composited image (hand-unit.png, built at
+   10× from the frame's own crop values), so there is no CSS crop or flip to
+   drift. The MIX ellipse (z3) paints over it and hides the spoon's metal
+   head, exactly like the frame (styles.css's .hand z-index:20 is reset). */
+.spoon-rig .hand {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  overflow: visible;
+  transform: none;
+  z-index: 1;
+}
+.spoon-rig .hand img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  max-width: none;
+  transform: none;
+  filter: none;                        /* no recolour — the frame's own photo */
+}
+.hand-tip, .chag-spoon-tip { display: none; }
+
+/* the spoon's scoop tip above the fist — Ellipse 65 (15×41 rotated 90 → 41×15)
+   at the frame's (137.6, 602), i.e. just above the hand box inside the rig */
+.chag-spoon-tip {
+  position: absolute;
+  left: calc(0.57 * var(--s));          /* frame: tip at 137.57, rig at 137 */
+  top: 0;                               /* frame: tip at 602 = the rig's top */
+  width: calc(41 * var(--s));
+  height: calc(15 * var(--s));
+  display: block;
+  z-index: 2;                           /* the round cap sits OVER the hand's top */
+}
+
+/* ── MIX — the purple upright ellipse (Ellipse 66 rotated 90: 72×121) with
+      vertical dashed lettering. It is positioned INSIDE the rig (rig at
+      137,602; frame puts MIX at 139.5,763 → 2.5,161 rig-relative). ── */
+.run {
+  position: absolute;
+  left: calc(2.5 * var(--s));
+  top: calc(161 * var(--s));
+  width: calc(72 * var(--s));
+  height: calc(121 * var(--s));
+  background: var(--chag-purple);
+  border: 1px solid #000;
+  border-radius: 50%;
+  transform: none;
+  margin: 0;
+  z-index: 3;                          /* the ellipse hides the spoon's metal head */
+}
+/* the unit is ONE piece: the rig carries all motion, so the button's own
+   site choreography (which was written for the separate horizontal pill)
+   is fully switched off — including the idle twitch and the border tricks. */
+#run, #run.is-mixing, #run.is-finishing, #run.is-done {
+  animation: none !important;
+}
+#run.is-finishing { border-color: #000; box-shadow: none; }
+.run::before, .run::after { content: none; }
+/* the MIX lettering is the frame's own dashed-stroke type (extracted from the
+   render as txt-mix.png, already vertical) — live text can't dash its stroke */
+.run__label {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(50 * var(--s)); height: calc(97 * var(--s));
+  transform: translate(-50%, -50%);
+  background: url('assets/chag/sym2/txt-mix.png') center / contain no-repeat;
+  color: transparent;
+  font-size: 0; line-height: 0;
+}
+.run.is-disabled { cursor: not-allowed; }
+
+/* ── the stir choreography, rebuilt for THIS unit. The site's keyframes swing
+      a horizontal spoon 90° into the bowl; here the unit already hangs
+      vertically above it, so the motion is a DROP (the MIX ellipse dips into
+      the liquid), a rotation-stir about the grip, and a lift back. Durations
+      are the site's own (800/640/1080/600ms) so app.js's cycle-boundary
+      hand-offs and the bowl-jiggle stay perfectly in sync. steps(1) keeps the
+      stop-motion feel. ── */
+@keyframes chag-rig-descend {
+  0%   { transform: translateY(0);                        animation-timing-function: steps(1); }
+  20%  { transform: translateY(calc(-14 * var(--s)));     animation-timing-function: steps(1); } /* wind-up lift */
+  50%  { transform: translateY(calc(40 * var(--s)));      animation-timing-function: steps(1); }
+  78%  { transform: translateY(calc(80 * var(--s)));      animation-timing-function: steps(1); }
+  100% { transform: translateY(calc(100 * var(--s))); }                                           /* ellipse in the liquid */
+}
+@keyframes chag-rig-stir {
+  0%   { transform: translateY(calc(100 * var(--s))) rotate(0deg);   animation-timing-function: steps(1); }
+  10%  { transform: translateY(calc(100 * var(--s))) rotate(7deg);   animation-timing-function: steps(1); }
+  22%  { transform: translateY(calc(100 * var(--s))) rotate(9deg);   animation-timing-function: steps(1); }
+  34%  { transform: translateY(calc(100 * var(--s))) rotate(4deg);   animation-timing-function: steps(1); }
+  46%  { transform: translateY(calc(100 * var(--s))) rotate(-5deg);  animation-timing-function: steps(1); }
+  58%  { transform: translateY(calc(100 * var(--s))) rotate(-8deg);  animation-timing-function: steps(1); }
+  70%  { transform: translateY(calc(100 * var(--s))) rotate(-4deg);  animation-timing-function: steps(1); }
+  82%  { transform: translateY(calc(100 * var(--s))) rotate(6deg);   animation-timing-function: steps(1); }
+  92%  { transform: translateY(calc(100 * var(--s))) rotate(2deg);   animation-timing-function: steps(1); }
+  100% { transform: translateY(calc(100 * var(--s))) rotate(0deg); }
+}
+@keyframes chag-rig-stir-calm {
+  0%   { transform: translateY(calc(100 * var(--s))) rotate(0deg);   animation-timing-function: steps(1); }
+  30%  { transform: translateY(calc(100 * var(--s))) rotate(2.5deg); animation-timing-function: steps(1); }
+  65%  { transform: translateY(calc(100 * var(--s))) rotate(-2deg);  animation-timing-function: steps(1); }
+  100% { transform: translateY(calc(100 * var(--s))) rotate(0deg); }
+}
+@keyframes chag-rig-lift {
+  0%   { transform: translateY(calc(100 * var(--s)));      animation-timing-function: steps(1); }
+  45%  { transform: translateY(calc(45 * var(--s)));      animation-timing-function: steps(1); }
+  75%  { transform: translateY(calc(6 * var(--s)));       animation-timing-function: steps(1); }
+  100% { transform: translateY(0); }
+}
+/* same structure as the site's rules, chag keyframes instead — is-finishing
+   layers ON TOP of is-mixing, keeping the descend's end pose underneath */
+.spoon-rig.is-mixing {
+  animation: chag-rig-descend 800ms 1 forwards, chag-rig-stir 640ms infinite 800ms;
+}
+.spoon-rig.is-finishing { animation: chag-rig-stir-calm 1080ms infinite; }
+.spoon-rig.is-done      { animation: chag-rig-lift 600ms 1 forwards; }
+
+/* ── the bowl: same geometry, the frame's colours — purple body, red rim ── */
+.bowl {
+  left: calc(54 * var(--s));
+  top: calc(910 * var(--s));
+  color: var(--chag-purple);           /* body reads currentColor */
+}
+.bowl .bowl__rim path { fill: #FE0000; }   /* the red top ellipse */
+
+/* the picked symbols sit IN the bowl: the div lives INSIDE .bowl, layered
+   between the red rim (z1, behind them) and the purple body (z22, in front)
+   — her exact spec: above the red, under the purple. Their feet reach 45u
+   into the bowl so the body covers them; their tops rise above the rim. */
+.chag-bowl-picks {
+  position: absolute;
+  left: 0;
+  top: calc(-75 * var(--s));
+  width: 100%;
+  height: calc(120 * var(--s));
+  display: flex;
+  justify-content: space-between;      /* pick #1 on the LEFT, pick #2 on the RIGHT */
+  align-items: flex-end;
+  padding: 0 calc(32 * var(--s));      /* keeps both inside the bowl's walls */
+  pointer-events: none;
+  z-index: 5;                          /* rim(1) < picks(5) < body(22) */
+}
+.chag-bowl-picks img {
+  display: none;
+  position: static;      /* styles.css absolutes every .bowl img — undo, so the
+                            flex row can put pick #1 left and pick #2 right */
+  max-width: calc(92 * var(--s));      /* never wider than the bowl's shoulder */
+  max-height: calc(110 * var(--s));
+  width: auto; height: auto;
+  object-fit: contain;
+  /* the sink: a real dive, not a fade — ease-in so it reads as dropping */
+  transition: transform .7s cubic-bezier(.5, 0, .8, .4), opacity .35s ease .4s;
+}
+.chag-bowl-picks img[src] { display: block; }
+/* the moment MIX is pressed the ingredients DIVE into the bowl: they slide
+   down behind the purple body (which paints over them, z22 > z5) and only
+   then the last trace fades — the churning liquid is them, mixed. */
+.bowl.is-mixing    .chag-bowl-picks img,
+.bowl.is-finishing .chag-bowl-picks img,
+.bowl.is-done      .chag-bowl-picks img,
+.bowl.is-draining  .chag-bowl-picks img,
+.bowl.is-carrying  .chag-bowl-picks img {
+  transform: translateY(calc(110 * var(--s)));
+  opacity: 0;
+}
+
+/* ═══ MAIN — one screen, no scroll ══════════════════════════════════ */
+.chag-main {
+  height: 100dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── the blue logo band (Rectangle 81: #0048FF, 1px black stroke, 374 tall) ── */
+.chag-logoband {
+  position: relative;
+  flex: 0 0 calc(374 * var(--s));
+  background: var(--chag-blue);
+  border: 1px solid #000;
+  overflow: hidden;
+}
+/* the lockup: extracted from the band node's own render (3412:778), WITH the
+   letters' black outline — ink box 1411×295 at (88,40) inside the band. */
+.chag-logo {
+  position: absolute;
+  left: calc(88 * var(--s));
+  top: calc(40 * var(--s));
+  width: calc(1411 * var(--s));
+  height: calc(295 * var(--s));
+  display: block;
+}
+
+/* ═══ THE GRID — 4×2, white, split by 1px black 3-3 dashed rules ═══ */
+.chag-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #fff;
+}
+.chag-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%; height: 100%;
+}
+
+.chag-tile {
+  position: relative;
+  margin: 0; padding: calc(20 * var(--s));
+  background: #fff;
+  border: none; border-radius: 0;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .12s ease;
+}
+/* NO focus halo — the pale-blue ring Chrome draws on a clicked button is not
+   in the design (this was the "תכלת" she flagged); the red ground IS the
+   selection feedback */
+.chag-tile:focus, .chag-tile:focus-visible { outline: none; }
+/* the dashed gridlines — EXACTLY 1px black, dash 3 gap 3, like the frame's
+   Vector 121 / Vector 25 (border-style:dashed can't pin the dash, so the
+   rules are painted as repeating gradients on the shared edges) */
+.chag-tile:not(:nth-child(4n))::after {          /* right edge rule */
+  content: '';
+  position: absolute; top: 0; bottom: 0; right: 0; width: 1px;
+  background: repeating-linear-gradient(to bottom, #000 0, #000 calc(3 * var(--s)), transparent calc(3 * var(--s)), transparent calc(6 * var(--s)));
+  pointer-events: none;
+}
+.chag-tile:nth-child(-n+4)::before {             /* bottom edge rule, row 1 */
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: repeating-linear-gradient(to right, #000 0, #000 calc(3 * var(--s)), transparent calc(3 * var(--s)), transparent calc(6 * var(--s)));
+  pointer-events: none;
+}
+
+.chag-tile__img {
+  max-width: 100%; max-height: 100%;
+  width: auto; height: auto;
+  object-fit: contain;
+  display: block;
+}
+/* per-symbol size + rotation + the frame's own off-centre nudges (each
+   symbol's centre measured against its cell's centre — they are NOT all
+   dead-centred in the design) */
+.chag-tile[data-id="dvash"]   .chag-tile__img { max-height: calc(231 * var(--s)); transform: translate(calc(3.5 * var(--s)), calc(12 * var(--s))); }
+.chag-tile[data-id="tapuach"] .chag-tile__img { max-height: calc(307 * var(--s)); transform: translate(calc(-38 * var(--s)), calc(-1 * var(--s))); }
+.chag-tile[data-id="keves"]   .chag-tile__img { max-height: calc(234 * var(--s)); transform: translate(calc(3.5 * var(--s)), calc(13.5 * var(--s))); }
+.chag-tile[data-id="gezer"]   .chag-tile__img { max-height: calc(318 * var(--s)); max-width: calc(318 * var(--s)); transform: translate(calc(-0.5 * var(--s)), calc(-3.5 * var(--s))) rotate(90deg); }
+.chag-tile[data-id="dag"]     .chag-tile__img { max-height: calc(256 * var(--s)); transform: translate(calc(-15 * var(--s)), calc(0.5 * var(--s))); }
+.chag-tile[data-id="kara"]    .chag-tile__img { max-height: calc(338 * var(--s)); max-width: calc(338 * var(--s)); transform: translate(calc(-9 * var(--s)), calc(-2.5 * var(--s))) rotate(-90deg); }
+.chag-tile[data-id="tamar"]   .chag-tile__img { max-height: calc(283 * var(--s)); transform: translate(calc(-12.5 * var(--s)), calc(-2 * var(--s))); }
+.chag-tile[data-id="rimon"]   .chag-tile__img { max-height: calc(285 * var(--s)); transform: translate(calc(-9.5 * var(--s)), calc(-1 * var(--s))); }
+
+.chag-tile__label { display: none; }
+.chag-tile__pick  { display: none !important; }   /* no badge in the final design */
+
+/* PICKED = the cell's ground turns red (Rectangle 154: #E60000) */
+.chag-tile.is-picked { background: var(--chag-red); }
+
+/* a small shake of the grid when MIX is pressed too early */
+@keyframes chag-nudge {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(calc(-6 * var(--s))); }
+  40% { transform: translateX(calc(6 * var(--s))); }
+  60% { transform: translateX(calc(-4 * var(--s))); }
+  80% { transform: translateX(calc(3 * var(--s))); }
+}
+.chag-picker.chag-nudge { animation: chag-nudge .38s ease; }
