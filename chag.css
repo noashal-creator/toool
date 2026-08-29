@@ -262,14 +262,14 @@
   transition: transform .7s cubic-bezier(.5, 0, .8, .4), opacity .35s ease .4s;
 }
 .chag-bowl-picks img[src] { display: block; }
-/* the moment MIX is pressed the ingredients DIVE into the bowl: they slide
-   down behind the purple body (which paints over them, z22 > z5) and only
-   then the last trace fades — the churning liquid is them, mixed. */
-.bowl.is-mixing    .chag-bowl-picks img,
-.bowl.is-finishing .chag-bowl-picks img,
-.bowl.is-done      .chag-bowl-picks img,
-.bowl.is-draining  .chag-bowl-picks img,
-.bowl.is-carrying  .chag-bowl-picks img {
+/* The moment MIX is pressed the ingredients DIVE into the bowl (slide down
+   behind the purple body, then fade) — and they STAY gone for the whole
+   round, including while the result window is up and after it (the bowl must
+   sit EMPTY behind and after the result). Keyed on html.chag-mixing, which
+   chag-pick.js raises on MIX and clears only when the selection resets —
+   NOT on the bowl's own state classes, which app.js clears behind the open
+   window (that popped the ingredients back onto the rim). */
+html.chag-mixing .chag-bowl-picks img {
   transform: translateY(calc(110 * var(--s)));
   opacity: 0;
 }

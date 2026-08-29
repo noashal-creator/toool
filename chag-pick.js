@@ -143,6 +143,9 @@
     document.documentElement.classList.toggle('chag-ready', ready);
     if (runBtn) runBtn.classList.toggle('is-disabled', !ready);
     window.chagPair = ready ? keyOf(grid[picked[0]], grid[picked[1]]) : null;
+
+    /* an empty selection ends the round — the next picks may appear again */
+    if (!picked.length) document.documentElement.classList.remove('chag-mixing');
   }
 
   /* MIX is inert until two are chosen. Capture phase so this runs before
@@ -155,7 +158,11 @@
         host.classList.remove('chag-nudge');
         void host.offsetWidth;
         host.classList.add('chag-nudge');
+        return;
       }
+      /* the round begins: the ingredients dive into the bowl and stay gone
+         until the selection resets (chag.css keys their hiding on this) */
+      document.documentElement.classList.add('chag-mixing');
     }, true);
   }
 
