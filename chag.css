@@ -293,11 +293,14 @@ html.chag-mixing .chag-bowl-picks img {
   overflow: hidden;
 }
 /* the lockup: extracted from the band node's own render (3412:778), WITH the
-   letters' black outline — ink box 1411×295 at (88,40) inside the band. */
+   letters' black outline — ink 1411×295. CENTRED in the band, not pinned to
+   the frame's left offset: the band stretches with the viewport and a fixed
+   left made the mark drift off-centre on wider screens. */
 .chag-logo {
   position: absolute;
-  left: calc(88 * var(--s));
+  left: 50%;
   top: calc(40 * var(--s));
+  transform: translateX(-50%);
   width: calc(1411 * var(--s));
   height: calc(295 * var(--s));
   display: block;
