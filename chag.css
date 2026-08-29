@@ -287,6 +287,9 @@ html.chag-mixing .chag-bowl-picks img {
   flex: 0 0 calc(374 * var(--s));
   background: var(--chag-blue);
   border: 1px solid #000;
+  /* the sidebar's own right rule IS the shared boundary line — in the frame
+     the two strokes overlap into one; a border here doubled it */
+  border-left: none;
   overflow: hidden;
 }
 /* the lockup: extracted from the band node's own render (3412:778), WITH the
