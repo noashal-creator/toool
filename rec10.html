@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הקלטה — טרול, 10 שניות (1080×670)</title>
+<style>
+  /* Pure black everywhere outside the frame, so whatever is left over on any
+     screen reads as one continuous black surround. */
+  html, body {
+    margin: 0; height: 100%; background: #000; overflow: hidden;
+  }
+
+  /* The capture frame: exactly 1080 × 670, centred. The iframe's own box is
+     always that size, so the site inside lays out against the same viewport on
+     every machine and every take is framed identically. */
+  .frame {
+    position: fixed; top: 50%; left: 50%;
+    width: 1080px; height: 670px;
+    margin: 0;
+    background: #000;
+    /* --k is written by the script below: 1 normally, smaller only when the
+       window cannot fit 1080 × 670. Scaling the PRESENTATION (not the box)
+       keeps the inner layout byte-identical, so a small screen never reflows
+       the site and changes the framing. */
+    transform: translate(-50%, -50%) scale(var(--k, 1));
+    transform-origin: center center;
+  }
+  .frame iframe {
+    width: 100%; height: 100%; border: 0; display: block; background: #000;
+  }
+
+  /* The hint lives OUTSIDE the frame, down in the black surround, and removes
+     itself after a few seconds — rec-frame.html has no visible button on
+     purpose, because the button itself showed up in the recording. */
+  .hint {
+    position: fixed; inset-inline: 0; bottom: 10px;
+    text-align: center;
+    font: 12px/1.4 -apple-system, Helvetica, Arial, sans-serif;
+    color: #555;
+    transition: opacity .4s;
+  }
+  .hint.gone { opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <!-- src is set in script, never here: this page is a recording rig, and a
+         cached index.html would keep pointing at an old styles.css?v=… — which
+         is exactly how a design that was already fixed still shows up stale on
+         screen. A fresh query on every load makes that impossible. -->
+    <iframe id="stage" allow="autoplay"></iframe>
+  </div>
+
+  <p class="hint" id="hint">רווח — מסך מלא · R — הרצה מחדש · הדמו מתחיל לבד</p>
+
+<script>
+  const stage = document.getElementById('stage');
+  const hint  = document.getElementById('hint');
+
+  /* Load (and reload) the site inside the frame. A reload is the retake path:
+     it guarantees a clean state — empty slots, empty bowl, closed result window
+     — which is far more reliable than trying to unwind app.js's mixing classes
+     and the open #mixwin by hand. The demo auto-starts inside, so a reload is
+     all a fresh take needs. */
+  function load() {
+    stage.src = 'index.html?rec10&cb=' + Date.now();
+  }
+  load();
+
+  /* Fit: only ever scales DOWN, and only when the window is smaller than the
+     frame. Computed here rather than in CSS because calc(100dvw / 1080) yields a
+     length, which min() cannot compare against a unitless 1. */
+  function fit() {
+    // a window reporting 0 (collapsed pane, pre-layout) would scale the frame
+    // to nothing; fall back to natural size instead of vanishing
+    const vw = window.innerWidth  || 1080;
+    const vh = window.innerHeight || 670;
+    const k = Math.max(0.01, Math.min(1, vw / 1080, vh / 670));
+    document.documentElement.style.setProperty('--k', k);
+  }
+  fit();
+  window.addEventListener('resize', fit);
+
+  // the hint has said its piece by the time a recording would start
+  setTimeout(() => hint.classList.add('gone'), 4000);
+
+  /* Focus stays on THIS outer page, so these keys are caught here and not
+     swallowed inside the site. Fullscreen cannot be automatic — the browser
+     requires a real user gesture — so the first Space is what grants it. */
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      hint.classList.add('gone');
+      try { document.documentElement.requestFullscreen()?.catch(() => {}); } catch (err) {}
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {            // retake
+      e.preventDefault();
+      hint.classList.add('gone');
+      load();
+    }
+  });
+
+  // a click is also a valid gesture for fullscreen, for recording one-handed
+  window.addEventListener('click', () => {
+    hint.classList.add('gone');
+    try { document.documentElement.requestFullscreen()?.catch(() => {}); } catch (err) {}
+  });
+</script>
+</body>
+</html>

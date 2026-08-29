@@ -2014,7 +2014,14 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   align-items: center;
   justify-content: center;
   padding: 2.5vh 2.5vw;
-  padding-left: var(--sbw);     /* centre the card in the right half */
+  /* Centre the card in the SKY — the area right of the sidebar — not in the
+     viewport. padding-left had been the bare sidebar width, which left the
+     content box as [sbw, 100vw - 2.5vw]: its centre sits 1.25vw left of the
+     sky's own centre, so the card hugged the sidebar (measured 43px of air on
+     the left against 70px on the right at 1080x670). Adding the same 2.5vw the
+     right edge already has makes the box symmetric inside the sky, so its
+     centre is exactly (sbw + 100vw) / 2. */
+  padding-left: calc(var(--sbw) + 2.5vw);
 }
 .mixwin.is-open { display: flex; }
 

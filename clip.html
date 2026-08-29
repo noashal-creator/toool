@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>קליפ — הקלטה</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+
+  /* the output frame — the thing you record. Black everywhere around it. */
+  .out {
+    position: fixed; top: 50%; left: 50%;
+    background: #000;
+    overflow: hidden;                  /* this is the crop */
+    transform: translate(-50%, -50%) scale(var(--k, 1));
+    transform-origin: center center;
+  }
+  /* the site, moved and scaled so the camera rectangle lands on the frame */
+  .out iframe {
+    position: absolute; top: 0; left: 0;
+    border: 0; display: block; background: #000;
+    transform-origin: 0 0;
+  }
+
+  /* The hint can end up ON the frame — a 1080-square fills most of a laptop
+     screen, so there is no reliable "outside" to put it in. It therefore goes
+     the moment anything happens, and quickly on its own regardless: whatever is
+     on screen when recording starts is in the take. */
+  .hint {
+    position: fixed; inset-inline: 0; bottom: 10px;
+    text-align: center;
+    font: 12px/1.4 -apple-system, Helvetica, Arial, sans-serif;
+    color: #555; transition: opacity .35s;
+    z-index: 5;
+  }
+  .hint.gone { opacity: 0; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div class="out" id="out"><iframe id="stage" allow="autoplay"></iframe></div>
+  <p class="hint" id="hint">רווח — מסך מלא · R — הרצה מחדש</p>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────
+   The camera.
+
+   The site is a 1728x1080 design frame drawn at --s = 100dvh/1080, so an iframe
+   sized 1728u x 1080u renders one design unit as `u` CSS pixels. Pick u and the
+   camera rectangles below — taken straight off the CSS geometry — become plain
+   pixel crops.
+
+   For a close-up, u is raised so the crop is rendered LARGE rather than a small
+   crop being blown up: filling a 980px-wide frame with a 265-unit-wide rectangle
+   means u ~= 3.7, i.e. the whole site painted at 4x. That is capped (`max`),
+   because past a few thousand pixels the paint cost stops being worth it; past
+   the cap the remainder is taken as ordinary magnification.
+
+   The iframe keeps the design frame's own 1728:1080 proportions at all times —
+   shrinking its width to "just the crop" would drop it under the 861px
+   breakpoint, or make the fixed 352-unit sidebar wider than the viewport, and
+   the site's layout would collapse.
+   ───────────────────────────────────────────────────────────────────── */
+const SHOTS = {
+  // rect: camera in design units [x, y, w, h] — null = the whole frame, 1:1
+  /* Every clip is square, 1080x1080.
+
+     The two close-ups are cut to a SQUARE window, measured off the live DOM
+     rather than eyeballed: slot 2 ends at y=787 and the yellow floor mask
+     starts at y=1042.8, so 788..1042 is the only vertical band with no yellow
+     in it — exactly 254 units, which sets the square. Across, 45..299 centres
+     the bowl (x 57..297) in it. The hand spans y 772.9..1025.3, so its top ~15
+     units fall outside and the arm enters from the frame edge, which is what a
+     close-up wants anyway. */
+  /* ══ MULTICAM ANGLES ══════════════════════════════════════════════════════
+     All eight point at the SAME performance (clip-stage.js `master`), so they
+     intercut cleanly. Design units; at a 1080-tall render one unit = one pixel.
+     Reference geometry: sidebar 0..352 · slot A y139..464 · slot B y474..787 ·
+     MIX x200..321 y811..883 · bowl x57..297 y910..1043 · card x436..1643.
+
+     Every angle keeps the sidebar's right edge (x=352) inside frame, or sits
+     wholly past it — never an element floated on a blank ground. */
+
+  /* ══ THE SAIL ═════════════════════════════════════════════════════════════
+     Noa's shot: the camera comes in at the top, the first image rises into box
+     1, it descends the sidebar, the second image rises into box 2, then it
+     descends again onto the mixing. One continuous move with three stops —
+     it settles at each, so you watch the thing happen, then travel.
+
+     Times are against the master choreography (clip-stage.js):
+       0.6-1.6s  the troll lands in box 1     → camera holds on box 1
+       1.6-2.6s  the tooth lands in box 2     → camera has moved down to box 2
+       3.0s      MIX presses itself           → still on box 2, MIX at its edge
+       3.6s on   the bowl fills               → camera has descended onto the bowl
+
+     Every rect keeps the sidebar's right edge (x=352) in frame, so there is
+     always a sliver of the band on the right and it reads as travelling down a
+     page, not as three cut-outs. */
+  sail: {
+    out: [1080, 1080], name: '0 · השייט',
+    path: [
+      { at:    0, rect: [40, 120, 430, 430] },   // box 1, waiting
+      { at: 1500, rect: [40, 120, 430, 430] },   // …the troll lands. hold.
+      { at: 2150, rect: [40, 455, 430, 430] },   // sail down to box 2
+      { at: 3350, rect: [40, 455, 430, 430] },   // …the tooth lands, MIX presses. hold.
+      { at: 5200, rect: [30, 640, 420, 420] },   // sail down onto the bowl
+    ],
+  },
+
+  // 1 · establishing — the whole page, sidebar and a wide slab of the band
+  wide:  { rect: [0, 0, 1080, 1080], out: [1080, 1080], name: '1 · רחב' },
+
+  // 2 · both boxes together, with the band down the right edge
+  slots: { rect: [0, 120, 700, 700], out: [1080, 1080], name: '2 · שני הריבועים' },
+
+  /* 3 & 4 · the two boxes, framed IDENTICALLY (same x, same width, same size —
+     only y differs, by exactly the 335-unit gap between the slots). That is
+     what makes cutting from one to the other a match cut rather than a jump. */
+  slot1: { rect: [40, 130, 430, 430], out: [1080, 1080], name: '3 · ריבוע 1' },
+  slot2: { rect: [40, 465, 430, 430], out: [1080, 1080], name: '4 · ריבוע 2' },
+
+  // 5 · the button pressing itself, bowl rim just entering the bottom
+  mix:   { rect: [110, 700, 350, 350], out: [1080, 1080], name: '5 · הלחיצה' },
+
+  // 7 · the result card, framed on its own 1207 width so nothing is clipped
+  card:  { rect: [436, -64, 1207, 1207], out: [1080, 1080], name: '7 · הכרטיס' },
+
+  // 8 · the band alone — starts exactly at the sidebar's edge
+  band:  { rect: [352, 0, 1080, 1080], out: [1080, 1080], name: '8 · הפס' },
+
+  hand:   { rect: [45, 788, 254, 254],   out: [1080, 1080], name: 'היד מערבבת' },
+  /* A MOVE, not a crop. Opens wide enough to read as the page — both slots'
+     lower half, the rig, MIX, the bowl, and a good slice of the band on the
+     right — then pushes in onto the bowl as it fills. The sidebar's right edge
+     (design x = 352) stays in frame at BOTH ends (about 50% across wide, 75%
+     tight), which is the "sliver of the right-hand side" that keeps it a zoom
+     into a page instead of an element lifted onto a blank ground. */
+  bowl:   { rect: [30, 640, 420, 420], out: [1080, 1080], name: '6 · הקערה',
+            zoom: { from: [0, 380, 700, 700], to: [30, 640, 420, 420],
+                    startMs: 600, durMs: 5800 } },
+  /* The band shots are a CROP too, never a re-fit: the site keeps its natural
+     1728x1080 proportions and the square is cut out of the content column
+     (x 352..1728, 1376 wide), centred — 352 + (1376-1080)/2 = 500. Rendering
+     the site into a 1080x1080 viewport instead would re-flow the whole layout
+     to a shape it was never designed for, which is what "fit to size" does and
+     what a close-up must not do. */
+  cow:    { rect: [500, 0, 1080, 1080], out: [1080, 1080], name: 'הפרה נעה' },
+  pops:   { rect: [500, 0, 1080, 1080], out: [1080, 1080], name: 'הסוכריות' },
+  chase:  { rect: [500, 0, 1080, 1080], out: [1080, 1080], name: 'הרודפים' },
+  /* The result card is 1207x975 design units, centred at x=1040 — WIDER than a
+     1080 square, so a 1080 crop clipped its dashed border and the first letters
+     of the title. The crop is therefore the card's own width, 1207 square,
+     centred on it: the whole card is in frame, and the ~5% above and below the
+     1080-tall viewport falls outside the site and reads as black — the same
+     letterbox the other rigs use. */
+  result: { rect: [436, -64, 1207, 1207], out: [1080, 1080], name: 'חלון התוצאה' },
+};
+
+const q     = new URLSearchParams(location.search);
+const id    = q.get('shot') || 'hand';
+const shot  = SHOTS[id] || SHOTS.hand;
+const outW  = +(q.get('w')   || shot.out[0]);
+const outH  = +(q.get('h')   || shot.out[1]);
+const MAX_H = +(q.get('max') || 3000);      // ceiling on the iframe's own height
+
+const out   = document.getElementById('out');
+const stage = document.getElementById('stage');
+const hint  = document.getElementById('hint');
+
+out.style.width  = outW + 'px';
+out.style.height = outH + 'px';
+document.title = 'קליפ — ' + shot.name + ' (' + outW + '×' + outH + ')';
+
+/* ── the camera ────────────────────────────────────────────────────────────
+   A shot may name a fixed `rect`, or a `zoom: {from, to, startMs, durMs}` — a
+   real push-in, the camera closing on the subject while the action plays.
+
+   `unit` (px per design unit, which IS the iframe's own viewport size) is fixed
+   for the whole shot and derived from the TIGHTEST rect, so the closest moment
+   is the sharpest and the wide moments simply render at scale < 1, which
+   downsamples cleanly. Recomputing it per frame would resize the iframe every
+   frame and reflow the entire site continuously. */
+let cam = {};
+const ZOOM = shot.zoom || null;
+
+/* A shot may also name a PATH: keyframes the camera sails through, each with
+   its own arrival time. `zoom` is just the two-keyframe case of it. */
+const PATH = shot.path || (ZOOM
+  ? [{ at: ZOOM.startMs, rect: ZOOM.from },
+     { at: ZOOM.startMs + ZOOM.durMs, rect: ZOOM.to }]
+  : null);
+
+/* The sharpest moment sets the render size, so pick the TIGHTEST rect on the
+   path — the smallest area, i.e. the closest the camera ever gets. */
+const BASE_RECT = PATH
+  ? PATH.map(k => k.rect).reduce((a, b) => (a[2] * a[3] <= b[2] * b[3] ? a : b))
+  : shot.rect;
+
+function computeCamera() {
+  if (!BASE_RECT) {
+    /* No rect = the site is rendered straight into the output box. That RE-FITS
+       the layout rather than cropping it, so no shipped shot uses this — it is
+       only a sane fallback for an unknown ?shot. */
+    cam = { viewW: outW, viewH: outH, scale: 1, offX: 0, offY: 0, unit: outH / 1080 };
+    return;
+  }
+  const [rx, ry, rw, rh] = BASE_RECT;
+  /* px-per-unit that would render the crop at exactly output size, then capped
+     above AND FLOORED below.
+
+     The floor is not a nicety. The site has a hard breakpoint at 860px: under
+     it, `--s` is redefined as 100vw/352, the sidebar un-fixes and stacks, and
+     the sideways reel is abandoned altogether. A small tile asking for a small
+     crop used to drive the internal viewport straight through that — a 340px
+     thumbnail of the 1080-unit-wide band rendered the site 544px wide, so every
+     tile showed the mobile layout's stacked sidebar instead of the shot. The
+     site is therefore always rendered at desktop width and the crop is scaled
+     DOWN for a thumbnail (scale < 1), never the layout shrunk to fit. */
+  const MIN_VIEW_W = 900;                        // comfortably past the 860 breakpoint
+  const ideal = Math.max(outW / rw, outH / rh);
+  const unit  = Math.max(MIN_VIEW_W / 1728, Math.min(ideal, MAX_H / 1080));
+  const viewH = Math.round(1080 * unit);
+  const viewW = Math.round(1728 * unit);         // keep the design frame's proportions
+  // whatever the cap did not cover is taken as magnification (cover, never bars)
+  const scale = Math.max(outW / (rw * unit), outH / (rh * unit));
+  cam = { viewW, viewH, scale, unit, offX: 0, offY: 0 };
+  setRect(BASE_RECT);
+}
+
+/* Point the camera at any rect, using the shot's FIXED unit. */
+function setRect(r) {
+  const [rx, ry, rw, rh] = r;
+  const u = cam.unit;
+  const scale = Math.max(outW / (rw * u), outH / (rh * u));
+  cam.scale = scale;
+  cam.offX  = -rx * u * scale + (outW - rw * u * scale) / 2;
+  cam.offY  = -ry * u * scale + (outH - rh * u * scale) / 2;
+  applyCamera();
+}
+
+function applyCamera() {
+  stage.style.width  = cam.viewW + 'px';
+  stage.style.height = cam.viewH + 'px';
+  stage.style.transform =
+    'translate(' + cam.offX.toFixed(2) + 'px,' + cam.offY.toFixed(2) + 'px) ' +
+    'scale(' + cam.scale.toFixed(4) + ')';
+}
+
+/* ── the push-in ───────────────────────────────────────────────────────────
+   Driven off a `clip:cycle` message the shot posts at the top of every loop,
+   rather than a clock of our own: two independent timers would drift apart and
+   the push has to land WITH the fill, which is the whole point of the move. */
+/* ── the motion model ─────────────────────────────────────────────────────
+   smootherstep was the problem. It is SYMMETRIC — it accelerates and
+   decelerates identically — and a symmetric move plus a dead stop is exactly
+   what reads as a machine sliding something along an axis.
+
+   A camera move that looks paid-for does three things instead:
+
+   1 · ASYMMETRIC EASE. It breaks gently and then settles for a long time:
+       roughly a third of the leg getting up to speed, two thirds easing down.
+       This is a real cubic-bezier, sampled — the same shape family the site
+       already uses for the result card's flight (cubic-bezier(.22,1,.36,1)).
+   2 · NEVER FULLY STOPS. A slow ambient breath runs underneath everything,
+       on all three axes and on periods that do not divide into each other, so
+       it never visibly repeats. Even "parked" the frame is alive.
+   3 · TRAVELS AND PUSHES AT ONCE. Each leg also closes in slightly, and drifts
+       a little sideways, so the move has an arc instead of running down a rail. */
+
+/* A cubic-bezier(x1,y1,x2,y2) sampler: solve x(t)=k by bisection (cheap, and
+   exact enough at 60fps), then read y(t). */
+function bezier(x1, y1, x2, y2) {
+  const cx = t => 3*(1-t)*(1-t)*t*x1 + 3*(1-t)*t*t*x2 + t*t*t;
+  const cy = t => 3*(1-t)*(1-t)*t*y1 + 3*(1-t)*t*t*y2 + t*t*t;
+  return k => {
+    if (k <= 0) return 0;
+    if (k >= 1) return 1;
+    let lo = 0, hi = 1, t = k;
+    for (let i = 0; i < 24; i++) {
+      t = (lo + hi) / 2;
+      if (cx(t) < k) lo = t; else hi = t;
+    }
+    return cy(t);
+  };
+}
+/* slow break, long settle — the "expensive" camera ease */
+const glide = bezier(0.33, 0, 0.10, 1);
+
+/* The breath. Amplitudes are deliberately tiny — a few design units and a few
+   tenths of a percent of scale. You should never be able to point at it; you
+   should only notice its absence. Periods are mutually prime-ish so the sum
+   never loops back on itself. */
+function breathe(t, r) {
+  const x = Math.sin(t / 7300  * Math.PI * 2)        * 5.0;
+  const y = Math.sin(t / 9100  * Math.PI * 2 + 1.3)  * 3.5;
+  const z = Math.sin(t / 11700 * Math.PI * 2 + 0.6)  * 0.0035;
+  const grow = r[2] * z;
+  return [r[0] + x - grow / 2, r[1] + y - grow / 2, r[2] + grow, r[3] + grow];
+}
+
+let cycleT0 = null;
+
+if (PATH) {
+  const lerpRect = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'clip:cycle') cycleT0 = performance.now();
+  });
+  /* Walk the keyframes: hold before the first and after the last, ease between
+     each neighbouring pair. Each leg gets its own smootherstep, so the camera
+     settles at every stop instead of drifting through it — that is what makes
+     it read as "arrive, watch, move on" rather than one long slide. */
+  function rectAt(t) {
+    if (t <= PATH[0].at) return PATH[0].rect;
+    for (let i = 1; i < PATH.length; i++) {
+      const a = PATH[i - 1], b = PATH[i];
+      if (t < b.at) {
+        const k = b.at === a.at ? 1 : (t - a.at) / (b.at - a.at);
+        return lerpRect(a.rect, b.rect, glide(Math.max(0, Math.min(1, k))));
+      }
+    }
+    return PATH[PATH.length - 1].rect;
+  }
+  (function pan(now) {
+    /* The breath runs off `now`, NOT off the cycle clock: it must not restart
+       with each loop or the reset point would show a little hitch. */
+    if (cycleT0 != null) setRect(breathe(now, rectAt(now - cycleT0)));
+    requestAnimationFrame(pan);
+  })(performance.now());
+}
+
+// exposed for verification: where a design-unit x lands inside the output
+window.__clipMapX = (ux) => ux * cam.unit * cam.scale + cam.offX;
+
+function load() {
+  computeCamera();
+  applyCamera();
+  // cb: a recording rig must never be served a cached index.html pinning old CSS
+  stage.src = 'index.html?clip=' + encodeURIComponent(id) + '&cb=' + Date.now();
+}
+load();
+
+/* fit the whole output frame into the window — only ever shrinks */
+function fit() {
+  /* A window that reports 0 (a collapsed pane, a tab measured before layout)
+     would otherwise drive the scale to 0 and blank the frame entirely. Fall
+     back to the natural size rather than vanishing. */
+  const vw = window.innerWidth  || outW;
+  const vh = window.innerHeight || outH;
+  document.documentElement.style.setProperty('--k',
+    Math.max(0.01, Math.min(1, vw / outW, vh / outH)));
+}
+fit();
+window.addEventListener('resize', fit);
+
+const hideHint = () => hint.classList.add('gone');
+setTimeout(hideHint, 2500);
+['keydown', 'mousemove', 'pointerdown', 'wheel'].forEach(ev =>
+  window.addEventListener(ev, hideHint, { once: true, passive: true }));
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault(); hint.classList.add('gone');
+    try { document.documentElement.requestFullscreen()?.catch(() => {}); } catch (err) {}
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); hint.classList.add('gone'); load(); }
+});
+window.addEventListener('click', () => {
+  hint.classList.add('gone');
+  try { document.documentElement.requestFullscreen()?.catch(() => {}); } catch (err) {}
+});
+
+window.__clipFrame = () => Object.assign({ id, outW, outH, rect: shot.rect }, cam);
+</script>
+</body>
+</html>

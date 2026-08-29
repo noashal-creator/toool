@@ -473,6 +473,19 @@ window.recFillSlot = (key, url) =>
       load(key, new File([b], 'object ' + (key === 'a' ? '1' : '2') + '.jpg', { type: b.type || 'image/jpeg' }), resolve);
     }));
 window.recResetSlots = () => resetSlots();
+// clear ONE slot immediately (mirror of recFillSlot). Additive — used by the
+// holiday variation (chag-pick.js) to empty a yellow window when its symbol is
+// deselected. index.html never calls it, so its behaviour is unchanged.
+window.recClearSlot = (key) => {
+  const slot = slots[key];
+  if (!slot) return;
+  if (slot.url) URL.revokeObjectURL(slot.url);
+  slot.url = null;
+  slot.image = null;
+  slot.el.classList.remove('is-filled', 'is-missing');
+  slot.el.querySelector('.slot__label').innerHTML = slotLabelHTML[key];
+  slot.el.querySelector('.slot__preview').removeAttribute('src');
+};
 window.recStir = (fillMs) => { playStir(fillMs); };
 window.recLift = () => {
   for (const el of [spoonRig, runBtn, bowl]) {

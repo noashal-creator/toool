@@ -9,9 +9,12 @@
    Registered in the CAPTURE phase and stops the event, so Space no longer
    scrolls the page or steps the sideways reel while you're framing a shot. It
    stays out of the way of text fields and the embedded game, and is disabled
-   entirely under the ?rec recording demo, which owns Space itself. */
+   entirely under the ?rec / ?rec10 recording demos, which own Space themselves. */
 (() => {
-  if (/[?&]rec\b/.test(location.search)) return;      // recording.js owns Space there
+  /* No \b after "rec": a word boundary cannot match between "rec" and the "1"
+     of ?rec10, so the 10-second capture cut would otherwise keep this handler
+     and toggle body.clean mid-take. */
+  if (/[?&]rec/.test(location.search)) return;        // recording.js owns Space there
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' && e.key !== ' ' && e.key !== 'Spacebar') return;
     const a = document.activeElement;

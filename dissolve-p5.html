@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DISSOLVE — p5 port</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Baloo+2:wght@800&family=Varela+Round&family=Quicksand:wght@400;500;600;700&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+<style>
+  html,body{margin:0;height:100%;background:#dcdcdc;display:grid;place-items:center;overflow:hidden}
+  canvas{max-width:96vmin;max-height:96vmin;width:auto!important;height:auto!important;box-shadow:0 10px 60px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<script>
+/* ============================================================
+   DISSOLVE — faithful p5 port of brik.space "Dissolve" (Shahar Levy)
+   Pipeline: Text source (per-char) → Echo stack → Halo (blur+contrast,
+   composite 'lighter') → Stochastic grain → 4-stop Gradient-Map LUT
+   → alpha = lum*2.5 over solid background色.
+   Keys:  Space = play/pause   ·   S = save PNG
+   ============================================================ */
+
+const P = {
+  W: 1080, H: 1080,
+
+  // ── Source ──
+  text: 'BR\nIK',
+  fontFamily: '"Varela Round", sans-serif',
+  fontWeight: '400',
+  fontSize: 500,
+  letterSpacing: 40,
+  lineHeight: 1.05,       // × fontSize
+  roundness: 0.015,       // extra round stroke for non-custom glyphs
+  customGlyphs: true,     // B/R/I/K drawn as G80-style uniform-stroke skeletons
+  glyphStroke: 0.062,     // stroke weight as fraction of fontSize
+  posX: 50,               // % of width
+  posY: 48,               // % of height
+
+  // ── Echo (this is what builds the stripes / plaid) ──
+  echoCount: 15,
+  echoOffsetX: 30,
+  echoOffsetY: -34,
+  echoFade: 60,           // %
+  echoMaxAlpha: 0.45,     // ceiling on every echo copy's opacity (trail translucency)
+  echoScatter: 0,
+  echoScaleDecay: 0,      // %
+  echoRotation: 0,        // deg per copy
+
+  // ── Echo Path (the tool's pen tool): echoes travel along this polyline and
+  //     ROTATE with its direction — horizontal legs give horizontal stripe combs,
+  //     vertical legs rotate the copies 90° into vertical combs, diagonal legs
+  //     make the "wings". Points are normalized [x, y]. Drag mouse = draw a new
+  //     path, C = clear (falls back to plain offset echoes). ──
+  echoPathEnabled: false,
+  echoPath: [],
+
+  // ── Source frame rectangle (the embossed border line around the composition) ──
+  borderRect: true,
+  borderInset: 70,
+  borderWeight: 13,
+
+  // ── Halo & Glow ──
+  outerBlur: 0,
+  outerHaloIntensity: 27, // %
+  innerBlur: 8,
+  haloIntensity: 107,     // %
+  haloOffsetX: 0,
+  haloOffsetY: 0,
+  haloContrast: 140,      // %
+  preserveCore: false,
+
+  // ── Grain & Dissolve ──
+  grainSize: 1,
+  grainAmount: 16,        // %
+
+  // ── Gradient map — the emboss look of the poster:
+  //     low lum → warm light (bg speckle), MID lum → black (the contour ridges
+  //     hugging every edge), high lum → warm light (bright shape interiors) ──
+  grad1: '#A89A94',
+  grad2: '#000000',
+  grad3: '#A89A94',
+  grad4: '#000000',
+  pos2: 0,                // %
+  pos3: 0,                // %
+  bgColor: '#454C48',
+
+  // ── Animation — the poster's engine: each char drifts on a sin/cos Lissajous
+  //     ('float'), and echoes sample earlier phases (echoIndex*0.3), leaving
+  //     motion-trail combs in whatever direction that char was moving ──
+  playing: true,
+  speed: 2,
+  animateText: false, textAnimType: 'float', textAnimAmp: 0,
+  animateEcho: false, echoAnimType: 'float', echoAnimAmp: 0,
+
+  // ── Poster frame (white page margin + crop marks + lilac tab) ──
+  frame: true,
+  frameMargin: 34,
+  frameColor: '#F5F3F1',
+  tabColor: '#EBC8F4',
+  tabText: 'BRIK',
+};
+
+let pg;              // offscreen source buffer
+let seed = 0;
+let lastTime = 0;
+
+// URL overrides: any P key, e.g. ?text=TOOOL&fontSize=280&seed=4.2
+// '|' in ?text becomes a line break. ?seed=N freezes on that frame.
+(function () {
+  const q = new URLSearchParams(location.search);
+  q.forEach((v, k) => {
+    if (k === 'seed') { seed = parseFloat(v) || 0; P.playing = false; return; }
+    if (!(k in P)) return;
+    if (v === 'true') P[k] = true;
+    else if (v === 'false') P[k] = false;
+    else if (v !== '' && !isNaN(parseFloat(v)) && /^-?[\d.]+$/.test(v)) P[k] = parseFloat(v);
+    else P[k] = v.replace(/\|/g, '\n');
+  });
+})();
+
+// ── deterministic hash (verbatim from the tool) ──
+function hash(x, y) {
+  let h = x * 374761393 + y * 668265263;
+  h = (h ^ (h >> 13)) * 1274126177;
+  h = h ^ (h >> 16);
+  return (h & 0x7fffffff) / 0x7fffffff;
+}
+
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+
+// ── 4-stop gradient LUT with smoothstep between stops (verbatim) ──
+let cachedLUT = null, cachedLUTKey = '';
+function buildGradientLUT() {
+  const stops = [
+    { pos: 0.0,          color: hexToRgb(P.grad1) },
+    { pos: P.pos2 / 100, color: hexToRgb(P.grad2) },
+    { pos: P.pos3 / 100, color: hexToRgb(P.grad3) },
+    { pos: 1.0,          color: hexToRgb(P.grad4) },
+  ];
+  const lut = new Uint8Array(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    let lower = stops[0], upper = stops[stops.length - 1];
+    for (let s = 0; s < stops.length - 1; s++) {
+      if (t >= stops[s].pos && t <= stops[s + 1].pos) { lower = stops[s]; upper = stops[s + 1]; break; }
+    }
+    const range = upper.pos - lower.pos;
+    const f = range === 0 ? 0 : (t - lower.pos) / range;
+    const sf = f * f * (3 - 2 * f);
+    lut[i * 3]     = Math.round(lower.color[0] + (upper.color[0] - lower.color[0]) * sf);
+    lut[i * 3 + 1] = Math.round(lower.color[1] + (upper.color[1] - lower.color[1]) * sf);
+    lut[i * 3 + 2] = Math.round(lower.color[2] + (upper.color[2] - lower.color[2]) * sf);
+  }
+  return lut;
+}
+function getLUT() {
+  const key = [P.grad1, P.grad2, P.grad3, P.grad4, P.pos2, P.pos3].join('|');
+  if (key !== cachedLUTKey) { cachedLUT = buildGradientLUT(); cachedLUTKey = key; }
+  return cachedLUT;
+}
+
+// ── Custom skeleton glyphs (G80-style: uniform stroke, huge counters).
+//    Each glyph draws centered in a box of width adv×size, height size. ──
+const GLYPHS = {
+  B: { adv: 0.78, draw: (ctx, w, h) => {
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w * 0.88, h * 0.50, h * 0.17);
+    ctx.roundRect(0, h * 0.50, w, h * 0.50, h * 0.17);
+    ctx.stroke();
+  }},
+  R: { adv: 0.78, draw: (ctx, w, h) => {
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w * 0.95, h * 0.55, h * 0.17);
+    ctx.moveTo(0, h * 0.55); ctx.lineTo(0, h);
+    ctx.moveTo(w * 0.45, h * 0.55); ctx.lineTo(w * 0.95, h);
+    ctx.stroke();
+  }},
+  I: { adv: 0.24, draw: (ctx, w, h) => {
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, 0); ctx.lineTo(w * 0.5, h);
+    ctx.stroke();
+  }},
+  K: { adv: 0.80, draw: (ctx, w, h) => {
+    ctx.beginPath();
+    ctx.moveTo(w * 0.06, 0); ctx.lineTo(w * 0.06, h);
+    ctx.moveTo(w * 0.95, 0); ctx.lineTo(w * 0.10, h * 0.55);
+    ctx.moveTo(w * 0.38, h * 0.44); ctx.lineTo(w * 0.95, h);
+    ctx.stroke();
+  }},
+};
+
+// ── Echo path helpers (verbatim from the tool, points in px) ──
+function computePathData(pathPx) {
+  if (pathPx.length < 2) return null;
+  const segments = [];
+  let totalLen = 0;
+  for (let p = 1; p < pathPx.length; p++) {
+    const dx = pathPx[p].x - pathPx[p - 1].x;
+    const dy = pathPx[p].y - pathPx[p - 1].y;
+    const segLen = Math.sqrt(dx * dx + dy * dy);
+    totalLen += segLen;
+    segments.push({ len: segLen, cumLen: totalLen });
+  }
+  return { segments, totalLen, pts: pathPx };
+}
+function samplePath(pathData, frac) {
+  const targetDist = frac * pathData.totalLen;
+  const pts = pathData.pts;
+  for (let p = 0; p < pathData.segments.length; p++) {
+    const prevCum = p === 0 ? 0 : pathData.segments[p - 1].cumLen;
+    if (targetDist <= pathData.segments[p].cumLen || p === pathData.segments.length - 1) {
+      const segFrac = pathData.segments[p].len === 0 ? 0 : (targetDist - prevCum) / pathData.segments[p].len;
+      const p0 = pts[p], p1 = pts[p + 1];
+      return {
+        x: p0.x + (p1.x - p0.x) * segFrac,
+        y: p0.y + (p1.y - p0.y) * segFrac,
+        angle: Math.atan2(p1.y - p0.y, p1.x - p0.x),
+      };
+    }
+  }
+  return { x: pts[0].x, y: pts[0].y, angle: 0 };
+}
+
+// ── Source rendering: per-char text + echo stack (verbatim logic) ──
+function renderSource(g) {
+  const ctx = g.drawingContext;
+  const w = g.width, h = g.height;
+  const baseX = (P.posX / 100) * w;
+  const baseY = (P.posY / 100) * h;
+
+  // embossed border rectangle around the composition
+  if (P.borderRect) {
+    ctx.save();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = P.borderWeight;
+    ctx.strokeRect(P.borderInset, P.borderInset, w - 2 * P.borderInset, h - 2 * P.borderInset);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.font = `${P.fontWeight} ${P.fontSize}px ${P.fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = P.fontSize * P.roundness;
+
+  const lines = P.text.split(/\n/);
+  const lineHeight = P.fontSize * (P.lineHeight || 1.1);
+  const totalHeight = lines.length * lineHeight;
+
+  function drawAnimatedText(tx, ty, rot, scale, isMain, echoIndex) {
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(rot);
+    ctx.scale(scale, scale);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let lineWidth = 0;
+      for (let j = 0; j < line.length; j++) {
+        const g = P.customGlyphs && GLYPHS[line[j].toUpperCase()];
+        lineWidth += g ? g.adv * P.fontSize : ctx.measureText(line[j]).width;
+      }
+      const totalLineWidth = lineWidth + (line.length - 1) * P.letterSpacing;
+      let currentX = -totalLineWidth / 2;
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        const glyph = P.customGlyphs && GLYPHS[char.toUpperCase()];
+        const charWidth = glyph ? glyph.adv * P.fontSize : ctx.measureText(char).width;
+        let cx = currentX + charWidth / 2;
+        let cy = (i * lineHeight) - (totalHeight / 2) + (lineHeight / 2);
+        let s = 1;
+        const charOffset = j * 0.4 + i * 0.4;
+        const phaseOffset = isMain ? 0 : echoIndex * 0.3;
+        if (P.animateText) {
+          const t = seed + charOffset - phaseOffset;
+          if (P.textAnimType === 'float')      { cx += Math.sin(t * 0.5) * P.textAnimAmp; cy += Math.cos(t * 0.7) * P.textAnimAmp; }
+          else if (P.textAnimType === 'pulse') { s *= 1 + Math.sin(t) * (P.textAnimAmp / 100); }
+          else if (P.textAnimType === 'wave')  { cy += Math.sin(t) * P.textAnimAmp; }
+        }
+        if (!isMain && P.animateEcho) {
+          const t2 = seed * 1.3 + charOffset - phaseOffset + 10;
+          if (P.echoAnimType === 'float')      { cx += Math.sin(t2 * 0.5) * P.echoAnimAmp; cy += Math.cos(t2 * 0.7) * P.echoAnimAmp; }
+          else if (P.echoAnimType === 'pulse') { s *= 1 + Math.sin(t2) * (P.echoAnimAmp / 100); }
+          else if (P.echoAnimType === 'wave')  { cy += Math.sin(t2) * P.echoAnimAmp; }
+        }
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(s, s);
+        if (glyph) {
+          ctx.save();
+          ctx.lineWidth = P.fontSize * P.glyphStroke;
+          ctx.translate(-charWidth / 2, -P.fontSize / 2);
+          glyph.draw(ctx, charWidth, P.fontSize);
+          ctx.restore();
+        } else {
+          if (P.roundness > 0) ctx.strokeText(char, 0, 0);
+          ctx.fillText(char, 0, 0);
+        }
+        ctx.restore();
+        currentX += charWidth + P.letterSpacing;
+      }
+    }
+    ctx.restore();
+  }
+
+  // Echo stack, far → near — along the pen path when one exists, else by offset
+  const echoFade = P.echoFade / 100;
+  const echoScaleDecay = P.echoScaleDecay / 100;
+  const pathPx = (P.echoPathEnabled && P.echoPath.length >= 2)
+    ? P.echoPath.map(pt => ({ x: pt[0] * w, y: pt[1] * h }))
+    : null;
+  const pathData = pathPx ? computePathData(pathPx) : null;
+  if (P.echoCount > 0) {
+    for (let e = P.echoCount; e >= 1; e--) {
+      const t = e / P.echoCount;
+      const alpha = Math.pow(1 - t * echoFade, 1.5);
+      if (alpha <= 0) continue;
+      const rx = (hash(e * 137, 42) - 0.5) * 2 * P.echoScatter;
+      const ry = (hash(e * 251, 89) - 0.5) * 2 * P.echoScatter;
+      const scale = 1 - (echoScaleDecay * t);
+      if (scale <= 0) continue;
+      const rot = (P.echoRotation * e * Math.PI) / 180;
+      let tx, ty, pathAngle = 0;
+      if (pathData) {
+        const sample = samplePath(pathData, t);
+        tx = sample.x + rx;
+        ty = sample.y + ry;
+        pathAngle = sample.angle;
+      } else {
+        tx = baseX + P.echoOffsetX * e + rx;
+        ty = baseY + P.echoOffsetY * e + ry;
+      }
+      ctx.globalAlpha = Math.max(0, alpha) * P.echoMaxAlpha;
+      drawAnimatedText(tx, ty, rot + pathAngle, scale, false, e);
+    }
+  }
+  ctx.globalAlpha = 1.0;
+  drawAnimatedText(baseX, baseY, 0, 1, true, 0);
+  ctx.restore();
+}
+
+// ── p5 ──
+function setup() {
+  createCanvas(P.W, P.H);
+  pixelDensity(1);
+  pg = createGraphics(P.W, P.H);
+  pg.pixelDensity(1);
+}
+
+function draw() {
+  const w = width, h = height;
+  const ctx = drawingContext;
+
+  // clock (matches the tool: seed += dt * speed*0.1 * 0.01)
+  const now = performance.now();
+  const dt = (lastTime === 0) ? 16 : (now - lastTime);
+  lastTime = now;
+  if (P.playing && dt > 0) seed += dt * (P.speed * 0.1) * 0.01;
+
+  // 1) grayscale source on black
+  pg.drawingContext.clearRect(0, 0, w, h);
+  pg.drawingContext.fillStyle = '#000000';
+  pg.drawingContext.fillRect(0, 0, w, h);
+  renderSource(pg);
+
+  // 2) halo composite onto black (composite 'lighter')
+  ctx.save();
+  ctx.filter = 'none';
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, w, h);
+
+  let drawnAnything = false;
+  if (P.outerBlur > 0 && P.outerHaloIntensity > 0) {
+    ctx.save();
+    ctx.filter = `blur(${P.outerBlur}px)`;
+    ctx.globalAlpha = Math.min(1, P.outerHaloIntensity / 100);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(pg.drawingContext.canvas, 0, 0);
+    ctx.restore();
+    drawnAnything = true;
+  }
+  if (P.innerBlur > 0 || P.haloOffsetX !== 0 || P.haloOffsetY !== 0 || P.haloContrast !== 100) {
+    ctx.save();
+    ctx.filter = `blur(${P.innerBlur}px) contrast(${P.haloContrast}%)`;
+    ctx.globalAlpha = Math.min(1, P.haloIntensity / 100);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(pg.drawingContext.canvas, P.haloOffsetX, P.haloOffsetY);
+    ctx.restore();
+    drawnAnything = true;
+  }
+  if (P.preserveCore || !drawnAnything) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(pg.drawingContext.canvas, 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // 3) pixel pipeline: grain → gradient map → alpha(lum*2.5) over bg color
+  const lut = getLUT();
+  const grainAmount = P.grainAmount / 100;
+  const grainSize = Math.max(1, Math.floor(P.grainSize));
+  const bg = hexToRgb(P.bgColor);
+  const s = Math.floor(seed * 100);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const x = (i / 4) % w;
+    const y = ((i / 4) / w) | 0;
+    let lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    if (grainAmount > 0) {
+      const gx = Math.floor(x / grainSize) * grainSize;
+      const gy = Math.floor(y / grainSize) * grainSize;
+      lum += (hash(gx + s, gy + s * 1.3) - 0.5) * 255 * grainAmount * 2;
+    }
+    const li = Math.min(255, Math.max(0, Math.round(lum)));
+    const a = Math.min(255, li * 2.5) / 255;   // the tool's transparent-bg alpha, pre-composited over bgColor
+    data[i]     = bg[0] + (lut[li * 3]     - bg[0]) * a;
+    data[i + 1] = bg[1] + (lut[li * 3 + 1] - bg[1]) * a;
+    data[i + 2] = bg[2] + (lut[li * 3 + 2] - bg[2]) * a;
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  // 4) poster frame: white page margin + crop marks + lilac tab
+  if (P.frame) drawPosterFrame();
+}
+
+function drawPosterFrame() {
+  const m = P.frameMargin;
+  push();
+  noStroke();
+  fill(P.frameColor);
+  rect(0, 0, width, m);
+  rect(0, height - m, width, m);
+  rect(0, 0, m, height);
+  rect(width - m, 0, m, height);
+  // crop hairlines
+  stroke(20);
+  strokeWeight(1);
+  line(0, m * 0.5, width, m * 0.5);
+  line(m * 0.5, 0, m * 0.5, m * 1.6);
+  // lilac tab
+  noStroke();
+  fill(P.tabColor);
+  const tw = 24, th = 96;
+  const tabX = m + 92, tabY = height - m - th + 26;
+  rect(tabX, tabY, tw, th);
+  fill(40);
+  push();
+  translate(tabX + tw / 2, tabY + th / 2);
+  rotate(-HALF_PI);
+  textAlign(CENTER, CENTER);
+  textFont('monospace');
+  textSize(9);
+  text(P.tabText, 0, 0);
+  pop();
+  pop();
+}
+
+function keyPressed() {
+  if (key === ' ') { P.playing = !P.playing; return false; }
+  if (key === 's' || key === 'S') saveCanvas('dissolve', 'png');
+  if (key === 'c' || key === 'C') { P.echoPath = []; }   // clear pen path → plain offset echoes
+}
+
+// drag on the canvas = draw a new echo path (like the tool's pen)
+function mousePressed() {
+  if (mouseX < 0 || mouseY < 0 || mouseX > width || mouseY > height) return;
+  P.echoPathEnabled = true;
+  P.echoPath = [[mouseX / width, mouseY / height]];
+}
+function mouseDragged() {
+  if (!P.echoPath.length) return;
+  const last = P.echoPath[P.echoPath.length - 1];
+  const dx = (mouseX / width) - last[0], dy = (mouseY / height) - last[1];
+  if (dx * dx + dy * dy > 0.00002) P.echoPath.push([mouseX / width, mouseY / height]);
+}
+</script>
+</body>
+</html>

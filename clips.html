@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>קליפים — בחירה</title>
+<style>
+  :root { --ink: #fff; --dim: #8a8a8a; --line: #2a2a2a; }
+  html, body { margin: 0; background: #0b0b0b; color: var(--ink);
+    font: 15px/1.45 -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 12px 18px 18px; }
+
+  h1 { font-size: 17px; font-weight: 800; margin: 0 0 3px; letter-spacing: -.01em; }
+  .sub { color: var(--dim); margin: 0 0 10px; font-size: 12px; }
+
+  /* align-items:start — the six shots have different aspect ratios, and a grid
+     row otherwise stretches every card to the tallest one, padding the short
+     ones with black. */
+  /* Three across, two rows — sized so all six are on screen together. That is
+     not cosmetic: an off-screen tile has its rAF suspended and the pan/carousel/
+     chase shots stop dead. */
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .card { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #000; }
+  /* every tile is the real clip page, just smaller — what you see is the take */
+  .stage { position: relative; width: 100%; aspect-ratio: var(--ar, 1080 / 670);
+           background: #000; overflow: hidden; }
+  .stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+
+  /* one compact row: number, name, ratio, record link — keeps each card short
+     enough that two rows of three fit above the fold */
+  .meta { display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+          border-top: 1px solid var(--line); }
+  .n { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 12px; }
+  .name { font-weight: 700; }
+  .desc { color: var(--dim); font-size: 13px; margin-inline-start: auto; text-align: end; }
+  .links { display: contents; }
+  a.rec { color: #000; background: #F0D800; text-decoration: none; font-weight: 700;
+          font-size: 12px; padding: 4px 10px; border-radius: 999px; margin-inline-start: auto; }
+  a.rec:hover { filter: brightness(.94); }
+  .size { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .note { color: var(--dim); font-size: 11px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px; }
+  .note b { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>מולטיקאם — זוויות</h1>
+  <p class="sub">שמונה זוויות על <b>אותה כוריאוגרפיה</b> (~18 שנ׳: קלט → קלט → לחיצה → ערבוב → תוצאה),
+     ולכן כל שתיים נחתכות אחת בשנייה בלי קפיצה. 3 ו-4 ממוסגרות זהה — match cut.
+     «הקלטה» פותחת זווית לבד, 1080×1080 על שחור.</p>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="note">
+    <b>מולטיקאם:</b> כל זווית היא האתר האמיתי עם מצלמה אחרת עליו — לא שחזור. כולן מריצות
+    את אותה כוריאוגרפיה, אז אפשר לחתוך ביניהן חופשי.<br>
+    <b>בהקלטה:</b> רווח = מסך מלא, R = הרצה מחדש. כל זווית חוזרת על עצמה בלופ —
+    תני לה להתחיל סבב נקי ואז תקליטי.
+  </p>
+</div>
+
+<script>
+const CLIPS = [
+  /* The eight multicam angles, in story order — all one performance, so any two
+     cut together cleanly. `cow` is the odd one out: its own seamless loop, not
+     part of the master, and kept because Noa picked it. */
+  { id: 'sail',  name: '0 · השייט',        desc: 'תנועה אחת · קלט→קלט→ערבוב' },
+  { id: 'wide',  name: '1 · רחב',          desc: 'הדף כולו' },
+  { id: 'slots', name: '2 · שני הריבועים', desc: 'הקלטים' },
+  { id: 'slot1', name: '3 · ריבוע 1',      desc: 'הטרול נוחת' },
+  { id: 'slot2', name: '4 · ריבוע 2',      desc: 'match cut ל-3' },
+  { id: 'mix',   name: '5 · הלחיצה',       desc: 'תקריב על הכפתור' },
+  { id: 'bowl',  name: '6 · הקערה',        desc: 'זום אין · מתמלאת' },
+  { id: 'card',  name: '7 · הכרטיס',       desc: 'עף מהקערה' },
+  { id: 'band',  name: '8 · הפס',          desc: 'בלי הסרגל' },
+  { id: 'cow',   name: 'הפרה',             desc: 'לופ עצמאי' },
+].map(c => Object.assign({ w: 1080, h: 1080 }, c));
+
+const grid = document.getElementById('grid');
+
+CLIPS.forEach((c, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  /* Each tile is a full copy of the site in a nested iframe, so six at once is
+     heavy — hence the small tiles and the hard `max` cap on the internal render.
+     NOT lazy, and deliberately so: three of the six (cow / pops / chase) are
+     driven by requestAnimationFrame, which a browser suspends in an iframe that
+     is off screen. A lazy or scrolled-away tile simply sits frozen. Eager
+     loading plus a grid that fits on one screen is what keeps all six alive. */
+  const tileW = 300, tileH = Math.round(tileW * c.h / c.w);
+  const src = 'clip.html?shot=' + c.id + '&w=' + tileW + '&h=' + tileH + '&max=680';
+
+  card.innerHTML =
+    '<div class="stage" style="--ar: ' + c.w + ' / ' + c.h + '">' +
+      '<iframe src="' + src + '" title="' + c.name + '"></iframe>' +
+    '</div>' +
+    '<div class="meta">' +
+      '<span class="n">' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<span class="name">' + c.name + '</span>' +
+      '<span class="desc">' + c.desc + '</span>' +
+      '<a class="rec" href="clip.html?shot=' + c.id + '" target="_blank" rel="noopener">הקלטה</a>' +
+    '</div>';
+
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>
