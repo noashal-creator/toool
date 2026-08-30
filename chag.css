@@ -387,93 +387,124 @@ html.chag-mixing .chag-bowl-picks img {
 .chag-picker.chag-nudge { animation: chag-nudge .38s ease; }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   THE RESULT WINDOW IS THE NEW YEAR CARD (Figma 3412:1238).
+   THE RESULT WINDOW IS THE NEW YEAR CARD — Figma 3438:141, 1:1.
 
-   The .mixwin__card frame from styles.css is reused for its open/close +
-   fly-from-bowl machinery, but here it becomes the red greeting card: a
-   fixed layout where only the creature image (#mixwin-big) changes per pair.
-   Children are positioned as % of the card; the card has container-type:size
-   (styles.css) so cqw = 1% of the card width — every size scales with it.
-   Percentages are taken from the frame's own 1241×977 geometry.
+   Verified against the frame's own render in card-design.html (overlay +
+   difference blend): every box 0.00px off, the scalloped sheet a 0.117px
+   mean fit along all four edges, the lettering inside half a pixel.
+
+   The .mixwin__card shell from styles.css is kept for its open/close and
+   fly-out-of-the-bowl machinery. Everything here is written in --u, the
+   ONE scale factor that shell already computes: at --u = 1px this is the
+   Figma frame at 1:1, and since every child shares it the proportions
+   cannot drift. Do not reintroduce percentages here.
    ═══════════════════════════════════════════════════════════════════════ */
 .mixwin__card--chag {
-  display: block;                 /* children are absolutely placed, not flexed */
-  background-color: #E60000;      /* the design's red (unified with cell/logo) */
-  /* the frame's dashed stroke is the Figma spec EXACTLY — width 3, dash 2,
-     gap 2 (a fine stitch). CSS `border: dashed` can't do that: it draws
-     dashes ~3x the border width, which read as thick, coarse blocks. So the
-     frame is an SVG rect stretched over the card instead. */
-  border: none;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1241 977" preserveAspectRatio="none"><rect x="1.5" y="1.5" width="1238" height="974" rx="9.5" fill="none" stroke="%23000" stroke-width="3" stroke-dasharray="2 2"/></svg>');
-  background-size: 100% 100%;
+  /* the frame is 1241x998 (the shell's own default is the old 1207x975), and
+     --fit has to be recomputed for it or a short window would crop the card */
+  --fit: min(calc((100vw - var(--sbw) - 4vw) / 1241), calc((100dvh - 4vh) / 998));
+  width: calc(1241 * var(--u));
+  height: calc(998 * var(--u));
+  display: block;                  /* children are placed, not flexed */
+  background: none;                /* the ground is painted by the frame SVG */
+  border: none;                    /* ditto the dashed stroke */
+  border-radius: calc(11 * var(--u));
+  box-shadow: none;                /* the frame carries no shadow */
   overflow: hidden;
 }
 .mixwin__card--chag > * { position: absolute; margin: 0; }
 
-/* QR — yellow block + the code sitting inside it (top-left) */
+/* the card's ground + its dashed stroke: Rectangle 166's own path, verbatim.
+   CSS `border: dashed` cannot do stroke 3 / dash 2 / gap 2 — it draws dashes
+   about three times the border width, which reads as coarse blocks. */
+.mixwin__card--chag .chagcard__frame {
+  left: calc(-1.5 * var(--u)); top: calc(-1.5 * var(--u));
+  width: calc(1244 * var(--u)); height: calc(1001 * var(--u));
+}
+
+/* QR — the yellow block and the code inside it */
 .mixwin__card--chag .chagcard__qrbox {
-  left: 1.61%; top: 1.95%; width: 10.23%; height: 12.28%;
+  left: calc(17 * var(--u)); top: calc(15 * var(--u));
+  width: calc(127 * var(--u)); height: calc(126 * var(--u));
   background: #FFFF01;
+  border: 1px solid #000;
+  border-radius: calc(11 * var(--u));
 }
 .mixwin__card--chag .chagcard__qr {
-  left: 2.01%; top: 2.76%; width: 8.94%; height: 11.46%;
-  object-fit: cover;
+  left: calc(25 * var(--u)); top: calc(22 * var(--u));
+  width: calc(111 * var(--u)); height: calc(112 * var(--u));
+  overflow: hidden;
 }
-/* the lettering carries the notched dashed CONTOUR of the sidebar
-   instructions (solid fill + a dashed stroke riding the outline) —
-   an SVG so it scales vector-crisp with the card */
-.mixwin__card--chag .chagcard__scan {
-  left: 12.57%; top: 1.95%; width: 19.02%; height: 7.78%;
-  overflow: visible;
-}
-.mixwin__card--chag .chagcard__scan text {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 700; font-size: 29px;
-  letter-spacing: 0.29px;
-  fill: #000;
-  stroke: #000; stroke-width: 1.6; stroke-dasharray: 2 2;
-  paint-order: stroke;
+.mixwin__card--chag .chagcard__qr img {
+  position: absolute;
+  width: 123.23%; height: 121.66%; left: -11.61%; top: -10.83%;
+  max-width: none;
 }
 
-/* yellow round close button (top-right) */
+/* the close control. The purple dot and its X are drawn in the vector layer;
+   this is only the hit area, sitting exactly on top of them. */
 .mixwin__card--chag .chagcard__x {
-  left: 93.80%; top: 2.15%; width: 4.19cqw; height: 4.19cqw;
-  background: #FFFF01; border: 1px solid #000; border-radius: 50%;
-  cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
+  left: calc(1182 * var(--u)); top: calc(19 * var(--u));
+  width: calc(37 * var(--u)); height: calc(37 * var(--u));
+  background: none; border: 0; border-radius: 50%; padding: 0;
+  cursor: pointer;
 }
-.mixwin__card--chag .chagcard__x svg { width: 46%; height: 46%; }
-.mixwin__card--chag .chagcard__x:hover { filter: brightness(.96); }
 .mixwin__card--chag .chagcard__x:active { transform: translateY(1px); }
 
-/* the scalloped white sheet the creature sits on */
+/* the scalloped white sheet */
 .mixwin__card--chag .chagcard__panel {
-  left: 0.89%; top: 14.23%; width: 97.90%; height: 84.44%;
+  left: calc(18.5 * var(--u)); top: calc(175.5 * var(--u));
+  width: calc(1204 * var(--u)); height: calc(804 * var(--u));
 }
-/* the creature — centred and CONTAINED in the sheet, so any of the 28
-   specimens fits without clipping; its white background blends into the
-   white sheet. (The bench used the Figma tight crop, tuned to one image;
-   contain is safe across all pairs.) */
+
+/* the creature, on the card's OPTICAL centre: centred horizontally, and
+   vertically midway between the sheet's solid top (189) and the greeting's
+   cap-top (909.5), which leaves an equal 33.75u of white above and below.
+   The sources in assets/chag/res-c/ are canvases centred on each object's
+   own bbox, so `contain` drops every one of the 28 dead centre at whatever
+   size it was shot — see prep-chag-results.py. */
 .mixwin__card--chag .chagcard__img {
-  /* fully INSIDE the sheet's solid area: the scallop bumps reach 33 panel
-     units deep (17.6% of the card's height at the top edge), so the image
-     starts below that — it must never cut across the white frame. */
-  left: 6%; top: 19%; width: 88%; height: 64%;
+  left: calc(56 * var(--u)); top: calc(222.75 * var(--u));
+  width: calc(1129 * var(--u)); height: calc(653 * var(--u));
   overflow: hidden;
 }
 .mixwin__card--chag .chagcard__img .mixwin__big {
   position: absolute; inset: 0;
-  left: 0; top: 0; width: 100%; height: 100%;
+  width: 100%; height: 100%;
   object-fit: contain; object-position: center;
 }
 
-/* chain logo + greeting, centred at the foot of the card */
-.mixwin__card--chag .chagcard__logo {
-  left: 50%; transform: translateX(-50%);
-  top: 87.62%; width: 9.27cqw; height: 2.77%;
+/* the vector layer: the tear line, the close dot, the lettering.
+   viewBox 1241x998 means one user unit is one frame unit, so the type sizes
+   below are the frame's own numbers and scale with the card by themselves. */
+.mixwin__card--chag .chagcard__vec {
+  left: 0; top: 0;
+  width: calc(1241 * var(--u)); height: calc(998 * var(--u));
+  pointer-events: none;
 }
-.mixwin__card--chag .chagcard__greet {
-  left: 0; right: 0; top: 91.10%;
-  font-weight: 700; font-size: 2.18cqw; line-height: 2.18cqw;
-  text-align: center; text-transform: uppercase; color: #000;
+/* the card's lettering is ENGLISH and must always set left-to-right even if a
+   page around it is RTL — otherwise "SCAN TO KEEP" lays out leftward from its
+   x and SHANA TOVA!'s exclamation mark flips to the wrong side. */
+.mixwin__card--chag .chagcard__vec text { direction: ltr; unicode-bidi: isolate; }
+.mixwin__card--chag .chagcard__vec .t {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700; font-size: 29px; letter-spacing: 0.29px;
+  fill: #000;
+}
+/* the notched contour of the sidebar's instructions. letter-spacing is 0.20
+   rather than the node's 0.29 ON PURPOSE: Figma sets "Helvetica Neue W01 75
+   Bold" and the browser has the local Helvetica Neue cut, 0.45% wider per em
+   — at 0.20 the block measures the frame's own 218 units of ink exactly. */
+.mixwin__card--chag .chagcard__vec .t--stitched {
+  letter-spacing: 0.20px;
+  stroke: #000; stroke-width: 1; stroke-dasharray: 2 2;
+  paint-order: stroke;
+}
+
+/* only ever seen if ?live generation fails */
+.mixwin__card--chag .mixwin__status {
+  left: calc(56 * var(--u)); right: calc(56 * var(--u));
+  top: calc(945 * var(--u));
+  font-size: calc(20 * var(--u)); line-height: 1.2;
+  text-align: center; color: #000;
 }

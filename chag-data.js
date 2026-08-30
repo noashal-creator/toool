@@ -44,8 +44,11 @@ window.CHAG_RESULTS = (() => {
       const key = [a.id, b.id].sort().join('+');
       out[key] = {
         /* the prepared result for this pair — one file per pair, named by the
-           same sorted key (assets/chag/res/<key>.png). All 28 are in place. */
-        img:    `assets/chag/res/${key}.png`,
+           same sorted key. res-c/ is the card-ready set: white point levelled
+           so the photo melts into the card's white sheet with no edge, dust
+           removed, and re-canvassed so the object lands optically centred.
+           Rebuild it from the originals with prep-chag-results.py. */
+        img:    `assets/chag/res-c/${key}.png`,
         name:   `${a.label}־${b.label}`,
         kind:   'סימן חג ממוזג',
         desc:   `התוצר המשולב של ${a.label} ו${b.label} — כאן יופיע התיאור שהכנת מראש לזוג הזה.`,

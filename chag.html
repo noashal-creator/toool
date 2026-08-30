@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=37">
+<link rel="stylesheet" href="chag.css?v=38">
 </head>
 <body>
 
@@ -195,35 +195,48 @@
 
 </main>
 
-<!-- ══ mix result popup — pops up ~10s after MIX (Figma node 3062:4) ═════ -->
-<!-- The result window IS the New Year greeting card (Figma 3412:1238).
-     The frame is fixed; only #mixwin-big (the creature) swaps per pair.
-     Kept classes .mixwin / .mixwin__card so the open/close + fly-from-bowl
-     logic in chag-live.js drives it unchanged. -->
+<!-- ══ the result window IS the New Year card — Figma 3438:141, 1:1 ═══════
+     Verified against the frame's own render in card-design.html (overlay +
+     difference blend). Only #mixwin-big changes per pair; everything else is
+     fixed. Classes .mixwin / .mixwin__card are kept so the open/close and
+     fly-out-of-the-bowl logic in chag-live.js drives it unchanged. ══════ -->
 <div class="mixwin" id="mixwin" hidden>
   <div class="mixwin__card mixwin__card--chag" role="dialog" aria-modal="true" tabindex="-1"
        aria-label="Your New Year card">
 
-    <div class="chagcard__qrbox"></div>
-    <img class="chagcard__qr" src="assets/chag/card/qr-sample.png?v=1" alt="">
-    <svg class="chagcard__scan" viewBox="0 0 236 76" aria-label="SCAN TO KEEP &amp; SEND" role="img">
-      <text x="0" y="33">SCAN TO KEEP</text>
-      <text x="0" y="63.6">&amp; SEND</text>
+    <!-- the ground and its dashed stroke: Rectangle 166's own path -->
+    <svg class="chagcard__frame" viewBox="0 0 1244 1001" fill="none" aria-hidden="true">
+      <path d="M1.5 12.5C1.5 6.42485 6.42487 1.5 12.5 1.5H1231.5C1237.58 1.5 1242.5 6.42487 1242.5 12.5V988.5C1242.5 994.575 1237.58 999.5 1231.5 999.5H12.5C6.42485 999.5 1.5 994.575 1.5 988.5V12.5Z"
+            fill="#FC0000" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
     </svg>
-    <button type="button" class="chagcard__x" id="mixwin-x" aria-label="Close">
-      <svg viewBox="0 0 26 26" aria-hidden="true">
-        <path d="M22.56 6.01 19.99 3.44 3.44 19.99l2.57 2.57L22.56 6.01Z" fill="#000"/>
-        <path d="M6.01 3.44 3.44 6.01l16.55 16.55 2.57-2.57L6.01 3.44Z" fill="#000"/>
-      </svg>
-    </button>
 
-    <img class="chagcard__panel" src="assets/chag/card/panel.svg" alt="">
+    <div class="chagcard__qrbox"></div>
+    <div class="chagcard__qr"><img src="assets/chag/card/qr-frame.png?v=1" alt=""></div>
+
+    <img class="chagcard__panel" src="assets/chag/card/panel.svg?v=4" alt="">
     <div class="chagcard__img">
-      <img class="mixwin__big" id="mixwin-big" src="assets/mix/n-03.png"
-           alt="The generated New Year creature">
+      <img class="mixwin__big" id="mixwin-big" src="assets/chag/res-c/dag+dvash.png"
+           alt="Your New Year creature">
     </div>
-    <img class="chagcard__logo" src="assets/chag/card/logo-small.svg" alt="toool">
-    <p class="chagcard__greet">HAPPY NEW YEAR!</p>
+
+    <svg class="chagcard__vec" viewBox="0 0 1241 998" fill="none" aria-hidden="true">
+      <!-- the tear line: straight across, curling down into both card edges
+           (Vector 209 mirrored + Vector 207 + Vector 208, beziers verbatim) -->
+      <path d="M0 167.5C0 156.693 9 156 16 156H1225C1232 156 1241 156.693 1241 167.5"
+            stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+      <!-- the close dot (Ellipse 65) with the site's own X at its 60% -->
+      <circle cx="1200.5" cy="37.5" r="18.5" fill="#560476" stroke="#000"/>
+      <g transform="translate(1189.4 26.4) scale(0.8538)" fill="#fff">
+        <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z"/>
+        <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z"/>
+      </g>
+      <text class="t t--stitched" x="159" y="42">SCAN TO KEEP</text>
+      <text class="t t--stitched" x="159" y="70">&amp; SEND</text>
+      <text class="t" x="620.5" y="930" text-anchor="middle">SHANA TOVA!</text>
+    </svg>
+
+    <!-- the hit area for the dot drawn above -->
+    <button type="button" class="chagcard__x" id="mixwin-x" aria-label="Close"></button>
 
     <!-- reports a generation error in ?live mode; hidden while all is well -->
     <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
@@ -248,9 +261,9 @@
   window.TOOOL_FILL_CYCLES = 16;
 </script>
 <script src="app.js?v=21"></script>
-<script src="chag-data.js?v=7"></script>
+<script src="chag-data.js?v=8"></script>
 <script src="chag-pick.js?v=9"></script>
-<script src="chag-live.js?v=2"></script>
+<script src="chag-live.js?v=3"></script>
 <!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the
      grid cells, gridlines and page background. -->
 <script src="chag-color-edit.js?v=3"></script>
