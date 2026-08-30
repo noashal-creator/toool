@@ -36,7 +36,6 @@ window.CHAG_GRID = [
 
 /* ── the 28 pairs — placeholder fill until the real results arrive ── */
 window.CHAG_RESULTS = (() => {
-  const PLACEHOLDER = 'assets/mix/n-03.png';
   const out = {};
   const S = window.CHAG_SYMBOLS;
   for (let i = 0; i < S.length; i++) {
@@ -44,7 +43,9 @@ window.CHAG_RESULTS = (() => {
       const a = S[i], b = S[j];
       const key = [a.id, b.id].sort().join('+');
       out[key] = {
-        img:    PLACEHOLDER,
+        /* the prepared result for this pair — one file per pair, named by the
+           same sorted key (assets/chag/res/<key>.png). All 28 are in place. */
+        img:    `assets/chag/res/${key}.png`,
         name:   `${a.label}־${b.label}`,
         kind:   'סימן חג ממוזג',
         desc:   `התוצר המשולב של ${a.label} ו${b.label} — כאן יופיע התיאור שהכנת מראש לזוג הזה.`,

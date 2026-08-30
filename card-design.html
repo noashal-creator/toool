@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chag — card design bench</title>
+<!-- ══ DESIGN BENCH ONLY — the chag result card, 1:1 from Figma 3412:1238.
+     Frame facts (pulled from the node's own data + SVGs):
+       card: (488,52) 1241×977, radius 11, BLACK DASHED 3px 2-2 stroke.
+       Fill: the frame says #FC0000 but Noa asked for the design's own red
+       (#E60000, the picked-cell/logo red) — unified per her instruction.
+       QR block: yellow #FFFF01 rect (20,19) 127×120, QR img (25,27) 111×112
+       "SCAN TO KEEP & SEND": (156, cy57) w236, Helvetica Bold 29/30.6, +0.29
+       X: YELLOW circle 52×52 at (1164,21), 1px black stroke
+       white panel: the frame's own scalloped sheet (panel.png) (11,139) 1215×825
+       creature: (62,247) 1102×681 (per-pair image)
+       chain logo: 115×27, centred on the card, top ≈856
+       HAPPY NEW YEAR!: 27px/22, centred, below the logo
+     Not linked from any page; the site is untouched until Noa approves. ══ -->
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 30px 0 60px;
+    background: #e9e9e9;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+  }
+  h2 { font-size: 14px; font-weight: 700; color: #444; margin: 0; }
+
+  .card {
+    --k: 0.62;                       /* preview scale of the 1241×977 frame card */
+    position: relative;
+    width: calc(1241px * var(--k));
+    height: calc(977px * var(--k));
+    background-color: #E60000;       /* the design's red (Noa: unify with the rest) */
+    /* the Figma stitch exactly (width 3, dash 2, gap 2) — CSS dashed borders
+       draw coarse blocks instead, so the frame is an SVG rect */
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1241 977" preserveAspectRatio="none"><rect x="1.5" y="1.5" width="1238" height="974" rx="9.5" fill="none" stroke="%23000" stroke-width="3" stroke-dasharray="2 2"/></svg>');
+    background-size: 100% 100%;
+    border-radius: calc(11px * var(--k));
+  }
+  .card > * { position: absolute; }
+
+  .card__qrbox {
+    left: calc(20px * var(--k)); top: calc(19px * var(--k));
+    width: calc(127px * var(--k)); height: calc(120px * var(--k));
+    background: #FFFF01;
+  }
+  .card__qr {
+    left: calc(25px * var(--k)); top: calc(27px * var(--k));
+    width: calc(111px * var(--k)); height: calc(112px * var(--k));
+    object-fit: cover;
+  }
+  /* the lettering carries the notched dashed CONTOUR of the sidebar
+     instructions (solid fill + a dashed stroke riding the outline) —
+     an SVG so it scales vector-crisp with the card */
+  .card__scan {
+    left: calc(156px * var(--k)); top: calc(19px * var(--k));
+    width: calc(236px * var(--k)); height: calc(76px * var(--k));
+    overflow: visible;
+  }
+  .card__scan text {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 700; font-size: 29px;
+    letter-spacing: 0.29px;
+    fill: #000;
+    stroke: #000; stroke-width: 1.6; stroke-dasharray: 2 2;
+    paint-order: stroke;
+  }
+  .card__x {
+    left: calc(1164px * var(--k)); top: calc(21px * var(--k));
+    width: calc(52px * var(--k)); height: calc(52px * var(--k));
+    background: #FFFF01;
+    border: 1px solid #000; border-radius: 50%;
+    cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card__x svg { width: 46%; height: 46%; }
+
+  .card__panel {
+    left: calc(11px * var(--k)); top: calc(139px * var(--k));
+    width: calc(1215px * var(--k)); height: calc(825px * var(--k));
+  }
+  /* the creature box crops its source exactly as the frame does
+     (img 134.94%×187.06% at -17.51%,-46.28%) */
+  .card__img {
+    left: calc(62px * var(--k)); top: calc(247px * var(--k));
+    width: calc(1102px * var(--k)); height: calc(681px * var(--k));
+    overflow: hidden;
+  }
+  .card__img img {
+    position: absolute;
+    width: 134.94%; height: 187.06%;
+    left: -17.51%; top: -46.28%;
+    max-width: none;
+  }
+  .card__logo {
+    left: 50%; transform: translateX(-50%);
+    top: calc(856px * var(--k));
+    width: calc(115px * var(--k)); height: calc(27px * var(--k));
+  }
+  .card__greet {
+    left: 0; right: 0; margin: 0;
+    top: calc(890px * var(--k));
+    font-weight: 700;
+    font-size: calc(27px * var(--k));
+    line-height: calc(22px * var(--k));
+    text-align: center; text-transform: uppercase; color: #000;
+  }
+</style>
+</head>
+<body>
+
+<h2>חלון התוצאה — 1:1 מהפריים (3412:1238), בקנה 62%</h2>
+
+<div class="card">
+  <div class="card__qrbox"></div>
+  <img class="card__qr" src="assets/chag/card/qr-sample.png" alt="">
+  <svg class="card__scan" viewBox="0 0 236 76" aria-label="SCAN TO KEEP &amp; SEND" role="img">
+    <text x="0" y="33">SCAN TO KEEP</text>
+    <text x="0" y="63.6">&amp; SEND</text>
+  </svg>
+  <button class="card__x" type="button" aria-label="Close">
+    <svg viewBox="0 0 26 26" aria-hidden="true">
+      <path d="M22.56 6.01 19.99 3.44 3.44 19.99l2.57 2.57L22.56 6.01Z" fill="#000"/>
+      <path d="M6.01 3.44 3.44 6.01l16.55 16.55 2.57-2.57L6.01 3.44Z" fill="#000"/>
+    </svg>
+  </button>
+  <img class="card__panel" src="assets/chag/card/panel.svg" alt="">
+  <div class="card__img"><img src="assets/chag/card/creature-sample.png" alt=""></div>
+  <img class="card__logo" src="assets/chag/card/logo-small.svg" alt="toool">
+  <p class="card__greet">HAPPY NEW YEAR!</p>
+</div>
+
+</body>
+</html>

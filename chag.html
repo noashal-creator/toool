@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=35">
+<link rel="stylesheet" href="chag.css?v=37">
 </head>
 <body>
 
@@ -196,67 +196,36 @@
 </main>
 
 <!-- ══ mix result popup — pops up ~10s after MIX (Figma node 3062:4) ═════ -->
+<!-- The result window IS the New Year greeting card (Figma 3412:1238).
+     The frame is fixed; only #mixwin-big (the creature) swaps per pair.
+     Kept classes .mixwin / .mixwin__card so the open/close + fly-from-bowl
+     logic in chag-live.js drives it unchanged. -->
 <div class="mixwin" id="mixwin" hidden>
-  <div class="mixwin__card" role="dialog" aria-modal="true" tabindex="-1"
-       aria-label="Generated midpoint result">
+  <div class="mixwin__card mixwin__card--chag" role="dialog" aria-modal="true" tabindex="-1"
+       aria-label="Your New Year card">
 
-    <div class="mixwin__hero">
+    <div class="chagcard__qrbox"></div>
+    <img class="chagcard__qr" src="assets/chag/card/qr-sample.png?v=1" alt="">
+    <svg class="chagcard__scan" viewBox="0 0 236 76" aria-label="SCAN TO KEEP &amp; SEND" role="img">
+      <text x="0" y="33">SCAN TO KEEP</text>
+      <text x="0" y="63.6">&amp; SEND</text>
+    </svg>
+    <button type="button" class="chagcard__x" id="mixwin-x" aria-label="Close">
+      <svg viewBox="0 0 26 26" aria-hidden="true">
+        <path d="M22.56 6.01 19.99 3.44 3.44 19.99l2.57 2.57L22.56 6.01Z" fill="#000"/>
+        <path d="M6.01 3.44 3.44 6.01l16.55 16.55 2.57-2.57L6.01 3.44Z" fill="#000"/>
+      </svg>
+    </button>
+
+    <img class="chagcard__panel" src="assets/chag/card/panel.svg" alt="">
+    <div class="chagcard__img">
       <img class="mixwin__big" id="mixwin-big" src="assets/mix/n-03.png"
-           alt="The generated midpoint object">
-
-      <!-- the spec sheet (Figma 3234:272/273 + the two Line 5 rules). Title,
-           kind, desc, Size and Weight are written live per generation by
-           mix-live.js (describe → image-aware text). -->
-      <div class="mixwin__article">
-        <h2 class="mixwin__title">Wing dryer</h2>
-        <div class="mixwin__body">
-          <p class="mixwin__kind"><span class="u">Insect accessory</span></p>
-          <p class="mixwin__desc">A wing dryer is an object used for drying the wings of
-             large insects. The body is rounded and compact, with a raised upper section.
-             The insect is placed on the surface while the wings dry.</p>
-        </div>
-        <!-- label, then the rule, then the value: measured off the Figma render,
-             the 78-wide rule sits BETWEEN the two (y=215 / y=279) while the text
-             is indented to x=45 and the rule starts back at x=16. -->
-        <div class="mixwin__spec mixwin__spec--size">
-          <span class="mixwin__spec-label">Size</span>
-          <span class="mixwin__spec-rule" aria-hidden="true"></span>
-          <span class="mixwin__spec-value" id="mixwin-size">12 cm × 8 cm</span>
-        </div>
-        <div class="mixwin__spec mixwin__spec--weight">
-          <span class="mixwin__spec-label">Weight</span>
-          <span class="mixwin__spec-rule" aria-hidden="true"></span>
-          <span class="mixwin__spec-value" id="mixwin-weight">180 g</span>
-        </div>
-      </div>
-
-      <div class="mixwin__actions">
-        <button type="button" class="mixwin__dl" id="mixwin-dl" aria-label="Download">
-          <!-- The word carries a DASHED outline on the letterforms (Figma 3229:179).
-               CSS cannot dash a text stroke, and a flattened PNG went coarse once
-               scaled down, so it is drawn as SVG text: real type, real dashed
-               stroke, crisp at any size. textLength pins it to the Figma 151. -->
-          <svg class="mixwin__dl-word" viewBox="0 0 151 30" aria-hidden="true">
-            <text x="75.5" y="24" text-anchor="middle" textLength="143" lengthAdjust="spacing"
-                  font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
-                  font-weight="700" font-size="25"
-                  fill="#000" stroke="#000" stroke-width="0.7"
-                  stroke-dasharray="2 2" paint-order="stroke">DOWNLOAD</text>
-          </svg>
-        </button>
-        <button type="button" class="mixwin__x" id="mixwin-x" aria-label="Close">
-          <svg viewBox="0 0 26 26" aria-hidden="true">
-            <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>
-            <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z" fill="currentColor"/>
-          </svg>
-        </button>
-      </div>
+           alt="The generated New Year creature">
     </div>
+    <img class="chagcard__logo" src="assets/chag/card/logo-small.svg" alt="toool">
+    <p class="chagcard__greet">HAPPY NEW YEAR!</p>
 
-    <!-- LIVE: no play button, no spectrum strip — one real generated image
-         (Figma node 3263:78). The status line reports the generation state
-         if it ever fails; while fal works, the bowl churn IS the wait and
-         the window only opens once the result is ready (mix-live.js). -->
+    <!-- reports a generation error in ?live mode; hidden while all is well -->
     <p class="mixwin__status" id="mixwin-status" role="status" aria-live="polite" hidden></p>
 
   </div>
@@ -270,8 +239,16 @@
      The cow spectrum, the toy sections and the sideways reel are gone, so
      their scripts (hero / game / toys / roll / hero-chase / intro-loop /
      sideways / recording / clip-stage / auto-mix) are dropped. -->
-<script src="app.js?v=20"></script>
-<script src="chag-data.js?v=6"></script>
+<script>
+  /* the holiday tool loads fast: 16 stir cycles instead of the site's 44 —
+     descend 800 + 16×640 + lift 600 + beat 500 ≈ a 12s mix (app.js reads this
+     BEFORE it derives its timeline; index.html doesn't set it, so the main
+     site keeps its ~30s untouched). Whole cycles only — the stir must land
+     on a cycle boundary or the spoon snaps mid-swing. */
+  window.TOOOL_FILL_CYCLES = 16;
+</script>
+<script src="app.js?v=21"></script>
+<script src="chag-data.js?v=7"></script>
 <script src="chag-pick.js?v=9"></script>
 <script src="chag-live.js?v=2"></script>
 <!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the

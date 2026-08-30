@@ -30,7 +30,10 @@ const DESCEND_MS = 800;
 const STIR_MS    = 640;
 const LIFT_MS    = 600;
 const READY_BEAT = 500;                  // beat on "ready" before the result opens
-const FILL_MS    = 44 * STIR_MS;         // 28160ms — the ~half-minute prep
+/* a page may shorten the prep by setting window.TOOOL_FILL_CYCLES before this
+   script loads (chag.html uses 16 ≈ a 12s mix); MUST be whole stir cycles.
+   index.html sets nothing, so the main site stays at 44 — byte-identical. */
+const FILL_MS    = (window.TOOOL_FILL_CYCLES || 44) * STIR_MS;   // 44 → 28160ms, the ~half-minute prep
 /* The last 6 stir cycles of the fill are a WIND-DOWN. It has to begin on a
    cycle boundary: rig-stir is back at exactly rotate(90.53deg) and bowl-jiggle
    at translateX(0) there, which is the pose the -calm variants start from, so
