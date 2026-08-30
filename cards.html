@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chag — כל 28 הכרטיסים</title>
+<!-- ══ CONTACT SHEET — all 28 pair cards, for eyeballing the whole set ═════
+     Local review page. Not linked from any page, not loaded by chag.html,
+     not deployed. The card geometry is IDENTICAL to card-design.html (the
+     1:1 bench verified against Figma 3438:141): every card is drawn at the
+     raw frame size 1241x998, one CSS px per Figma px, then scaled with a
+     transform — so what you see here is the approved card, 28 times, with
+     only #mixwin-big swapping.
+
+     The image toggle compares the two candidates for the creature photos:
+       assets/chag/res/    the originals — studio ground is 237-253 grey,
+                           so a faint edge shows where the photo meets the
+                           card's white sheet
+       assets/chag/res-w/  (LOCAL ONLY, git-ignored - an intermediate step)
+                           white point levelled (that same ground stretched
+                           to pure 255). No cutout, no mask, no edge; the
+                           shadow under the object survives intact. Largest
+                           lift any of the 28 needed: 20/255. Scanner dirt on
+                           the very edge is cleared, never wider than the
+                           object's own clearance - all 28 bboxes verified
+                           unchanged.
+       assets/chag/res-c/  the same, re-canvassed so each object's own ink
+                           bbox is dead centre - Noa: place each one optically
+                           centred, sizes may differ since no two are ever
+                           seen together. Sizes are therefore left as shot;
+                           the shadow is deliberately excluded from the bbox
+                           so it cannot drag the object off centre. ══════ -->
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 12px 16px 60px;
+    background: #d9d9d9;
+    font: 13px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #222;
+  }
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+    padding: 10px 14px; margin-bottom: 16px;
+    background: #fff; border: 1px solid #bbb; border-radius: 8px;
+  }
+  .bar b { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .bar label { display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .bar .hint { color: #666; }
+  kbd { font: 11px/1 ui-monospace, Menlo, monospace; background: #eee;
+        border: 1px solid #ccc; border-radius: 3px; padding: 2px 4px; }
+
+  .sheet { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; }
+  .cell { }
+  .cell__cap {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; padding: 0 2px 5px;
+    width: calc(1241px * var(--k));
+  }
+  .cell__cap span:last-child { color: #777; direction: ltr; }
+
+  /* ── the card: identical to the 1:1 bench ── */
+  .stage {
+    position: relative;
+    width: calc(1241px * var(--k));
+    height: calc(998px * var(--k));
+  }
+  .card {                            /* 1 CSS px = 1 Figma px in here */
+    position: absolute; left: 0; top: 0;
+    width: 1241px; height: 998px;
+    transform: scale(var(--k)); transform-origin: 0 0;
+    --red: #FC0000;
+  }
+  .card > * { position: absolute; }
+  .card__frame { left: -1.5px; top: -1.5px; width: 1244px; height: 1001px; }
+  .card__qrbox {
+    left: 17px; top: 15px; width: 127px; height: 126px;
+    background: #FFFF01; border: 1px solid #000; border-radius: 11px;
+  }
+  .card__qr { left: 25px; top: 22px; width: 111px; height: 112px; overflow: hidden; }
+  .card__qr img {
+    position: absolute; width: 123.23%; height: 121.66%;
+    left: -11.61%; top: -10.83%; max-width: none;
+  }
+  .card__panel { left: 18.5px; top: 175.5px; width: 1204px; height: 804px; }
+  /* the creature box, placed on the card's OPTICAL centre: the card's own
+     centre horizontally, and vertically midway between the sheet's solid top
+     (189) and the greeting's cap-top (909.5) -> 549.25, which leaves an equal
+     33.75px of white above and below. The images in assets/chag/res-c/ are
+     canvases centred on each object's own ink bbox, so `contain` drops every
+     object dead centre at whatever size it was shot. */
+  .card__img   { left: 56px; top: 222.75px; width: 1129px; height: 653px; overflow: hidden; }
+  .card__img img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; object-position: center;
+  }
+  .card__vec { left: 0; top: 0; width: 1241px; height: 998px; pointer-events: none; }
+  /* the card's lettering is ENGLISH and must always set left-to-right, even
+     when the surrounding page is RTL (cards.html is dir="rtl"): without this
+     the browser lays "SCAN TO KEEP" out leftward from its x and flips the "!"
+     of SHANA TOVA! to the wrong side. */
+  .card__vec text { direction: ltr; unicode-bidi: isolate; }
+  .card__vec .t {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 700; font-size: 29px; letter-spacing: 0.29px; fill: #000;
+  }
+  .card__vec .t--stitched {
+    letter-spacing: 0.20px;
+    stroke: #000; stroke-width: 1; stroke-dasharray: 2 2; paint-order: stroke;
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>כל 28 הכרטיסים</b>
+  <label>גודל
+    <select id="zoom">
+      <option value="0.28">קטן</option>
+      <option value="0.4" selected>בינוני</option>
+      <option value="0.6">גדול</option>
+      <option value="1">1:1</option>
+    </select></label>
+  <label>תמונות
+    <select id="src">
+      <option value="res-c" selected>מוכן לכרטיס</option>
+      <option value="res">המקור כמו שצולם</option>
+    </select></label>
+  <span class="hint" id="count"></span>
+  <span class="hint"><kbd>W</kbd> מחליף בין מוכן למקור</span>
+</div>
+
+<div class="sheet" id="sheet"></div>
+
+<script src="chag-data.js?v=7"></script>
+<script>
+  const sheet = document.getElementById('sheet');
+  const zoom  = document.getElementById('zoom');
+  const src   = document.getElementById('src');
+  const count = document.getElementById('count');
+
+  /* one card, exactly as approved in card-design.html */
+  const CARD = (key, imgSrc) => `
+    <svg class="card__frame" viewBox="0 0 1244 1001" fill="none" aria-hidden="true">
+      <path d="M1.5 12.5C1.5 6.42485 6.42487 1.5 12.5 1.5H1231.5C1237.58 1.5 1242.5 6.42487 1242.5 12.5V988.5C1242.5 994.575 1237.58 999.5 1231.5 999.5H12.5C6.42485 999.5 1.5 994.575 1.5 988.5V12.5Z"
+            fill="var(--red)" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+    </svg>
+    <div class="card__qrbox"></div>
+    <div class="card__qr"><img src="assets/chag/card/qr-frame.png" alt=""></div>
+    <img class="card__panel" src="assets/chag/card/panel.svg?v=4" alt="">
+    <div class="card__img"><img src="${imgSrc}" alt="" loading="lazy"></div>
+    <svg class="card__vec" viewBox="0 0 1241 998" fill="none" aria-hidden="true">
+      <path d="M0 167.5C0 156.693 9 156 16 156H1225C1232 156 1241 156.693 1241 167.5"
+            stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+      <circle cx="1200.5" cy="37.5" r="18.5" fill="#560476" stroke="#000"/>
+      <g transform="translate(1189.4 26.4) scale(0.8538)" fill="#fff">
+        <path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z"/>
+        <path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z"/>
+      </g>
+      <text class="t t--stitched" x="159" y="42">SCAN TO KEEP</text>
+      <text class="t t--stitched" x="159" y="70">&amp; SEND</text>
+      <text class="t" x="620.5" y="930" text-anchor="middle">SHANA TOVA!</text>
+    </svg>`;
+
+  const pairs = Object.keys(window.CHAG_RESULTS || {}).sort();
+
+  function build() {
+    const dir = src.value;
+    sheet.innerHTML = pairs.map((key) => {
+      const rec = window.CHAG_RESULTS[key];
+      return `<div class="cell">
+        <div class="cell__cap"><span>${rec.name || key}</span><span>${key}</span></div>
+        <div class="stage"><div class="card">${CARD(key, `assets/chag/${dir}/${key}.png`)}</div></div>
+      </div>`;
+    }).join('');
+    count.textContent = pairs.length + ' כרטיסים';
+    apply();
+  }
+  function apply() {
+    document.body.style.setProperty('--k', zoom.value);
+    document.querySelectorAll('.stage, .card, .cell__cap')
+      .forEach(el => el.style.setProperty('--k', zoom.value));
+  }
+  zoom.addEventListener('input', apply);
+  src.addEventListener('input', build);
+  addEventListener('keydown', (e) => {
+    if (e.key === 'w' || e.key === 'W') {                 // cycle the three sets
+      const o = [...src.options].map(x => x.value);
+      src.value = o[(o.indexOf(src.value) + 1) % o.length];
+      build(); e.preventDefault();
+    }
+  });
+  build();
+</script>
+
+</body>
+</html>

@@ -20,3 +20,7 @@ LIVE-PLAN.md
 
 # function dependencies are installed by Netlify at deploy time
 node_modules/
+
+# derived from assets/chag/res/ by prep-chag-results.py — an intermediate
+# step only the local review needs; res-c/ is what the card actually uses
+assets/chag/res-w/
