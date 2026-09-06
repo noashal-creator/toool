@@ -56,6 +56,14 @@
 }
 .bowl-wave { display: none !important; }
 
+/* The screen-reader readout is position:absolute with no offsets, so it lands
+   at its STATIC position — the very end of the body — and its single pixel
+   pushed the document 1px past the viewport. The root's background is white,
+   so that pixel showed as a white line under the grid and made the page
+   scrollable by 1px. Pinning it changes nothing about it otherwise: it stays
+   1x1 and clipped. */
+.status { top: 0; left: 0; }
+
 /* the sidebar and the column beside it use the SNAPPED width (see the script
    in chag.html), so the rule between them lands on a whole device pixel and
    is not smeared across three */
