@@ -134,8 +134,17 @@
   }
   .btn {
     appearance: none;
-    height: calc(141 * var(--k));
-    padding: 0 calc(20 * var(--k));
+    display: inline-block;
+    /* The frame's 141 was the height of a label that wrapped to two lines.
+       With one line the height comes from the CAPS, not the line box: the
+       lettering's ink is 34.36 tall, and it gets the same 23.5 of yellow all
+       round that the sides already give it — hence 34.36 + 2 x 23.5 = 81.36.
+       Chrome centres a button's content itself (align-items does nothing, and
+       padding only shifts it by half), and it centres the LINE box, which
+       leaves the capitals sitting 0.28 low — so 0.56 of padding underneath
+       lifts them back onto the middle. */
+    height: calc(81.36 * var(--k));
+    padding: 0 calc(20 * var(--k)) calc(0.56 * var(--k));
     background: #FFFF01;
     border: 1px solid #000;
     border-radius: calc(11 * var(--k));
@@ -145,7 +154,6 @@
     text-transform: uppercase;
     white-space: nowrap;
     cursor: pointer;
-    display: inline-flex; align-items: center;
   }
   .btn:active { transform: translateY(1px); }
   .btn[disabled] { opacity: .55; cursor: default; }
