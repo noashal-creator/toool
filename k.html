@@ -17,9 +17,11 @@
      that frame's own. Blue ground, the card, and two yellow buttons:
 
        card     (32, 375)   876.488 x 594.684   r11, stroke 3 dashed 2-2
-       save     (41, 1020)  496 x 141           #FFFF01, r11, 1px black
-       send     (555, 1020) 342 x 141           same
-       lettering 47/44.6 bold uppercase, inset 20/21 (23/21 on the right)
+       buttons  row at (41, 1020), 141 tall, 18 apart, r11, #FFFF01,
+                1px black, lettering 47/44.6 bold uppercase with 20 of
+                inset — each one exactly as wide as its own words, since
+                the frame's 496 and 342 were the width of a label that
+                wrapped to two lines
 
      THE CARD HERE IS THE CARD AFTER THE PERFORATION IS TORN OFF. That line
      exists to be torn, and whoever reached this page has already scanned the
@@ -112,27 +114,33 @@
     font-weight: 700; font-size: 27px; letter-spacing: 0.29px; fill: #000;
   }
 
-  /* ── the two buttons ────────────────────────────────────────────────── */
-  .btn {
-    position: absolute; appearance: none;
+  /* ── the two buttons ────────────────────────────────────────────────────
+     The frame draws them 496 and 342 because its lettering wrapped to two
+     lines. Here each one is exactly as wide as its own words: the frame's
+     20 of inset on both sides, everything else — the 41 the row starts at,
+     the 18 between them, the height, the radius, the type — is the frame's. */
+  .acts {
+    position: absolute;
+    left: calc(41 * var(--k));
     top: calc(645 * var(--k));                     /* 1020 - 375 */
+    display: flex; gap: calc(18 * var(--k));
+    direction: ltr;
+  }
+  .btn {
+    appearance: none;
     height: calc(141 * var(--k));
+    padding: 0 calc(20 * var(--k));
     background: #FFFF01;
     border: 1px solid #000;
     border-radius: calc(11 * var(--k));
-    padding: calc(21 * var(--k)) calc(20 * var(--k)) 0;
     font: 700 calc(47 * var(--k)) / calc(44.6 * var(--k))
           "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #000;
     text-transform: uppercase;
-    text-align: left;
-    direction: ltr;
+    white-space: nowrap;
     cursor: pointer;
-    overflow: hidden;
+    display: inline-flex; align-items: center;
   }
-  .btn--save { left: calc(41 * var(--k));  width: calc(496 * var(--k)); }
-  .btn--send { left: calc(555 * var(--k)); width: calc(342 * var(--k));
-               padding-left: calc(23 * var(--k)); }
   .btn:active { transform: translateY(1px); }
   .btn[disabled] { opacity: .55; cursor: default; }
 
@@ -173,8 +181,10 @@
       </div>
     </div>
 
-    <button class="btn btn--save" id="save" type="button">Save the card</button>
-    <button class="btn btn--send" id="send" type="button">Send it</button>
+    <div class="acts">
+      <button class="btn" id="save" type="button">Save the card</button>
+      <button class="btn" id="send" type="button">Send it</button>
+    </div>
 
     <p class="note" id="note" role="status" aria-live="polite"></p>
   </div>
