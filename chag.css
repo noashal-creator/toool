@@ -308,12 +308,14 @@ html.chag-opening .chag-intro {
 html.chag-opening .chag-intro__logo {
   position: absolute;
   left: 50%; transform: translateX(-50%);
+  /* capped exactly like the band's own lockup, or it clips on the same
+     screens — see .chag-logo */
   /* rides the curtain's edge into place. chag-intro.js overwrites this with
      the gap MEASURED off the real band, so the landing is exact; this is the
      sane starting value for the frame it takes to run. */
   bottom: calc(39 * var(--s));
-  width: calc(1411 * var(--s));
-  height: calc(295 * var(--s));
+  width: min(calc(1411 * var(--s)), 90%);
+  height: auto;
 }
 
 /* ── the blue logo band (Rectangle 81: #0048FF, 1px black stroke, 374 tall) ── */
@@ -334,10 +336,23 @@ html.chag-opening .chag-intro__logo {
 .chag-logo {
   position: absolute;
   left: 50%;
-  top: calc(40 * var(--s));
-  transform: translateX(-50%);
-  width: calc(1411 * var(--s));
-  height: calc(295 * var(--s));
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* 1411 units is the frame's own width, but the unit comes from the HEIGHT,
+     so on a screen narrower than 1.63:1 the lockup grew wider than the band
+     and the band's overflow:hidden cut it off at both ends. Every MacBook is
+     1.54-1.60 and was clipped; only the 16:9 the frame was drawn at escaped.
+     So it is capped at the band's own share of its width. The frame's share
+     is 1411/1569 = 89.93% (the band is 1921 minus the 352-wide sidebar), and
+     the cap is set a hair above it at 90% so that at the frame's own aspect
+     the exact 1411 still wins the min() — at 89.7% the cap engaged even
+     there and quietly shaved 0.4% off the lockup.
+     height:auto keeps the lockup's aspect from the image itself.
+     Centred vertically rather than pinned at 40: in the frame it sits 40 from
+     the top and 39 from the bottom, i.e. centred to within half a unit, and
+     centring is the only placement that stays right when it scales down. */
+  width: min(calc(1411 * var(--s)), 90%);
+  height: auto;
   display: block;
 }
 
@@ -435,11 +450,23 @@ html.chag-opening .chag-intro__logo {
    cannot drift. Do not reintroduce percentages here.
    ═══════════════════════════════════════════════════════════════════════ */
 .mixwin__card--chag {
-  /* the frame is 1241x998 (the shell's own default is the old 1207x975), and
-     --fit has to be recomputed for it or a short window would crop the card */
-  --fit: min(calc((100vw - var(--sbw) - 4vw) / 1241), calc((100dvh - 4vh) / 998));
+  /* The frame is 1241x998, not the shell's 1207x975, so the fit has to be
+     recomputed — and --u is set DIRECTLY rather than through --fit, because
+     the shell derives --u by substituting its OWN --fit and an override
+     there never reaches it.
+
+     5vw / 5vh, not 4: .mixwin pads 2.5vw on each side and 2.5vh top and
+     bottom, so that is what is actually free. At 4 the card came out about
+     1% too wide for its box on any screen narrower than the frame's own
+     16:9 — every MacBook is 1.54-1.60 — and FLEX SILENTLY SHRANK IT, which
+     squeezed the card out of proportion and dragged every child with it.
+     flex:none means a miscalculation can never do that quietly again. */
+  --u: min(var(--s),
+           calc((100vw - var(--sbw) - 5vw) / 1241),
+           calc((100dvh - 5vh) / 998));
   width: calc(1241 * var(--u));
   height: calc(998 * var(--u));
+  flex: none;
   display: block;                  /* children are placed, not flexed */
   background: none;                /* the ground is painted by the frame SVG */
   border: none;                    /* ditto the dashed stroke */
@@ -557,18 +584,10 @@ html.chag-opening .chag-intro__logo {
    no sidebar beside it here, so nothing should be subtracted. ══════════ */
 @media (max-width: 860px) {
   .mixwin__card--chag {
-    /* --u is set DIRECTLY, not through --fit: the shell derives --u by
-       substituting its own --fit, so overriding --fit alone left --u still
-       carrying the desktop formula and the card stayed 0x0. One variable,
-       no chain. */
+    /* the sidebar is stacked above, not beside — nothing to subtract for it.
+       Left in, --sbw resolves to 100vw here and --u went NEGATIVE: the card
+       rendered 0x0 and the tool produced nothing at all on a phone. */
     --u: min(calc((100vw - 5vw) / 1241), calc((100dvh - 5vh) / 998));
-    width: calc(1241 * var(--u));
-    height: calc(998 * var(--u));
-    /* .mixwin pads 2.5vw each side, so 5vw is what is actually free. It was
-       4vw, and the card came out 1% too wide — whereupon flex SHRANK it and
-       every child drifted with it. flex: none means a miscalculation can
-       never silently squeeze the card again; it would overflow visibly. */
-    flex: none;
   }
 }
 
