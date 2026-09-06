@@ -336,11 +336,17 @@ html.chag-opening .chag-intro {
   position: absolute; left: 0; top: 0; right: 0;
   height: 100%;
   background: var(--chag-blue);
-  border: 1px solid #000;
-  border-left: none;               /* the sidebar's rule is the shared line */
+  /* No border. The curtain used to carry one on three sides like the band
+     did, and it drew a black line along the top of the window and down its
+     right edge — most visible behind the open result card, where the curtain
+     is at full height. Only the OPENING curtain needs an edge, and only its
+     bottom one, so that the line it comes to rest on hands over seamlessly to
+     the band's. The backdrop behind the result gets none. */
+  border: none;
   overflow: hidden;
   z-index: 40;
 }
+html.chag-opening #chag-intro { border-bottom: 1px solid #000; }
 html.chag-opening .chag-intro__logo {
   position: absolute;
   left: 50%; transform: translateX(-50%);
@@ -582,20 +588,23 @@ html.chag-opening .chag-intro__logo {
 }
 .mixwin__card--chag .chagcard__x:active { transform: translateY(1px); }
 
-/* The white sheet is a SHAPE, not a box: its top edge is the tear line's own
-   path dropped 1.5 (the bottom of that 3-wide stroke), so the sheet curls
-   down into the card's corners exactly as the perforation does — it is what
-   is left under the tear. Sides and bottom reach the card's edge, so the only
-   red left is the scan stub above the tear. */
+/* The white sheet is a SHAPE, not a box: its top edge IS the tear line's own
+   path, so the sheet curls down into the card's corners exactly as the
+   perforation does — it is what is left under the tear — and the 3-wide
+   stroke straddles that edge, 1.5 on the red and 1.5 on the white, the same
+   way every other line here sits centred on the edge it marks. Held clear of
+   it, the whole line sat on the red and read as being above the boundary
+   instead of on it. Sides and bottom reach the card's edge, so the only red
+   left is the scan stub. */
 .mixwin__card--chag .chagcard__panel {
   left: 0; top: 0;
   width: calc(1241 * var(--u)); height: calc(998 * var(--u));
 }
 
 .mixwin__card--chag .chagcard__img {
-  /* centred in the sheet's own room: equal 65.25 above and below, between the
-     sheet's top edge across the middle (157.5) and the greeting's cap-top */
-  left: calc(56 * var(--u)); top: calc(222.75 * var(--u));
+  /* centred in the sheet's own room: equal 66 above and below, between the
+     sheet's top edge across the middle (156) and the greeting's cap-top (941) */
+  left: calc(56 * var(--u)); top: calc(222 * var(--u));
   width: calc(1129 * var(--u)); height: calc(653 * var(--u));
   overflow: hidden;
 }

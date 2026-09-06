@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=64">
+<link rel="stylesheet" href="chag.css?v=66">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -245,12 +245,14 @@
     <img class="chagcard__qr" id="mixwin-qr" src="assets/chag/card/qr/dag+dvash.png" alt="">
 
     <!-- The white sheet is what is LEFT under the tear, so its top edge is the
-         tear itself: the perforation's own path, dropped 1.5 to clear the
-         bottom of its 3-wide stroke, curling down to the card's edges exactly
-         as the line does. Sides and bottom run to the card, bottom corners
-         11 like the card's own. -->
+         tear itself — the perforation's own path, NOT offset below it. The
+         stroke then straddles that edge, 1.5 on the red and 1.5 on the white,
+         the same way every other line here sits centred on the edge it marks;
+         held clear of it, the whole line sat on the red and read as being
+         above the boundary rather than on it. Sides and bottom run to the
+         card, bottom corners 11 like the card's own. -->
     <svg class="chagcard__panel" viewBox="0 0 1241 998" aria-hidden="true">
-      <path d="M0 169C0 158.193 9 157.5 16 157.5H1225C1232 157.5 1241 158.193 1241 169V987C1241 993.075 1236.08 998 1230 998H11C4.92485 998 0 993.075 0 987V169Z"
+      <path d="M0 167.5C0 156.693 9 156 16 156H1225C1232 156 1241 156.693 1241 167.5V987C1241 993.075 1236.08 998 1230 998H11C4.92485 998 0 993.075 0 987V167.5Z"
             fill="#fff"/>
     </svg>
     <div class="chagcard__img">
