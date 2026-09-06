@@ -17,6 +17,12 @@
    band inside the flex column instead would shove the grid down and slide
    it back up, which reads as the grid arriving rather than being revealed.
 
+   The same curtain COMES BACK DOWN behind the result: when the card opens,
+   the blue grows from the band to full height again, so the card sits on a
+   clean blue field instead of on the busy grid of eight objects. It rises
+   back to the band when the card is dismissed. Symmetry, and it is the same
+   one animated property in both directions.
+
    The flag on <html> is `chag-opening`, NOT `chag-intro`: an <html> carrying
    the element's own class matches its `display: none` base rule and blanks
    the entire document for the duration.
@@ -36,6 +42,11 @@
      rushing it made the landing read as a snap rather than a settle. */
   const HOLD    = 440;                  // a beat, so the blue registers first
   const LIFT    = 1760;
+  /* the card's own flight out of the bowl (card-fly-smooth in styles.css) —
+     matching it makes the blue land in the same instant the card does, so
+     the two read as one event rather than two */
+  const FALL    = 1150;
+  const RAISE   = 700;
   const EASE    = 'cubic-bezier(.22, 1, .36, 1)';   // the site's own glide
 
   /* `slow` stretches it for inspection; it changes nothing that ships */
@@ -93,6 +104,63 @@
   }
 
   window.chagIntroPlay = play;
+
+  /* ── the curtain behind the result ──────────────────────────────────
+     Same element, same single property. It has to sit UNDER the result
+     window (z-index 100) and over the grid, which the stylesheet's 40
+     already does, and it must never eat clicks meant for the card. */
+  let backdrop = null;
+
+  function mount() {
+    if (backdrop && backdrop.isConnected) return backdrop;
+    backdrop = template.cloneNode(true);
+    backdrop.id = 'chag-backdrop';
+    backdrop.style.pointerEvents = 'none';
+    main.prepend(backdrop);
+    root.classList.add('chag-opening');       // the class that makes it visible
+    const bandEl  = main.querySelector('.chag-logoband');
+    const bandLogo = bandEl && bandEl.querySelector('.chag-logo');
+    if (bandLogo) {
+      const gap = bandEl.getBoundingClientRect().bottom - bandLogo.getBoundingClientRect().bottom;
+      backdrop.querySelector('.chag-intro__logo').style.bottom = gap.toFixed(2) + 'px';
+    }
+    return backdrop;
+  }
+
+  const heights = () => {
+    const u = main.getBoundingClientRect().height / FRAME_H;
+    return { band: (BAND_H * u).toFixed(2) + 'px', full: (FRAME_H * u).toFixed(2) + 'px' };
+  };
+
+  function lower() {                          /* the result is arriving */
+    const el = mount();
+    const h  = heights();
+    el.getAnimations().forEach((a) => a.cancel());
+    el.animate([{ height: h.band }, { height: h.full }],
+               { duration: FALL, easing: EASE, fill: 'forwards' });
+  }
+
+  function raise() {                          /* the result was dismissed */
+    if (!backdrop || !backdrop.isConnected) return;
+    const el = backdrop;
+    const h  = heights();
+    el.getAnimations().forEach((a) => a.cancel());
+    el.animate([{ height: h.full }, { height: h.band }],
+               { duration: RAISE, easing: EASE, fill: 'forwards' })
+      .addEventListener('finish', () => {
+        el.remove();
+        if (backdrop === el) backdrop = null;
+        root.classList.remove('chag-opening');
+      });
+  }
+
+  const mixwin = document.getElementById('mixwin');
+  if (mixwin) {
+    new MutationObserver(() => {
+      if (mixwin.classList.contains('is-open')) lower();
+      else raise();
+    }).observe(mixwin, { attributes: true, attributeFilter: ['class'] });
+  }
 
   /* it opens the page — `?intro=off` is only for working on everything else */
   const off = new URLSearchParams(location.search).get('intro') === 'off';

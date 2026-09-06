@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=44">
+<link rel="stylesheet" href="chag.css?v=48">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -16,6 +16,7 @@
   (function () {
     if (/[?&]intro=off/.test(location.search)) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (matchMedia('(max-width: 860px)').matches) return;   /* the tool is hidden there */
     document.documentElement.classList.add('chag-opening');
   })();
 </script>
@@ -211,6 +212,20 @@
 
 </main>
 
+<!-- ══ on a phone the tool stands aside: the frame is landscape and there is
+     no portrait design for it, so below 860px this replaces it. The phone's
+     job is the CARD — the keep & send page a scanned QR opens. ══ -->
+<div class="chag-smallscreen" role="note">
+  <div class="chag-smallscreen__band">
+    <img src="assets/chag/sym2/logo.png?v=3" alt="TOOOL">
+  </div>
+  <div class="chag-smallscreen__note">
+    <b>הכלי עובד על מסך גדול</b>
+    <p>פתחו את TOOOL במחשב כדי להרכיב גלויה.<br>
+       גלויה שכבר קיבלתם נפתחת כאן מצוין — סרקו את הקוד שעליה.</p>
+  </div>
+</div>
+
 <!-- ══ the result window IS the New Year card — Figma 3438:141, 1:1 ═══════
      Verified against the frame's own render in card-design.html (overlay +
      difference blend). Only #mixwin-big changes per pair; everything else is
@@ -280,7 +295,7 @@
 <script src="chag-data.js?v=8"></script>
 <script src="chag-pick.js?v=10"></script>
 <script src="chag-live.js?v=4"></script>
-<script src="chag-intro.js?v=5"></script>
+<script src="chag-intro.js?v=6"></script>
 <!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the
      grid cells, gridlines and page background. -->
 <script src="chag-color-edit.js?v=3"></script>

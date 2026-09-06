@@ -548,3 +548,69 @@ html.chag-opening .chag-intro__logo {
   font-size: calc(20 * var(--u)); line-height: 1.2;
   text-align: center; color: #000;
 }
+
+/* ══ NARROW SCREENS ════════════════════════════════════════════════════
+   Under 860px styles.css restacks the sidebar on top and redefines --s off
+   the WIDTH, which makes --sbw equal 100vw. The card's --fit subtracts a
+   sidebar width from the viewport width, so it went NEGATIVE and the result
+   card rendered 0x0 — on a phone the tool produced nothing at all. There is
+   no sidebar beside it here, so nothing should be subtracted. ══════════ */
+@media (max-width: 860px) {
+  .mixwin__card--chag {
+    /* --u is set DIRECTLY, not through --fit: the shell derives --u by
+       substituting its own --fit, so overriding --fit alone left --u still
+       carrying the desktop formula and the card stayed 0x0. One variable,
+       no chain. */
+    --u: min(calc((100vw - 5vw) / 1241), calc((100dvh - 5vh) / 998));
+    width: calc(1241 * var(--u));
+    height: calc(998 * var(--u));
+    /* .mixwin pads 2.5vw each side, so 5vw is what is actually free. It was
+       4vw, and the card came out 1% too wide — whereupon flex SHRANK it and
+       every child drifted with it. flex: none means a miscalculation can
+       never silently squeeze the card again; it would overflow visibly. */
+    flex: none;
+  }
+}
+
+/* ══ ON A PHONE, THE TOOL STANDS ASIDE ═════════════════════════════════
+   The frame is landscape 1921x1080 and there is no portrait design for it —
+   Noa's call: the phone is for the CARD (the keep & send page the QR opens),
+   the tool itself is for a big screen. Left alone, styles.css's own narrow
+   rules stacked the sidebar to 1151px tall on an 812px screen and pushed the
+   grid past 1551, which is worse than saying nothing. So below 860 the tool
+   is replaced by one clean screen in the site's own language: the blue band
+   with its lockup, a solid 1px black rule, and the message on the sidebar's
+   yellow. ═══════════════════════════════════════════════════════════════ */
+.chag-smallscreen { display: none; }
+
+@media (max-width: 860px) {
+  .sidebar, .chag-main { display: none; }
+
+  .chag-smallscreen {
+    display: flex; flex-direction: column;
+    position: fixed; inset: 0; z-index: 200;
+    background: var(--panel);
+  }
+  .chag-smallscreen__band {
+    background: var(--chag-blue);
+    border-bottom: 1px solid #000;
+    padding: clamp(14px, 3vh, 26px) 22px;
+    display: flex; justify-content: center;
+  }
+  .chag-smallscreen__band img {
+    width: 100%; max-width: 280px; height: auto; display: block;
+  }
+  .chag-smallscreen__note {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px;
+    padding: 24px 22px 40px;
+    text-align: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #000;
+  }
+  .chag-smallscreen__note b {
+    font-size: clamp(21px, 3.4vh, 28px); line-height: 1.15;
+  }
+  .chag-smallscreen__note p { margin: 0; font-size: 15px; line-height: 1.5; }
+}
