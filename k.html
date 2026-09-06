@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
 <title>שנה טובה — TOOOL</title>
 <meta name="theme-color" content="#0048FF">
@@ -13,162 +13,174 @@
      the symbol set is ever reordered, which an index would not survive.
      ?p= also accepts a full pair key (dvash+tapuach) for hand testing.
 
+     THE PAGE IS NOA'S FRAME 3485:391, 940 x 1735, and every number below is
+     that frame's own. Blue ground, the card, and two yellow buttons:
+
+       card     (32, 375)   876.488 x 594.684   r11, stroke 3 dashed 2-2
+       save     (41, 1020)  496 x 141           #FFFF01, r11, 1px black
+       send     (555, 1020) 342 x 141           same
+       lettering 47/44.6 bold uppercase, inset 20/21 (23/21 on the right)
+
      THE CARD HERE IS THE CARD AFTER THE PERFORATION IS TORN OFF. That line
      exists to be torn, and whoever reached this page has already scanned the
      stub — so the QR, the SCAN TO KEEP & SEND lettering, the tear line and
-     the close X are all gone, and everything below shifts up so the red frame
-     reads as an even margin all round: 1241x841 with the sheet at 18.5,18.5.
+     the close X are all gone. What is left is the sheet itself: the site's
+     card minus its top 156, which is why every inner number here is the
+     card's own minus 156 (creature 228.4 -> 72.4, WIX 949.514 -> 793.514,
+     Base44 947 -> 791, greeting baseline 973.15 -> 817.15).
 
-     BUILT IN THE SITE'S OWN LANGUAGE, not as a generic app screen: flat
-     blocks of the site's flat colours, butted together and divided by a
-     SOLID 1px black rule (which is exactly how the site separates its
-     sidebar from its logo band), sharp corners, the band's own red chain
-     lockup, and the actions as the site's button — a purple #560476 ellipse
-     with a 1px black outline, the MIX button's shape. The vertical rhythm
-     clamps against vh because on a 375x667 phone the whole page has to fit
-     without scrolling. ═════════════════════════════════════════════════ -->
+     The frame is 940 wide, so the whole page is laid out in that unit and
+     scales with the phone's width; vertically the block keeps the frame's
+     own 375-above / 574-below balance, so the composition holds on a short
+     phone as well as a tall one. ══════════════════════════════════════════ -->
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; height: 100%; }
   body {
-    background: #fff;
+    background: #0048FF;
     font: 700 16px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #000;
-    min-height: 100dvh;
-    display: flex; flex-direction: column;
+    overflow: hidden;
   }
 
-  /* ── the logo band, as on the site: blue, the red chain lockup, and a solid
-        1px black rule under it ── */
-  .band {
-    background: #0048FF;
-    border-bottom: 1px solid #000;
-    padding: clamp(9px, 1.6vh, 17px) 22px;
-    display: flex; justify-content: center;
-  }
-  .band img { width: 100%; max-width: 260px; height: auto; display: block; }
-
-  /* ── the white block the card sits in, like the site's grid area ── */
-  .sheet {
-    flex: 1;
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: clamp(9px, 1.8vh, 16px);
-    padding: clamp(14px, 2.6vh, 26px) 16px;
-  }
-  /* the creature's name — the one piece of copy on the page, so it carries
-     the weight: black on white, the site's own bold */
-  .who {
-    font-size: clamp(16px, 2.4vh, 21px); line-height: 1.15;
-    text-align: center;
+  /* the frame's unit. Width drives it; the height cap only bites on a phone
+     short enough that 1161 of frame would not fit. */
+  .page {
+    position: fixed; inset: 0;
+    --k: min(calc(100vw / 940), calc(100dvh / 1210));
   }
 
+  /* the block the frame actually holds — card top (375) to button bottom
+     (1161), 786 tall — hung so the blue above and below keeps the frame's
+     ratio (375 : 574) whatever is left over */
+  .wrap {
+    position: absolute; left: 50%;
+    transform: translateX(-50%);
+    width: calc(940 * var(--k));
+    height: calc(786 * var(--k));
+    top: calc((100dvh - 786 * var(--k)) * 0.3951);
+  }
+
+  /* ── the card ───────────────────────────────────────────────────────── */
   .stage {
-    position: relative;
-    width: 100%; max-width: 560px;
-    aspect-ratio: 1241 / 841;
+    position: absolute;
+    left: calc(32 * var(--k)); top: 0;
+    width: calc(876.488 * var(--k));
+    height: calc(594.684 * var(--k));
   }
-  .card {                            /* 1 CSS px = 1 Figma px in here */
+  /* the card's own unit: the frame draws it 876.488 wide out of 1241, so one
+     card unit is 0.7062764 of a frame unit. Sized rather than transformed —
+     scale() takes a number and --k is a length. */
+  .card {
+    --cu: calc(0.7062764 * var(--k));
     position: absolute; left: 0; top: 0;
-    width: 1241px; height: 841px;
-    transform: scale(var(--k, 0.45));
-    transform-origin: 0 0;
+    width: calc(1241 * var(--cu)); height: calc(842 * var(--cu));
   }
   .card > * { position: absolute; margin: 0; }
-  .card__frame { left: -1.5px; top: -1.5px; width: 1244px; height: 844px; }
-  .card__panel { left: 18.5px; top: 18.5px; width: 1204px; height: 804px; }
-  .card__img { left: 56px; top: 65.75px; width: 1129px; height: 653px; overflow: hidden; }
+  /* the sheet and its edge in one shape: white fill, the card's own stroke
+     centred on the edge (hence the 1.5 all round) */
+  .card__sheet {
+    left: calc(-1.5 * var(--cu)); top: calc(-1.5 * var(--cu));
+    width: calc(1244 * var(--cu)); height: calc(845 * var(--cu));
+  }
+  .card__img {
+    left: calc(56 * var(--cu)); top: calc(72.4 * var(--cu));
+    width: calc(1129 * var(--cu)); height: calc(653 * var(--cu));
+    overflow: hidden;
+  }
   .card__img img {
     position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: contain; object-position: center;
   }
-  .card__vec { left: 0; top: 0; width: 1241px; height: 841px; }
+  .card__wix {
+    left: calc(41 * var(--cu)); top: calc(793.514 * var(--cu));
+    width: calc(51.3288 * var(--cu)); height: calc(19.8726 * var(--cu));
+  }
+  .card__b44 {
+    left: calc(107 * var(--cu)); top: calc(791 * var(--cu));
+    width: calc(118.771 * var(--cu)); height: calc(24.969 * var(--cu));
+  }
+  .card__vec {
+    left: 0; top: 0;
+    width: calc(1241 * var(--cu)); height: calc(842 * var(--cu));
+  }
   /* the page is RTL and SVG text INHERITS direction — without this
      SHANA TOVA!'s "!" flips to the wrong side */
   .card__vec text { direction: ltr; unicode-bidi: isolate; }
   .card__vec .t {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 700; font-size: 29px; letter-spacing: 0.29px; fill: #000;
+    font-weight: 700; font-size: 27px; letter-spacing: 0.29px; fill: #000;
   }
 
-  /* ── the actions, on the sidebar's yellow, behind another 1px black rule ── */
-  .foot {
-    background: #FFFF01;
-    border-top: 1px solid #000;
-    padding: clamp(12px, 2vh, 20px) 16px clamp(12px, 2.2vh, 20px);
-    display: flex; flex-direction: column; align-items: center;
-    gap: clamp(9px, 1.5vh, 14px);
-  }
-  .acts { width: 100%; max-width: 420px; display: grid; gap: clamp(9px, 1.5vh, 13px); }
-  /* the site's button: a purple ellipse with a 1px black outline (.run) */
+  /* ── the two buttons ────────────────────────────────────────────────── */
   .btn {
-    appearance: none; width: 100%;
-    height: clamp(50px, 7vh, 62px);
-    background: #560476;
-    color: #fff;
+    position: absolute; appearance: none;
+    top: calc(645 * var(--k));                     /* 1020 - 375 */
+    height: calc(141 * var(--k));
+    background: #FFFF01;
     border: 1px solid #000;
-    border-radius: 50%;
-    font: 700 clamp(16px, 2.3vh, 19px)/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    border-radius: calc(11 * var(--k));
+    padding: calc(21 * var(--k)) calc(20 * var(--k)) 0;
+    font: 700 calc(47 * var(--k)) / calc(44.6 * var(--k))
+          "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #000;
+    text-transform: uppercase;
+    text-align: left;
+    direction: ltr;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 9px;
+    overflow: hidden;
   }
+  .btn--save { left: calc(41 * var(--k));  width: calc(496 * var(--k)); }
+  .btn--send { left: calc(555 * var(--k)); width: calc(342 * var(--k));
+               padding-left: calc(23 * var(--k)); }
   .btn:active { transform: translateY(1px); }
-  .btn[disabled] { opacity: .5; cursor: default; }
-  .btn svg { width: 1em; height: 1em; flex: none; }
+  .btn[disabled] { opacity: .55; cursor: default; }
 
-  /* reserves no room until it actually says something */
-  .note { margin: 0; font-size: 13px; text-align: center; }
+  /* says nothing, and takes no room, until something goes wrong or right */
+  .note {
+    position: absolute; left: 0; right: 0;
+    top: calc(806 * var(--k));
+    margin: 0; text-align: center; color: #fff;
+    font-size: calc(30 * var(--k)); line-height: 1.25;
+  }
   .note:empty { display: none; }
-  .make { font-size: 13px; text-align: center; }
-  .make a { color: #000; }
+
+  @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
 </style>
 </head>
 <body>
 
-<div class="band">
-  <!-- the band's own lockup, the site's exact export -->
-  <img src="assets/chag/sym2/logo.png?v=3" alt="TOOOL">
-</div>
+<div class="page">
+  <div class="wrap">
 
-<div class="sheet">
-  <p class="who" id="who"></p>
+    <div class="stage">
+      <div class="card" id="card">
+        <!-- the sheet: the site's card minus its torn-off top, r11, carrying
+             the card's own stroke (3, dash 2-2) centred on its edge -->
+        <svg class="card__sheet" viewBox="0 0 1244 845" fill="none" aria-hidden="true">
+          <path d="M1.5 13C1.5 6.64873 6.64873 1.5 13 1.5H1231C1237.35 1.5 1242.5 6.64873 1242.5 13V832C1242.5 838.351 1237.35 843.5 1231 843.5H13C6.64873 843.5 1.5 838.351 1.5 832V13Z"
+                fill="#fff" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+        </svg>
 
-  <div class="stage" id="stage">
-    <div class="card" id="card">
-      <!-- the same rounded rect and the same stroke (3, dash 2-2), for the
-           torn card's 1241x841 -->
-      <svg class="card__frame" viewBox="0 0 1244 844" fill="none" aria-hidden="true">
-        <path d="M1.5 12.5C1.5 6.42485 6.42487 1.5 12.5 1.5H1231.5C1237.58 1.5 1242.5 6.42487 1242.5 12.5V831.5C1242.5 837.575 1237.58 842.5 1231.5 842.5H12.5C6.42485 842.5 1.5 837.575 1.5 831.5V12.5Z"
-              fill="#FC0000" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
-      </svg>
-      <img class="card__panel" src="assets/chag/card/panel.svg?v=4" alt="">
-      <div class="card__img"><img id="creature" src="" alt="הגלויה שלך"></div>
-      <svg class="card__vec" viewBox="0 0 1241 841" fill="none" aria-hidden="true">
-        <text class="t" x="620.5" y="773" text-anchor="middle">SHANA TOVA!</text>
-      </svg>
+        <div class="card__img"><img id="creature" src="" alt="הגלויה שלך"></div>
+
+        <img class="card__wix" src="assets/chag/card/wix.svg?v=1" alt="Wix">
+        <img class="card__b44" src="assets/chag/card/base44.svg?v=1" alt="Base44">
+
+        <svg class="card__vec" viewBox="0 0 1241 842" fill="none" aria-hidden="true">
+          <text class="t" x="626.5" y="817.15" text-anchor="middle">SHANA TOVA!</text>
+        </svg>
+      </div>
     </div>
+
+    <button class="btn btn--save" id="save" type="button">Save the card</button>
+    <button class="btn btn--send" id="send" type="button">Send it</button>
+
+    <p class="note" id="note" role="status" aria-live="polite"></p>
   </div>
 </div>
 
-<div class="foot">
-  <div class="acts">
-    <button class="btn" id="save" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-        <path d="M12 3v12M7 11l5 5 5-5M4 21h16"/>
-      </svg>
-      שמירת הגלויה
-    </button>
-    <button class="btn" id="send" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-        <path d="M4 12l16-8-6 16-3-6-7-2z"/>
-      </svg>
-      שליחה
-    </button>
-  </div>
-  <p class="note" id="note" role="status" aria-live="polite"></p>
-  <p class="make">רוצה גלויה משלך? <a href="chag.html">כאן מכינים אחת</a></p>
-</div>
-
-<script src="chag-data.js?v=8"></script>
+<script src="chag-data.js?v=9"></script>
 <script>
 (() => {
   const CODE = { dvash:'dva', tapuach:'tap', keves:'kev', gezer:'gez',
@@ -185,22 +197,13 @@
   const pair = byCode[q] || (pairs.includes(q) ? q : pairs[0]);
   const rec  = (window.CHAG_RESULTS || {})[pair] || {};
 
-  const card = document.getElementById('card');
-  const stage = document.getElementById('stage');
   const note = document.getElementById('note');
   document.getElementById('creature').src = 'assets/chag/res-c/' + pair + '.png';
-  if (rec.name) {
-    document.title = rec.name + ' — שנה טובה';
-    document.getElementById('who').textContent = rec.name;
-  }
-
-  /* the card is authored at 1241px wide and scaled to whatever the phone has */
-  const fit = () => card.style.setProperty('--k', stage.clientWidth / 1241);
-  addEventListener('resize', fit); fit();
+  if (rec.name) document.title = rec.name + ' — שנה טובה';
 
   /* ── compose the card into a PNG, at 2x ──────────────────────────────
-     Drawn from the same pieces the page shows, in the same order, minus the
-     close X. Each SVG goes through an Image so the browser rasterises it. */
+     Drawn from the same pieces the page shows, in the same order. Each SVG
+     goes through an Image so the browser rasterises it. */
   const SCALE = 2;
   const load = (src) => new Promise((res, rej) => {
     const i = new Image();
@@ -211,11 +214,11 @@
     const s = el.cloneNode(true);
     s.setAttribute('width', el.viewBox.baseVal.width);
     s.setAttribute('height', el.viewBox.baseVal.height);
-    /* the external stylesheet does not travel with a serialised SVG */
+    /* the page's stylesheet does not travel with a serialised SVG */
     s.querySelectorAll('text').forEach((t) => {
       t.setAttribute('font-family', '"Helvetica Neue", Helvetica, Arial, sans-serif');
       t.setAttribute('font-weight', '700');
-      t.setAttribute('font-size', '29');
+      t.setAttribute('font-size', '27');
       t.setAttribute('fill', '#000');
       t.setAttribute('direction', 'ltr');
       t.setAttribute('letter-spacing', '0.29');
@@ -228,25 +231,34 @@
     if (composed) return composed;
     await document.fonts.ready;
     const c = document.createElement('canvas');
-    c.width = 1241 * SCALE; c.height = 841 * SCALE;
+    c.width = 1244 * SCALE; c.height = 845 * SCALE;
     const g = c.getContext('2d');
     g.scale(SCALE, SCALE);
+    /* the sheet is a rounded rect, so its corners would come out transparent
+       and land black in whatever app the card is sent through. They get the
+       page's own blue. */
+    g.fillStyle = '#0048FF';
+    g.fillRect(0, 0, 1244, 845);
+    g.translate(1.5, 1.5);                 /* the card's own origin, so the
+                                              stroke's outer half has room */
 
-    const [frame, panel, creature, vec] = await Promise.all([
-      load(svgUrl(document.querySelector('.card__frame'))),
-      load('assets/chag/card/panel.svg?v=4'),
+    const [sheet, creature, wix, b44, vec] = await Promise.all([
+      load(svgUrl(document.querySelector('.card__sheet'))),
       load(document.getElementById('creature').src),
+      load('assets/chag/card/wix.svg?v=1'),
+      load('assets/chag/card/base44.svg?v=1'),
       load(svgUrl(document.querySelector('.card__vec'))),
     ]);
 
-    g.drawImage(frame, -1.5, -1.5, 1244, 844);
-    g.drawImage(panel, 18.5, 18.5, 1204, 804);
+    g.drawImage(sheet, -1.5, -1.5, 1244, 845);
     /* the creature, contained in its box exactly as the CSS does it */
-    const bw = 1129, bh = 653, bx = 56, by = 65.75;
+    const bw = 1129, bh = 653, bx = 56, by = 72.4;
     const k = Math.min(bw / creature.naturalWidth, bh / creature.naturalHeight);
     const cw = creature.naturalWidth * k, ch = creature.naturalHeight * k;
     g.drawImage(creature, bx + (bw - cw) / 2, by + (bh - ch) / 2, cw, ch);
-    g.drawImage(vec, 0, 0, 1241, 841);
+    g.drawImage(wix, 41, 793.514, 51.3288, 19.8726);
+    g.drawImage(b44, 107, 791, 118.771, 24.969);
+    g.drawImage(vec, 0, 0, 1241, 842);
 
     composed = await new Promise((res) => c.toBlob(res, 'image/png'));
     return composed;
