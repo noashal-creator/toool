@@ -3,7 +3,7 @@
 
    Three tables the rest of the variation reads:
      CHAG_SYMBOLS — the 8 symbols (id, label, image). Images are the exact
-                    crops exported from the Figma frame (assets/chag/sym2/).
+                    crops exported from the Figma frame (assets/chag/sym3/).
      CHAG_GRID    — the 4×2 grid, in the frame's own order.
      CHAG_RESULTS — the pre-prepared result for each of the 28 pairs.
 
@@ -18,14 +18,14 @@
    ───────────────────────────────────────────────────────────────────── */
 
 window.CHAG_SYMBOLS = [
-  { id: 'dvash',   label: 'דבש',       img: 'assets/chag/sym2/dvash.png'   },
-  { id: 'tapuach', label: 'תפוח',      img: 'assets/chag/sym2/tapuach.png' },
-  { id: 'keves',   label: 'ראש כבש',   img: 'assets/chag/sym2/keves.png'   },
-  { id: 'gezer',   label: 'גזר',       img: 'assets/chag/sym2/gezer.png'   },
-  { id: 'dag',     label: 'ראש דג',    img: 'assets/chag/sym2/dag.png'     },
-  { id: 'kara',    label: 'קרא',       img: 'assets/chag/sym2/kara.png'    },
-  { id: 'tamar',   label: 'תמר',       img: 'assets/chag/sym2/tamar.png'   },
-  { id: 'rimon',   label: 'רימון',     img: 'assets/chag/sym2/rimon.png'   },
+  { id: 'dvash',   label: 'דבש',       img: 'assets/chag/sym3/dvash.png'   },
+  { id: 'tapuach', label: 'תפוח',      img: 'assets/chag/sym3/tapuach.png' },
+  { id: 'keves',   label: 'ראש כבש',   img: 'assets/chag/sym3/keves.png'   },
+  { id: 'gezer',   label: 'גזר',       img: 'assets/chag/sym3/gezer.png'   },
+  { id: 'dag',     label: 'ראש דג',    img: 'assets/chag/sym3/dag.png'     },
+  { id: 'kara',    label: 'קרא',       img: 'assets/chag/sym3/kara.png'    },
+  { id: 'tamar',   label: 'תמר',       img: 'assets/chag/sym3/tamar.png'   },
+  { id: 'rimon',   label: 'רימון',     img: 'assets/chag/sym3/rimon.png'   },
 ];
 
 /* the 4×2 grid, exactly as the Figma frame lays it out (row by row) */

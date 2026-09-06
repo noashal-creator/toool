@@ -26,6 +26,7 @@
      --bowl-color drives the waterline (.bowl-wave); the body's purple is
      pinned separately on .bowl below. */
   --bowl-color: #FE0000;
+
 }
 
 /* ── the LIQUID, aligned to THIS bowl. The frame puts the bowl at x=54; the
@@ -54,6 +55,17 @@
           mask-position: 0 0, 0 calc(12 * var(--s));
 }
 .bowl-wave { display: none !important; }
+
+/* ── EVERY LINE THE SAME WEIGHT ────────────────────────────────────────
+   The frame draws all of these at stroke-width 1 (checked against its own
+   SVG exports — not one of them carries a stroke-width, i.e. SVG's default).
+   On screen the CSS rules are `1px` and go through the browser's border
+   snapping, which styles.css relies on deliberately so that every rule lands
+   on the same whole device pixel. The bowl's outline is an SVG stroke inside
+   a scaled viewBox, so it was painted at its true 0.91px — 1.8 device pixels
+   — and came out visibly lighter and softer than every rule beside it.
+   non-scaling-stroke pins it to the same 1px, so all of them match. */
+.bowl__rim path, .bowl__body path { vector-effect: non-scaling-stroke; }
 
 /* ═══ SIDEBAR ═══════════════════════════════════════════════════════ */
 
@@ -423,17 +435,28 @@ html.chag-opening .chag-intro__logo {
   object-fit: contain;
   display: block;
 }
-/* per-symbol size + rotation + the frame's own off-centre nudges (each
-   symbol's centre measured against its cell's centre — they are NOT all
-   dead-centred in the design) */
-.chag-tile[data-id="dvash"]   .chag-tile__img { max-height: calc(231 * var(--s)); transform: translate(calc(3.5 * var(--s)), calc(12 * var(--s))); }
-.chag-tile[data-id="tapuach"] .chag-tile__img { max-height: calc(307 * var(--s)); transform: translate(calc(-38 * var(--s)), calc(-1 * var(--s))); }
-.chag-tile[data-id="keves"]   .chag-tile__img { max-height: calc(234 * var(--s)); transform: translate(calc(3.5 * var(--s)), calc(13.5 * var(--s))); }
-.chag-tile[data-id="gezer"]   .chag-tile__img { max-height: calc(318 * var(--s)); max-width: calc(318 * var(--s)); transform: translate(calc(-0.5 * var(--s)), calc(-3.5 * var(--s))) rotate(90deg); }
-.chag-tile[data-id="dag"]     .chag-tile__img { max-height: calc(256 * var(--s)); transform: translate(calc(-15 * var(--s)), calc(0.5 * var(--s))); }
-.chag-tile[data-id="kara"]    .chag-tile__img { max-height: calc(338 * var(--s)); max-width: calc(338 * var(--s)); transform: translate(calc(-9 * var(--s)), calc(-2.5 * var(--s))) rotate(-90deg); }
-.chag-tile[data-id="tamar"]   .chag-tile__img { max-height: calc(283 * var(--s)); transform: translate(calc(-12.5 * var(--s)), calc(-2 * var(--s))); }
-.chag-tile[data-id="rimon"]   .chag-tile__img { max-height: calc(285 * var(--s)); transform: translate(calc(-9.5 * var(--s)), calc(-1 * var(--s))); }
+/* Per-symbol size and rotation. NO off-centre nudges: the frame does place
+   some of its objects off their cell's centre — the apple sat 38 units left
+   — and Noa wants them centred, so every object is simply centred instead.
+
+   Centring is done in the FILES, not here: assets/chag/sym3/ holds each
+   symbol re-canvassed about its own INK centre (the smallest symmetric
+   expansion that still holds the whole source, so nothing is cropped), which
+   means plain centring lands it dead centre and no per-symbol correction can
+   drift. It also survives rotation, which a translate nudge does not — after
+   rotate(90deg) a horizontal nudge moves the object vertically.
+
+   The canvases grew a little in doing that, so each size limit is scaled by
+   its own growth factor to keep the object at exactly the size the frame
+   gives it. */
+.chag-tile[data-id="dvash"] .chag-tile__img { max-height: calc(231.6 * var(--s)); }
+.chag-tile[data-id="tapuach"] .chag-tile__img { max-height: calc(307.5 * var(--s)); }
+.chag-tile[data-id="keves"] .chag-tile__img { max-height: calc(234.7 * var(--s)); }
+.chag-tile[data-id="gezer"] .chag-tile__img { max-height: calc(326.0 * var(--s)); max-width: calc(319.5 * var(--s)); transform: rotate(90deg); }
+.chag-tile[data-id="dag"] .chag-tile__img { max-height: calc(258.9 * var(--s)); }
+.chag-tile[data-id="kara"] .chag-tile__img { max-height: calc(339.6 * var(--s)); max-width: calc(349.3 * var(--s)); transform: rotate(-90deg); }
+.chag-tile[data-id="tamar"] .chag-tile__img { max-height: calc(287.2 * var(--s)); }
+.chag-tile[data-id="rimon"] .chag-tile__img { max-height: calc(297.2 * var(--s)); }
 
 .chag-tile__label { display: none; }
 .chag-tile__pick  { display: none !important; }   /* no badge in the final design */
