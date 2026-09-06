@@ -588,8 +588,13 @@ html.chag-opening .chag-intro__logo {
    sheet instead (in .chagcard__vec), so the white can reach the edge and the
    stroke still sits on top of it. The only red left is the scan stub. */
 .mixwin__card--chag .chagcard__panel {
-  left: 0; top: calc(157.5 * var(--u));
-  width: calc(1241 * var(--u)); height: calc(840.5 * var(--u));
+  /* 175.5 is the frame's own top for the sheet, and it has to be: the tear
+     line sits at 156 and CURLS DOWN to 167.5 at both ends, so anything above
+     175.5 puts that curl on top of the white instead of on the red where the
+     frame draws it — the corner read as a hook cutting into the sheet. Only
+     the left, right and bottom margins were meant to go. */
+  left: 0; top: calc(175.5 * var(--u));
+  width: calc(1241 * var(--u)); height: calc(822.5 * var(--u));
   background: #fff;
   border-radius: 0 0 calc(11 * var(--u)) calc(11 * var(--u));
 }
@@ -601,7 +606,9 @@ html.chag-opening .chag-intro__logo {
    own bbox, so `contain` drops every one of the 28 dead centre at whatever
    size it was shot — see prep-chag-results.py. */
 .mixwin__card--chag .chagcard__img {
-  left: calc(56 * var(--u)); top: calc(240 * var(--u));
+  /* centred in the sheet's own room: equal 56.25 above and below, between the
+     sheet's top (175.5) and the greeting's cap-top (941) */
+  left: calc(56 * var(--u)); top: calc(231.75 * var(--u));
   width: calc(1129 * var(--u)); height: calc(653 * var(--u));
   overflow: hidden;
 }
