@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=51">
+<link rel="stylesheet" href="chag.css?v=54">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -244,7 +244,8 @@
     <div class="chagcard__qrbox"></div>
     <img class="chagcard__qr" id="mixwin-qr" src="assets/chag/card/qr/dag+dvash.png" alt="">
 
-    <img class="chagcard__panel" src="assets/chag/card/panel.svg?v=4" alt="">
+    <!-- the white sheet: no red margin, running to the card's edge (chag.css) -->
+    <div class="chagcard__panel" aria-hidden="true"></div>
     <div class="chagcard__img">
       <img class="mixwin__big" id="mixwin-big" src="assets/chag/res-c/dag+dvash.png"
            alt="Your New Year creature">
@@ -263,7 +264,7 @@
       </g>
       <text class="t t--stitched" x="159" y="42">SCAN TO KEEP</text>
       <text class="t t--stitched" x="159" y="70">&amp; SEND</text>
-      <text class="t" x="620.5" y="930" text-anchor="middle">SHANA TOVA!</text>
+      <text class="t" x="620.5" y="962" text-anchor="middle">SHANA TOVA!</text>
     </svg>
 
     <!-- the hit area for the dot drawn above -->

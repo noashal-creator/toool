@@ -455,6 +455,12 @@ html.chag-opening .chag-intro__logo {
      the shell derives --u by substituting its OWN --fit and an override
      there never reaches it.
 
+     0.791 is the card's share of the main area IN THE FRAME (1241 of 1569),
+     and it has to be a cap or the card swells: the unit comes from the
+     HEIGHT, so on a screen narrow for its height the same 1241 units ate 95%
+     of that area on a 14" MacBook against the 79% it was drawn at, and the
+     design's air around the card vanished.
+
      5vw / 5vh, not 4: .mixwin pads 2.5vw on each side and 2.5vh top and
      bottom, so that is what is actually free. At 4 the card came out about
      1% too wide for its box on any screen narrower than the frame's own
@@ -462,6 +468,7 @@ html.chag-opening .chag-intro__logo {
      squeezed the card out of proportion and dragged every child with it.
      flex:none means a miscalculation can never do that quietly again. */
   --u: min(var(--s),
+           calc(0.791 * (100vw - var(--sbw)) / 1241),
            calc((100vw - var(--sbw) - 5vw) / 1241),
            calc((100dvh - 5vh) / 998));
   width: calc(1241 * var(--u));
@@ -518,10 +525,15 @@ html.chag-opening .chag-intro__logo {
 }
 .mixwin__card--chag .chagcard__x:active { transform: translateY(1px); }
 
-/* the scalloped white sheet */
+/* The white sheet runs to the card's edge — no red margin around it. It
+   stops 1.5 short so the dashed border still reads (white over it would
+   swallow half of it), and its bottom corners are 9.5 to sit inside the
+   card's own 11. The red that remains is the scan stub along the top. */
 .mixwin__card--chag .chagcard__panel {
-  left: calc(18.5 * var(--u)); top: calc(175.5 * var(--u));
-  width: calc(1204 * var(--u)); height: calc(804 * var(--u));
+  left: calc(1.5 * var(--u)); top: calc(157.5 * var(--u));
+  width: calc(1238 * var(--u)); height: calc(839 * var(--u));
+  background: #fff;
+  border-radius: 0 0 calc(9.5 * var(--u)) calc(9.5 * var(--u));
 }
 
 /* the creature, on the card's OPTICAL centre: centred horizontally, and
@@ -531,7 +543,7 @@ html.chag-opening .chag-intro__logo {
    own bbox, so `contain` drops every one of the 28 dead centre at whatever
    size it was shot — see prep-chag-results.py. */
 .mixwin__card--chag .chagcard__img {
-  left: calc(56 * var(--u)); top: calc(222.75 * var(--u));
+  left: calc(56 * var(--u)); top: calc(240 * var(--u));
   width: calc(1129 * var(--u)); height: calc(653 * var(--u));
   overflow: hidden;
 }
