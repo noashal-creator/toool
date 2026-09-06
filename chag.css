@@ -82,11 +82,21 @@
 }
 .chag-step--1 { top: calc(166 * var(--s)); }
 .chag-step--2 { top: calc(375 * var(--s)); }
+/* The numeral is centred on its own INK, not on its line box — that is what
+   "optically centred" means here, and the two are not the same. With
+   line-height:1 the box is one font-size tall and the baseline lands 88% of
+   the way down it (the face's ascent is 98 and its descent 22 per 100), while
+   a digit's ink is only cap height: 70 for the 1, 71.4 for the 2. So the ink
+   centre sits 3% of a font-size BELOW the box centre for the 1 and 2.3% for
+   the 2, and a plain -50% leaves both riding low in the ellipse. Measured off
+   the face's own metrics, not guessed. */
 .chag-step span {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%);
+  position: absolute; left: 50%; top: 50%;
   color: #fff; font-weight: 700;
   font-size: calc(47 * var(--s)); line-height: 1;
 }
+.chag-step--1 span { transform: translate(-50%, -53%); }
+.chag-step--2 span { transform: translate(-50%, -52.3%); }
 
 /* ── the two slots: pure machinery now (app.js feeds the bowl from them) —
       completely invisible, out of the way, but still in the layout tree ── */
@@ -362,6 +372,11 @@ html.chag-opening .chag-intro__logo {
   flex: 1 1 auto;
   min-height: 0;
   background: #fff;
+  /* styles.css gives every direct child of .content a 2-unit bottom rule to
+     separate the sections. The grid is the LAST one — nothing follows it — so
+     that rule only ate 1.5px off the bottom, leaving the last row of objects
+     stopping short of the sidebar's own bottom edge. */
+  border-bottom: 0;
 }
 .chag-picker {
   display: grid;
