@@ -21,7 +21,9 @@
    the blue grows from the band to full height again, so the card sits on a
    clean blue field instead of on the busy grid of eight objects. It rises
    back to the band when the card is dismissed. Symmetry, and it is the same
-   one animated property in both directions.
+   one animated property in both directions — except that on the way down the
+   lockup stays where the band had it and fades out instead of riding the
+   edge, since carried down it just peers out from behind the card.
 
    The flag on <html> is `chag-opening`, NOT `chag-intro`: an <html> carrying
    the element's own class matches its `display: none` base rule and blanks
@@ -118,14 +120,27 @@
     backdrop.style.pointerEvents = 'none';
     main.prepend(backdrop);
     root.classList.add('chag-opening');       // the class that makes it visible
-    const bandEl  = main.querySelector('.chag-logoband');
+
+    /* Behind the RESULT the lockup stays put and fades, rather than riding
+       the curtain's edge down as it does on the way in. Carried down it ends
+       up level with the card and peers out from behind it, which is only
+       clutter — the card is what there is to look at. Pinned from the TOP at
+       exactly the band's own offset, so the moment the fall begins nothing
+       jumps; it simply dissolves. */
+    const bandEl   = main.querySelector('.chag-logoband');
     const bandLogo = bandEl && bandEl.querySelector('.chag-logo');
-    if (bandLogo) {
-      const gap = bandEl.getBoundingClientRect().bottom - bandLogo.getBoundingClientRect().bottom;
-      backdrop.querySelector('.chag-intro__logo').style.bottom = gap.toFixed(2) + 'px';
+    const mark     = backdrop.querySelector('.chag-intro__logo');
+    if (bandLogo && mark) {
+      const top = bandLogo.getBoundingClientRect().top - bandEl.getBoundingClientRect().top;
+      mark.style.bottom = 'auto';
+      mark.style.top = top.toFixed(2) + 'px';
     }
     return backdrop;
   }
+
+  /* far enough down that the whole lockup has cleared the screen */
+  const exitTop = (mark) =>
+    (main.getBoundingClientRect().height + mark.getBoundingClientRect().height).toFixed(2) + 'px';
 
   const heights = () => {
     const u = main.getBoundingClientRect().height / FRAME_H;
@@ -135,16 +150,27 @@
   function lower() {                          /* the result is arriving */
     const el = mount();
     const h  = heights();
-    el.getAnimations().forEach((a) => a.cancel());
+    el.getAnimations({ subtree: true }).forEach((a) => a.cancel());
     el.animate([{ height: h.band }, { height: h.full }],
                { duration: FALL, easing: EASE, fill: 'forwards' });
+    /* and the lockup keeps going, out past the bottom of the screen */
+    const mark = el.querySelector('.chag-intro__logo');
+    if (mark) {
+      const from = mark.style.top || '0px';
+      mark.animate([{ top: from }, { top: exitTop(mark) }],
+                   { duration: FALL, easing: EASE, fill: 'forwards' });
+    }
   }
 
   function raise() {                          /* the result was dismissed */
     if (!backdrop || !backdrop.isConnected) return;
     const el = backdrop;
     const h  = heights();
-    el.getAnimations().forEach((a) => a.cancel());
+    el.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    /* the lockup comes back up with it */
+    const mark = el.querySelector('.chag-intro__logo');
+    if (mark) mark.animate([{ top: exitTop(mark) }, { top: mark.style.top || '0px' }],
+                           { duration: RAISE, easing: EASE, fill: 'forwards' });
     el.animate([{ height: h.full }, { height: h.band }],
                { duration: RAISE, easing: EASE, fill: 'forwards' })
       .addEventListener('finish', () => {
