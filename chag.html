@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=66">
+<link rel="stylesheet" href="chag.css?v=67">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -260,6 +260,10 @@
            alt="Your New Year creature">
     </div>
 
+    <!-- the two marks, bottom left, at the frame's own boxes -->
+    <img class="chagcard__wix"  src="assets/chag/card/wix.svg?v=1" alt="Wix">
+    <img class="chagcard__b44"  src="assets/chag/card/base44.svg?v=1" alt="Base44">
+
     <svg class="chagcard__vec" viewBox="0 0 1241 998" fill="none" aria-hidden="true">
       <!-- the card's own dashed edge, drawn OVER the white sheet. Under it,
            the sheet had to stop 1.5 short or it swallowed the stroke's inner
@@ -278,7 +282,9 @@
       </g>
       <text class="t t--stitched" x="159" y="42">SCAN TO KEEP</text>
       <text class="t t--stitched" x="159" y="70">&amp; SEND</text>
-      <text class="t" x="620.5" y="962" text-anchor="middle">SHANA TOVA!</text>
+      <!-- shana tova! — the frame's own box (454, 947) 345x33, type centred in
+           it at 27/22, so the ink centres on (626.5, 963.5) -->
+      <text class="t t--greet" x="626.5" y="973.15" text-anchor="middle">SHANA TOVA!</text>
     </svg>
 
     <!-- the hit area for the dot drawn above -->
