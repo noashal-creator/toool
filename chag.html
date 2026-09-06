@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=58">
+<link rel="stylesheet" href="chag.css?v=61">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -238,7 +238,7 @@
     <!-- the ground and its dashed stroke: Rectangle 166's own path -->
     <svg class="chagcard__frame" viewBox="0 0 1244 1001" fill="none" aria-hidden="true">
       <path d="M1.5 12.5C1.5 6.42485 6.42487 1.5 12.5 1.5H1231.5C1237.58 1.5 1242.5 6.42487 1242.5 12.5V988.5C1242.5 994.575 1237.58 999.5 1231.5 999.5H12.5C6.42485 999.5 1.5 994.575 1.5 988.5V12.5Z"
-            fill="#FC0000" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+            fill="#FC0000"/>
     </svg>
 
     <div class="chagcard__qrbox"></div>
@@ -252,6 +252,11 @@
     </div>
 
     <svg class="chagcard__vec" viewBox="0 0 1241 998" fill="none" aria-hidden="true">
+      <!-- the card's own dashed edge, drawn OVER the white sheet. Under it,
+           the sheet had to stop 1.5 short or it swallowed the stroke's inner
+           half — and that 1.5 of exposed ground read as a thin red frame. -->
+      <path d="M0 11C0 4.92485 4.92487 0 11 0H1230C1236.08 0 1241 4.92487 1241 11V987C1241 993.075 1236.08 998 1230 998H11C4.92485 998 0 993.075 0 987V11Z"
+            stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
       <!-- the tear line: straight across, curling down into both card edges
            (Vector 209 mirrored + Vector 207 + Vector 208, beziers verbatim) -->
       <path d="M0 167.5C0 156.693 9 156 16 156H1225C1232 156 1241 156.693 1241 167.5"
@@ -297,6 +302,33 @@
 <script src="chag-pick.js?v=10"></script>
 <script src="chag-live.js?v=4"></script>
 <script src="chag-intro.js?v=8"></script>
+<script>
+  /* THE BOUNDARY LANDS ON A WHOLE DEVICE PIXEL.
+     The sidebar is 352 design units wide, which is a fractional number of CSS
+     pixels at almost every window size — 320.055 on a 982-tall screen. The 1px
+     rule drawn at that edge then straddles three device pixels instead of two,
+     one of them at full strength and two soft, which is why the line read as
+     too thick and slightly doubled. Rounding the width to a whole device pixel
+     costs at most a quarter of a CSS pixel and makes the edge crisp. */
+  (function () {
+    var el = document.documentElement;
+    function snap() {
+      var bar = document.querySelector('.sidebar');
+      if (!bar) return;
+      /* MEASURE the element — a custom property's computed value is its token
+         stream ("calc(352 * calc(100dvh / 1080))"), not a resolved length, so
+         reading --sbw and parsing it gives NaN. Clear the override first so
+         what is measured is the design's own width, not last time's rounding. */
+      el.style.removeProperty('--sbw-snap');
+      var raw = bar.getBoundingClientRect().width;
+      if (!raw) return;
+      var dpr = window.devicePixelRatio || 1;
+      el.style.setProperty('--sbw-snap', (Math.round(raw * dpr) / dpr).toFixed(3) + 'px');
+    }
+    snap();
+    addEventListener('resize', snap);
+  })();
+</script>
 <!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the
      grid cells, gridlines and page background. -->
 <script src="chag-color-edit.js?v=3"></script>

@@ -56,6 +56,12 @@
 }
 .bowl-wave { display: none !important; }
 
+/* the sidebar and the column beside it use the SNAPPED width (see the script
+   in chag.html), so the rule between them lands on a whole device pixel and
+   is not smeared across three */
+.sidebar { width: var(--sbw-snap, var(--sbw)); }
+.content { margin-left: var(--sbw-snap, var(--sbw)); }
+
 /* ── EVERY LINE THE SAME WEIGHT ────────────────────────────────────────
    The frame draws all of these at stroke-width 1 (checked against its own
    SVG exports — not one of them carries a stroke-width, i.e. SVG's default).
@@ -345,10 +351,15 @@ html.chag-opening .chag-intro__logo {
   position: relative;
   flex: 0 0 calc(374 * var(--s));
   background: var(--chag-blue);
-  border: 1px solid #000;
-  /* the sidebar's own right rule IS the shared boundary line — in the frame
-     the two strokes overlap into one; a border here doubled it */
-  border-left: none;
+  /* Only the BOTTOM edge is a line. In the frame the band's rect runs from
+     x=346 to the frame's right edge and from y=0 down, so three of its four
+     strokes sit ON the frame's boundary: the left one is the sidebar's own
+     rule (drawing it here doubled the line), and the top and right ones fall
+     outside the frame entirely — on screen they were showing as a stray line
+     along the top of the window and down its right edge. The bottom edge is
+     the only one inside the design, and it is the band/grid boundary. */
+  border: none;
+  border-bottom: 1px solid #000;
   overflow: hidden;
 }
 /* the lockup: extracted from the band node's own render (3412:778), WITH the
@@ -563,15 +574,16 @@ html.chag-opening .chag-intro__logo {
 }
 .mixwin__card--chag .chagcard__x:active { transform: translateY(1px); }
 
-/* The white sheet runs to the card's edge — no red margin around it. It
-   stops 1.5 short so the dashed border still reads (white over it would
-   swallow half of it), and its bottom corners are 9.5 to sit inside the
-   card's own 11. The red that remains is the scan stub along the top. */
+/* The white sheet runs to the card's edge — no red margin at all. It used to
+   stop 1.5 short so the dashed border would still read, and that sliver of
+   exposed ground showed up as a thin red frame; the edge is drawn OVER the
+   sheet instead (in .chagcard__vec), so the white can reach the edge and the
+   stroke still sits on top of it. The only red left is the scan stub. */
 .mixwin__card--chag .chagcard__panel {
-  left: calc(1.5 * var(--u)); top: calc(157.5 * var(--u));
-  width: calc(1238 * var(--u)); height: calc(839 * var(--u));
+  left: 0; top: calc(157.5 * var(--u));
+  width: calc(1241 * var(--u)); height: calc(840.5 * var(--u));
   background: #fff;
-  border-radius: 0 0 calc(9.5 * var(--u)) calc(9.5 * var(--u));
+  border-radius: 0 0 calc(11 * var(--u)) calc(11 * var(--u));
 }
 
 /* the creature, on the card's OPTICAL centre: centred horizontally, and
@@ -598,6 +610,7 @@ html.chag-opening .chag-intro__logo {
   left: 0; top: 0;
   width: calc(1241 * var(--u)); height: calc(998 * var(--u));
   pointer-events: none;
+  overflow: visible;          /* the card's edge stroke straddles the boundary */
 }
 /* the card's lettering is ENGLISH and must always set left-to-right even if a
    page around it is RTL — otherwise "SCAN TO KEEP" lays out leftward from its
