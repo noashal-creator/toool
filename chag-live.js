@@ -29,8 +29,19 @@
   const desc     = win?.querySelector('.mixwin__desc');
   const sizeEl   = document.getElementById('mixwin-size');
   const weightEl = document.getElementById('mixwin-weight');
+  const qrImg    = document.getElementById('mixwin-qr');
   const runBtn   = document.getElementById('run');
   if (!win || !big || !runBtn) return;
+
+  /* three letters per symbol → the 6-letter code the card's QR encodes and
+     /k?p= resolves. Kept STABLE on purpose: a card already sent stays valid
+     even if the symbol set is ever reordered, which an index would not. */
+  const SYM_CODE = { dvash:'dva', tapuach:'tap', keves:'kev', gezer:'gez',
+                     dag:'dag', kara:'kar', tamar:'tam', rimon:'rim' };
+  const pairCode = (pair) => {
+    const [a, b] = (pair || '').split('+');
+    return (SYM_CODE[a] && SYM_CODE[b]) ? SYM_CODE[a] + SYM_CODE[b] : null;
+  };
 
   const LIVE = new URLSearchParams(location.search).has('live');
   const API = '/.netlify/functions/mix-api';
@@ -182,6 +193,10 @@
   function render() {
     if (!win.classList.contains('is-open')) return;
     big.src = res.img || FALLBACK_IMG;
+    /* the card's QR is this pair's own code, pointing at the keep & send page */
+    if (qrImg && window.chagPair && pairCode(window.chagPair)) {
+      qrImg.src = 'assets/chag/card/qr/' + window.chagPair + '.png';
+    }
     big.classList.remove('is-waiting');
     setStatus('');
     const t = res.text;

@@ -168,13 +168,28 @@
 
   reflect();   // start disabled
 
-  /* after a mix's result window CLOSES, the tool resets for the next round —
-     app.js clears the slots and drains the bowl; the grid selection must
-     reset with them or the old picks pop back onto the bowl's rim. */
+  /* The result window drives two different resets.
+
+     On OPEN the picked cells go back to WHITE — the round is over, the answer
+     is on screen, and leaving two cells burning red behind the card reads as
+     if something is still selected. This is a LOOK-ONLY reset: `picked` and
+     window.chagPair stay exactly as they are, because chag-live.js reads
+     chagPair at that very moment to choose the card's QR.
+
+     On CLOSE the round really ends — app.js clears the slots and drains the
+     bowl, and the selection has to go with them or the old picks pop back
+     onto the bowl's rim. */
   const mixwin = document.getElementById('mixwin');
   if (mixwin) {
     new MutationObserver(() => {
-      if (mixwin.classList.contains('is-open')) return;   // only on CLOSE
+      if (mixwin.classList.contains('is-open')) {
+        tiles.forEach((el) => {
+          if (!el) return;
+          el.classList.remove('is-picked');
+          el.setAttribute('aria-pressed', 'false');
+        });
+        return;
+      }
       if (!picked.length) return;
       picked = [];
       reflect();

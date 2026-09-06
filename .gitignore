@@ -24,3 +24,7 @@ node_modules/
 # derived from assets/chag/res/ by prep-chag-results.py — an intermediate
 # step only the local review needs; res-c/ is what the card actually uses
 assets/chag/res-w/
+
+# _* above hides scratch files, but this one is Netlify's own routing table —
+# without it /k (the address every card's QR encodes) 404s on the live site
+!_redirects

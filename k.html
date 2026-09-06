@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<title>שנה טובה — TOOOL</title>
+<meta name="theme-color" content="#0048FF">
+<!-- ══ KEEP & SEND — where the card's QR lands ════════════════════════════
+     Reached as /k?p=<code>, the 6-letter pair code baked into that card's QR
+     (three letters per symbol, e.g. dvatap = dvash+tapuach). The code is
+     STABLE on purpose: a card already out in the world keeps working even if
+     the symbol set is ever reordered, which an index would not survive.
+     ?p= also accepts a full pair key (dvash+tapuach) for hand testing.
+
+     THE CARD HERE IS THE CARD AFTER THE PERFORATION IS TORN OFF. That line
+     exists to be torn, and whoever reached this page has already scanned the
+     stub — so the QR, the SCAN TO KEEP & SEND lettering, the tear line and
+     the close X are all gone, and everything below shifts up so the red frame
+     reads as an even margin all round: 1241x841 with the sheet at 18.5,18.5.
+
+     BUILT IN THE SITE'S OWN LANGUAGE, not as a generic app screen: flat
+     blocks of the site's flat colours, butted together and divided by a
+     SOLID 1px black rule (which is exactly how the site separates its
+     sidebar from its logo band), sharp corners, the band's own red chain
+     lockup, and the actions as the site's button — a purple #560476 ellipse
+     with a 1px black outline, the MIX button's shape. The vertical rhythm
+     clamps against vh because on a 375x667 phone the whole page has to fit
+     without scrolling. ═════════════════════════════════════════════════ -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #fff;
+    font: 700 16px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #000;
+    min-height: 100dvh;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── the logo band, as on the site: blue, the red chain lockup, and a solid
+        1px black rule under it ── */
+  .band {
+    background: #0048FF;
+    border-bottom: 1px solid #000;
+    padding: clamp(9px, 1.6vh, 17px) 22px;
+    display: flex; justify-content: center;
+  }
+  .band img { width: 100%; max-width: 260px; height: auto; display: block; }
+
+  /* ── the white block the card sits in, like the site's grid area ── */
+  .sheet {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: clamp(9px, 1.8vh, 16px);
+    padding: clamp(14px, 2.6vh, 26px) 16px;
+  }
+  /* the creature's name — the one piece of copy on the page, so it carries
+     the weight: black on white, the site's own bold */
+  .who {
+    font-size: clamp(16px, 2.4vh, 21px); line-height: 1.15;
+    text-align: center;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%; max-width: 560px;
+    aspect-ratio: 1241 / 841;
+  }
+  .card {                            /* 1 CSS px = 1 Figma px in here */
+    position: absolute; left: 0; top: 0;
+    width: 1241px; height: 841px;
+    transform: scale(var(--k, 0.45));
+    transform-origin: 0 0;
+  }
+  .card > * { position: absolute; margin: 0; }
+  .card__frame { left: -1.5px; top: -1.5px; width: 1244px; height: 844px; }
+  .card__panel { left: 18.5px; top: 18.5px; width: 1204px; height: 804px; }
+  .card__img { left: 56px; top: 65.75px; width: 1129px; height: 653px; overflow: hidden; }
+  .card__img img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; object-position: center;
+  }
+  .card__vec { left: 0; top: 0; width: 1241px; height: 841px; }
+  /* the page is RTL and SVG text INHERITS direction — without this
+     SHANA TOVA!'s "!" flips to the wrong side */
+  .card__vec text { direction: ltr; unicode-bidi: isolate; }
+  .card__vec .t {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 700; font-size: 29px; letter-spacing: 0.29px; fill: #000;
+  }
+
+  /* ── the actions, on the sidebar's yellow, behind another 1px black rule ── */
+  .foot {
+    background: #FFFF01;
+    border-top: 1px solid #000;
+    padding: clamp(12px, 2vh, 20px) 16px clamp(12px, 2.2vh, 20px);
+    display: flex; flex-direction: column; align-items: center;
+    gap: clamp(9px, 1.5vh, 14px);
+  }
+  .acts { width: 100%; max-width: 420px; display: grid; gap: clamp(9px, 1.5vh, 13px); }
+  /* the site's button: a purple ellipse with a 1px black outline (.run) */
+  .btn {
+    appearance: none; width: 100%;
+    height: clamp(50px, 7vh, 62px);
+    background: #560476;
+    color: #fff;
+    border: 1px solid #000;
+    border-radius: 50%;
+    font: 700 clamp(16px, 2.3vh, 19px)/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .btn svg { width: 1em; height: 1em; flex: none; }
+
+  /* reserves no room until it actually says something */
+  .note { margin: 0; font-size: 13px; text-align: center; }
+  .note:empty { display: none; }
+  .make { font-size: 13px; text-align: center; }
+  .make a { color: #000; }
+</style>
+</head>
+<body>
+
+<div class="band">
+  <!-- the band's own lockup, the site's exact export -->
+  <img src="assets/chag/sym2/logo.png?v=3" alt="TOOOL">
+</div>
+
+<div class="sheet">
+  <p class="who" id="who"></p>
+
+  <div class="stage" id="stage">
+    <div class="card" id="card">
+      <!-- the same rounded rect and the same stroke (3, dash 2-2), for the
+           torn card's 1241x841 -->
+      <svg class="card__frame" viewBox="0 0 1244 844" fill="none" aria-hidden="true">
+        <path d="M1.5 12.5C1.5 6.42485 6.42487 1.5 12.5 1.5H1231.5C1237.58 1.5 1242.5 6.42487 1242.5 12.5V831.5C1242.5 837.575 1237.58 842.5 1231.5 842.5H12.5C6.42485 842.5 1.5 837.575 1.5 831.5V12.5Z"
+              fill="#FC0000" stroke="#000" stroke-width="3" stroke-dasharray="2 2"/>
+      </svg>
+      <img class="card__panel" src="assets/chag/card/panel.svg?v=4" alt="">
+      <div class="card__img"><img id="creature" src="" alt="הגלויה שלך"></div>
+      <svg class="card__vec" viewBox="0 0 1241 841" fill="none" aria-hidden="true">
+        <text class="t" x="620.5" y="773" text-anchor="middle">SHANA TOVA!</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <div class="acts">
+    <button class="btn" id="save" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <path d="M12 3v12M7 11l5 5 5-5M4 21h16"/>
+      </svg>
+      שמירת הגלויה
+    </button>
+    <button class="btn" id="send" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <path d="M4 12l16-8-6 16-3-6-7-2z"/>
+      </svg>
+      שליחה
+    </button>
+  </div>
+  <p class="note" id="note" role="status" aria-live="polite"></p>
+  <p class="make">רוצה גלויה משלך? <a href="chag.html">כאן מכינים אחת</a></p>
+</div>
+
+<script src="chag-data.js?v=8"></script>
+<script>
+(() => {
+  const CODE = { dvash:'dva', tapuach:'tap', keves:'kev', gezer:'gez',
+                 dag:'dag', kara:'kar', tamar:'tam', rimon:'rim' };
+  const pairs = Object.keys(window.CHAG_RESULTS || {});
+  const byCode = {};
+  for (const p of pairs) {
+    const [a, b] = p.split('+');
+    byCode[CODE[a] + CODE[b]] = p;
+  }
+
+  const q = new URLSearchParams(location.search).get('p') || '';
+  /* accept the card's 6-letter code, or a full pair key typed by hand */
+  const pair = byCode[q] || (pairs.includes(q) ? q : pairs[0]);
+  const rec  = (window.CHAG_RESULTS || {})[pair] || {};
+
+  const card = document.getElementById('card');
+  const stage = document.getElementById('stage');
+  const note = document.getElementById('note');
+  document.getElementById('creature').src = 'assets/chag/res-c/' + pair + '.png';
+  if (rec.name) {
+    document.title = rec.name + ' — שנה טובה';
+    document.getElementById('who').textContent = rec.name;
+  }
+
+  /* the card is authored at 1241px wide and scaled to whatever the phone has */
+  const fit = () => card.style.setProperty('--k', stage.clientWidth / 1241);
+  addEventListener('resize', fit); fit();
+
+  /* ── compose the card into a PNG, at 2x ──────────────────────────────
+     Drawn from the same pieces the page shows, in the same order, minus the
+     close X. Each SVG goes through an Image so the browser rasterises it. */
+  const SCALE = 2;
+  const load = (src) => new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => rej(new Error(src));
+    i.src = src;
+  });
+  const svgUrl = (el) => {
+    const s = el.cloneNode(true);
+    s.setAttribute('width', el.viewBox.baseVal.width);
+    s.setAttribute('height', el.viewBox.baseVal.height);
+    /* the external stylesheet does not travel with a serialised SVG */
+    s.querySelectorAll('text').forEach((t) => {
+      t.setAttribute('font-family', '"Helvetica Neue", Helvetica, Arial, sans-serif');
+      t.setAttribute('font-weight', '700');
+      t.setAttribute('font-size', '29');
+      t.setAttribute('fill', '#000');
+      t.setAttribute('direction', 'ltr');
+      t.setAttribute('letter-spacing', '0.29');
+    });
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(new XMLSerializer().serializeToString(s));
+  };
+
+  let composed = null;
+  async function compose() {
+    if (composed) return composed;
+    await document.fonts.ready;
+    const c = document.createElement('canvas');
+    c.width = 1241 * SCALE; c.height = 841 * SCALE;
+    const g = c.getContext('2d');
+    g.scale(SCALE, SCALE);
+
+    const [frame, panel, creature, vec] = await Promise.all([
+      load(svgUrl(document.querySelector('.card__frame'))),
+      load('assets/chag/card/panel.svg?v=4'),
+      load(document.getElementById('creature').src),
+      load(svgUrl(document.querySelector('.card__vec'))),
+    ]);
+
+    g.drawImage(frame, -1.5, -1.5, 1244, 844);
+    g.drawImage(panel, 18.5, 18.5, 1204, 804);
+    /* the creature, contained in its box exactly as the CSS does it */
+    const bw = 1129, bh = 653, bx = 56, by = 65.75;
+    const k = Math.min(bw / creature.naturalWidth, bh / creature.naturalHeight);
+    const cw = creature.naturalWidth * k, ch = creature.naturalHeight * k;
+    g.drawImage(creature, bx + (bw - cw) / 2, by + (bh - ch) / 2, cw, ch);
+    g.drawImage(vec, 0, 0, 1241, 841);
+
+    composed = await new Promise((res) => c.toBlob(res, 'image/png'));
+    return composed;
+  }
+
+  const fileName = 'shana-tova-' + pair.replace('+', '-') + '.png';
+  const busy = (on, msg) => {
+    for (const id of ['save', 'send']) document.getElementById(id).disabled = on;
+    note.textContent = msg || '';
+  };
+
+  document.getElementById('save').addEventListener('click', async () => {
+    busy(true, 'מכין את התמונה…');
+    try {
+      const blob = await compose();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 8000);
+      busy(false, 'נשמר!');
+    } catch (e) {
+      busy(false, 'לא הצלחתי לשמור — אפשר ללחוץ לחיצה ארוכה על הגלויה ולשמור');
+      console.error(e);
+    }
+  });
+
+  document.getElementById('send').addEventListener('click', async () => {
+    busy(true, 'מכין את התמונה…');
+    try {
+      const blob = await compose();
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'שנה טובה' });
+        busy(false, '');
+        return;
+      }
+      if (navigator.share) {                    /* no file support — send the link */
+        await navigator.share({ title: 'שנה טובה', url: location.href });
+        busy(false, '');
+        return;
+      }
+      await navigator.clipboard.writeText(location.href);
+      busy(false, 'הקישור הועתק');
+    } catch (e) {
+      if (e && e.name === 'AbortError') { busy(false, ''); return; }
+      busy(false, 'השיתוף לא נתמך כאן — שמרי את התמונה ושלחי אותה');
+      console.error(e);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

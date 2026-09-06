@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<title>הפתיחה — צפייה חוזרת</title>
+<!-- ══ a bench for watching the opening ═══════════════════════════════════
+     Local only, not linked, not deployed. The panel is the REAL chag.html in
+     an iframe, so what plays is the actual page; this page just reaches in
+     and calls its chagIntroPlay() again, which beats reloading (a reload
+     restarts the whole tool) and can run it slowed down. ══════════════ -->
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 14px 18px 40px;
+    background: #d9d9d9;
+    font: 13px/1.45 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #222;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .bar {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+    padding: 11px 14px; background: #fff;
+    border: 1px solid #bbb; border-radius: 8px;
+  }
+  .bar b { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .bar button {
+    font: 700 14px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    padding: 10px 20px; cursor: pointer;
+    background: #560476; color: #fff; border: 1px solid #000; border-radius: 999px;
+  }
+  .bar .hint { color: #666; }
+  .screen {
+    position: relative; width: 100%; max-width: 1280px;
+    aspect-ratio: 1600 / 900;
+    border: 1px solid #999; background: #fff; overflow: hidden;
+  }
+  .screen iframe {
+    position: absolute; left: 0; top: 0;
+    width: 1600px; height: 900px; border: 0;
+    transform: scale(var(--k, .8)); transform-origin: 0 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>הפתיחה</b>
+  <button id="play" type="button">נגן שוב</button>
+  <label>מהירות
+    <select id="slow">
+      <option value="1" selected>רגילה</option>
+      <option value="2">חצי</option>
+      <option value="4">רבע</option>
+    </select></label>
+  <span class="hint">הכחול עולה כמו וילון ונושא איתו את הלוגו עד מקומו</span>
+</div>
+
+<div class="screen"><iframe id="frame" src="chag.html" title="chag"></iframe></div>
+
+<script>
+  const frame = document.getElementById('frame');
+  const fit = () => {
+    const s = document.querySelector('.screen');
+    frame.style.setProperty('--k', s.clientWidth / 1600);
+  };
+  addEventListener('resize', fit); addEventListener('load', fit); fit();
+
+  document.getElementById('play').addEventListener('click', () => {
+    const w = frame.contentWindow;
+    if (w && w.chagIntroPlay) w.chagIntroPlay(Number(document.getElementById('slow').value) || 1);
+  });
+</script>
+
+</body>
+</html>

@@ -8,7 +8,17 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=38">
+<link rel="stylesheet" href="chag.css?v=44">
+<script>
+  /* the flag has to land BEFORE first paint or the grid flashes for a frame
+     before the blue covers it. `?intro=off` is for working on the rest of
+     the page; anyone who asked for less motion never sees the opening. */
+  (function () {
+    if (/[?&]intro=off/.test(location.search)) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    document.documentElement.classList.add('chag-opening');
+  })();
+</script>
 </head>
 <body>
 
@@ -181,6 +191,12 @@
        Spikes Mono font draws the o's ring wider than Figma's, so live type
        merged the rings where the frame shows them crossing with a gap — the
        frame's own pixels are the only exact reproduction. -->
+  <!-- the opening's curtain: the blue lifts off the grid, carrying the
+       lockup up with it (chag-intro.js) -->
+  <div class="chag-intro" id="chag-intro" aria-hidden="true">
+    <img class="chag-intro__logo" src="assets/chag/sym2/logo.png?v=3" alt="">
+  </div>
+
   <div class="chag-logoband" aria-hidden="true">
     <img class="chag-logo" src="assets/chag/sym2/logo.png?v=3" alt="">
   </div>
@@ -211,7 +227,7 @@
     </svg>
 
     <div class="chagcard__qrbox"></div>
-    <div class="chagcard__qr"><img src="assets/chag/card/qr-frame.png?v=1" alt=""></div>
+    <img class="chagcard__qr" id="mixwin-qr" src="assets/chag/card/qr/dag+dvash.png" alt="">
 
     <img class="chagcard__panel" src="assets/chag/card/panel.svg?v=4" alt="">
     <div class="chagcard__img">
@@ -262,8 +278,9 @@
 </script>
 <script src="app.js?v=21"></script>
 <script src="chag-data.js?v=8"></script>
-<script src="chag-pick.js?v=9"></script>
-<script src="chag-live.js?v=3"></script>
+<script src="chag-pick.js?v=10"></script>
+<script src="chag-live.js?v=4"></script>
+<script src="chag-intro.js?v=5"></script>
 <!-- HOLIDAY VARIATION: the colours panel (🎨) — visible here, extended to the
      grid cells, gridlines and page background. -->
 <script src="chag-color-edit.js?v=3"></script>

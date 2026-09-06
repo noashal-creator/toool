@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<title>הדמיה — עמוד הסריקה בטלפון</title>
+<!-- ══ PHONE MOCKUP for k.html ═══════════════════════════════════════════
+     Local review page. Not linked from anywhere, not deployed.
+
+     The phone holds an <iframe> pointing at the REAL k.html, not a redraw of
+     it — so this mockup cannot go stale when the page changes. The screen
+     sizes are the logical viewports of actual phones, smallest first, because
+     the small one is where a layout breaks: everything (name, card, both
+     buttons, the link and the mark) has to fit without scrolling there.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px 18px 48px;
+    background: #d9d9d9;
+    font: 13px/1.45 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #222;
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+  }
+  .bar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+    padding: 10px 14px; background: #fff;
+    border: 1px solid #bbb; border-radius: 8px;
+  }
+  .bar b { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .bar label { display: flex; gap: 7px; align-items: center; white-space: nowrap; }
+  .bar .hint { color: #666; }
+
+  .rack { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; }
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .unit__cap { font-size: 12px; color: #555; direction: ltr; }
+
+  /* ── the phone ── */
+  .phone {
+    position: relative;
+    padding: 11px;
+    background: #111;
+    border-radius: 46px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.28), inset 0 0 0 1.5px #333;
+  }
+  .phone__screen {
+    position: relative;
+    width: var(--w); height: var(--h);
+    border-radius: 36px;
+    overflow: hidden;
+    background: #0048FF;
+  }
+  .phone__screen iframe {
+    width: var(--w); height: var(--h);
+    border: 0; display: block;
+  }
+  /* the dynamic island / notch, purely so the frame reads as a phone */
+  .phone__island {
+    position: absolute; left: 50%; top: 9px; transform: translateX(-50%);
+    width: 84px; height: 25px; border-radius: 999px;
+    background: #111; z-index: 2; pointer-events: none;
+  }
+  .phone--notch .phone__island { width: 148px; height: 26px; top: 0; border-radius: 0 0 16px 16px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>עמוד הסריקה, כמו שרואים אותו בטלפון</b>
+  <label>זוג
+    <select id="pair"></select></label>
+  <label><input type="checkbox" id="all"> להראות את כל המסכים</label>
+  <span class="hint" id="hint"></span>
+</div>
+
+<div class="rack" id="rack"></div>
+
+<script src="chag-data.js?v=8"></script>
+<script>
+  const CODE = { dvash:'dva', tapuach:'tap', keves:'kev', gezer:'gez',
+                 dag:'dag', kara:'kar', tamar:'tam', rimon:'rim' };
+  const code = (p) => { const [a,b] = p.split('+'); return CODE[a] + CODE[b]; };
+
+  /* the logical viewports of real phones — the small one first, since that is
+     where the layout has to prove it fits without scrolling */
+  const SCREENS = [
+    { name: 'iPhone SE',       w: 375, h: 667, notch: true },
+    { name: 'iPhone 15',       w: 393, h: 852, notch: false },
+    { name: 'iPhone 15 Pro Max', w: 430, h: 932, notch: false },
+  ];
+
+  const pairs = Object.keys(window.CHAG_RESULTS || {}).sort();
+  const sel = document.getElementById('pair');
+  sel.innerHTML = pairs.map((p) => {
+    const n = window.CHAG_RESULTS[p].name || p;
+    return `<option value="${p}">${n} — ${code(p)}</option>`;
+  }).join('');
+  /* open on a tall narrow creature: the hardest one for a portrait layout */
+  sel.value = pairs.includes('rimon+tamar') ? 'rimon+tamar' : pairs[0];
+
+  const rack = document.getElementById('rack');
+  const all  = document.getElementById('all');
+  const hint = document.getElementById('hint');
+
+  function build() {
+    const pair = sel.value;
+    const shown = all.checked ? SCREENS : [SCREENS[1]];
+    rack.innerHTML = shown.map((s) => `
+      <div class="unit">
+        <div class="phone ${s.notch ? 'phone--notch' : ''}" style="--w:${s.w}px; --h:${s.h}px">
+          <span class="phone__island"></span>
+          <div class="phone__screen">
+            <iframe src="k.html?p=${code(pair)}" title="${s.name}" loading="eager"></iframe>
+          </div>
+        </div>
+        <div class="unit__cap">${s.name} · ${s.w}×${s.h}</div>
+      </div>`).join('');
+    hint.textContent = 'הכרטיס הוא ' + (window.CHAG_RESULTS[pair].name || pair);
+  }
+  sel.addEventListener('input', build);
+  all.addEventListener('input', build);
+  build();
+</script>
+
+</body>
+</html>

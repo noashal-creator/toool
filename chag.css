@@ -276,9 +276,44 @@ html.chag-mixing .chag-bowl-picks img {
 
 /* ═══ MAIN — one screen, no scroll ══════════════════════════════════ */
 .chag-main {
+  position: relative;              /* the opening's curtain anchors to this */
   height: 100dvh;
   display: flex; flex-direction: column;
   overflow: hidden;
+}
+
+/* ══ THE OPENING (chag-intro.js) ═══════════════════════════════════════
+   A blue curtain over the whole main area with the chain lockup pinned to
+   its BOTTOM edge. The curtain's height is the only thing animated: as it
+   shrinks to the band's own 374 the lockup rides up with it and lands
+   exactly where the band's logo sits, and the eight objects underneath
+   never moved. It is pinned the same distance above the curtain's edge that
+   the band's lockup sits above the band's own — chag-intro.js measures that
+   off the live band, so the landing is exact.
+
+   Hidden unless the <head> put chag-opening on <html> before first paint.
+   That flag is deliberately NOT called chag-intro: `<html class="chag-intro">`
+   would match the base rule below and display:none the entire document. ══ */
+.chag-intro { display: none; }
+html.chag-opening .chag-intro {
+  display: block;
+  position: absolute; left: 0; top: 0; right: 0;
+  height: 100%;
+  background: var(--chag-blue);
+  border: 1px solid #000;
+  border-left: none;               /* the sidebar's rule is the shared line */
+  overflow: hidden;
+  z-index: 40;
+}
+html.chag-opening .chag-intro__logo {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  /* rides the curtain's edge into place. chag-intro.js overwrites this with
+     the gap MEASURED off the real band, so the landing is exact; this is the
+     sane starting value for the frame it takes to run. */
+  bottom: calc(39 * var(--s));
+  width: calc(1411 * var(--s));
+  height: calc(295 * var(--s));
 }
 
 /* ── the blue logo band (Rectangle 81: #0048FF, 1px black stroke, 374 tall) ── */
@@ -410,7 +445,13 @@ html.chag-mixing .chag-bowl-picks img {
   border: none;                    /* ditto the dashed stroke */
   border-radius: calc(11 * var(--u));
   box-shadow: none;                /* the frame carries no shadow */
-  overflow: hidden;
+  /* NOT hidden. The frame's dashed path runs ALONG the card's edge, so its
+     3-unit stroke straddles it — half in, half out. Clipping ate the outer
+     half and the border rendered 1.5 units against the tear line's full 3,
+     i.e. the inside line looked twice as thick as the outside one. Nothing
+     else here overflows (the creature box does its own clipping), so the
+     card lets that 1.5 units of stroke bleed, exactly as the frame does. */
+  overflow: visible;
 }
 .mixwin__card--chag > * { position: absolute; margin: 0; }
 
@@ -427,18 +468,17 @@ html.chag-mixing .chag-bowl-picks img {
   left: calc(17 * var(--u)); top: calc(15 * var(--u));
   width: calc(127 * var(--u)); height: calc(126 * var(--u));
   background: #FFFF01;
-  border: 1px solid #000;
+  /* the frame's 1px hairline, in DESIGN units so it holds its proportion on a
+     big screen too, with a 1px floor so it can never vanish */
+  border: max(1px, calc(1 * var(--u))) solid #000;
   border-radius: calc(11 * var(--u));
 }
+/* a REAL code, one per pair — so unlike the frame's sample image it keeps its
+   quiet zone and is never cropped. The yellow block around it adds ~2 more
+   modules of margin, which is what makes it scan off a screen. */
 .mixwin__card--chag .chagcard__qr {
   left: calc(25 * var(--u)); top: calc(22 * var(--u));
   width: calc(111 * var(--u)); height: calc(112 * var(--u));
-  overflow: hidden;
-}
-.mixwin__card--chag .chagcard__qr img {
-  position: absolute;
-  width: 123.23%; height: 121.66%; left: -11.61%; top: -10.83%;
-  max-width: none;
 }
 
 /* the close control. The purple dot and its X are drawn in the vector layer;
