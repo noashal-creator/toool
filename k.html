@@ -109,9 +109,15 @@
   /* the page is RTL and SVG text INHERITS direction — without this
      SHANA TOVA!'s "!" flips to the wrong side */
   .card__vec text { direction: ltr; unicode-bidi: isolate; }
+  /* the same notched contour the card carries on the site: a 1-wide dashed
+     stroke on the glyphs, the fill painted over it. letter-spacing 0 — the
+     frame's own outlined greeting is 179.051 units of ink wide, and this cut
+     sets it at 179.064 untracked. */
   .card__vec .t {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-weight: 700; font-size: 27px; letter-spacing: 0.29px; fill: #000;
+    font-weight: 700; font-size: 27px; letter-spacing: 0; fill: #000;
+    stroke: #000; stroke-width: 1; stroke-dasharray: 2 2;
+    paint-order: stroke;
   }
 
   /* ── the two buttons ────────────────────────────────────────────────────
@@ -231,7 +237,11 @@
       t.setAttribute('font-size', '27');
       t.setAttribute('fill', '#000');
       t.setAttribute('direction', 'ltr');
-      t.setAttribute('letter-spacing', '0.29');
+      t.setAttribute('letter-spacing', '0');
+      t.setAttribute('stroke', '#000');
+      t.setAttribute('stroke-width', '1');
+      t.setAttribute('stroke-dasharray', '2 2');
+      t.setAttribute('paint-order', 'stroke');
     });
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(new XMLSerializer().serializeToString(s));
   };

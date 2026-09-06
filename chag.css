@@ -644,8 +644,16 @@ html.chag-opening .chag-intro__logo {
   fill: #000;
 }
 /* the greeting is 27 in the frame — the 29 came from measuring it inside a
-   baked, horizontally squashed bitmap before it existed as live type */
-.mixwin__card--chag .chagcard__vec .t--greet { font-size: 27px; }
+   baked, horizontally squashed bitmap before it existed as live type — and it
+   carries the same notched contour as SCAN TO KEEP & SEND above it.
+   letter-spacing 0, not the card's 0.29: the frame's own outlined greeting is
+   179.051 units of ink wide, and this cut sets it at 179.064 untracked. */
+.mixwin__card--chag .chagcard__vec .t--greet {
+  font-size: 27px;
+  letter-spacing: 0;
+  stroke: #000; stroke-width: 1; stroke-dasharray: 2 2;
+  paint-order: stroke;
+}
 /* the notched contour of the sidebar's instructions. letter-spacing is 0.20
    rather than the node's 0.29 ON PURPOSE: Figma sets "Helvetica Neue W01 75
    Bold" and the browser has the local Helvetica Neue cut, 0.45% wider per em
