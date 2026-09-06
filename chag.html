@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/fonts/spikes-font.css">
 <link rel="stylesheet" href="styles.css?v=mid1">
 <link rel="stylesheet" href="live.css?v=9">
-<link rel="stylesheet" href="chag.css?v=63">
+<link rel="stylesheet" href="chag.css?v=64">
 <script>
   /* the flag has to land BEFORE first paint or the grid flashes for a frame
      before the blue covers it. `?intro=off` is for working on the rest of
@@ -244,8 +244,15 @@
     <div class="chagcard__qrbox"></div>
     <img class="chagcard__qr" id="mixwin-qr" src="assets/chag/card/qr/dag+dvash.png" alt="">
 
-    <!-- the white sheet: no red margin, running to the card's edge (chag.css) -->
-    <div class="chagcard__panel" aria-hidden="true"></div>
+    <!-- The white sheet is what is LEFT under the tear, so its top edge is the
+         tear itself: the perforation's own path, dropped 1.5 to clear the
+         bottom of its 3-wide stroke, curling down to the card's edges exactly
+         as the line does. Sides and bottom run to the card, bottom corners
+         11 like the card's own. -->
+    <svg class="chagcard__panel" viewBox="0 0 1241 998" aria-hidden="true">
+      <path d="M0 169C0 158.193 9 157.5 16 157.5H1225C1232 157.5 1241 158.193 1241 169V987C1241 993.075 1236.08 998 1230 998H11C4.92485 998 0 993.075 0 987V169Z"
+            fill="#fff"/>
+    </svg>
     <div class="chagcard__img">
       <img class="mixwin__big" id="mixwin-big" src="assets/chag/res-c/dag+dvash.png"
            alt="Your New Year creature">

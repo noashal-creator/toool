@@ -582,33 +582,20 @@ html.chag-opening .chag-intro__logo {
 }
 .mixwin__card--chag .chagcard__x:active { transform: translateY(1px); }
 
-/* The white sheet runs to the card's edge — no red margin at all. It used to
-   stop 1.5 short so the dashed border would still read, and that sliver of
-   exposed ground showed up as a thin red frame; the edge is drawn OVER the
-   sheet instead (in .chagcard__vec), so the white can reach the edge and the
-   stroke still sits on top of it. The only red left is the scan stub. */
+/* The white sheet is a SHAPE, not a box: its top edge is the tear line's own
+   path dropped 1.5 (the bottom of that 3-wide stroke), so the sheet curls
+   down into the card's corners exactly as the perforation does — it is what
+   is left under the tear. Sides and bottom reach the card's edge, so the only
+   red left is the scan stub above the tear. */
 .mixwin__card--chag .chagcard__panel {
-  /* 175.5 is the frame's own top for the sheet, and it has to be: the tear
-     line sits at 156 and CURLS DOWN to 167.5 at both ends, so anything above
-     175.5 puts that curl on top of the white instead of on the red where the
-     frame draws it — the corner read as a hook cutting into the sheet. Only
-     the left, right and bottom margins were meant to go. */
-  left: 0; top: calc(175.5 * var(--u));
-  width: calc(1241 * var(--u)); height: calc(822.5 * var(--u));
-  background: #fff;
-  border-radius: 0 0 calc(11 * var(--u)) calc(11 * var(--u));
+  left: 0; top: 0;
+  width: calc(1241 * var(--u)); height: calc(998 * var(--u));
 }
 
-/* the creature, on the card's OPTICAL centre: centred horizontally, and
-   vertically midway between the sheet's solid top (189) and the greeting's
-   cap-top (909.5), which leaves an equal 33.75u of white above and below.
-   The sources in assets/chag/res-c/ are canvases centred on each object's
-   own bbox, so `contain` drops every one of the 28 dead centre at whatever
-   size it was shot — see prep-chag-results.py. */
 .mixwin__card--chag .chagcard__img {
-  /* centred in the sheet's own room: equal 56.25 above and below, between the
-     sheet's top (175.5) and the greeting's cap-top (941) */
-  left: calc(56 * var(--u)); top: calc(231.75 * var(--u));
+  /* centred in the sheet's own room: equal 65.25 above and below, between the
+     sheet's top edge across the middle (157.5) and the greeting's cap-top */
+  left: calc(56 * var(--u)); top: calc(222.75 * var(--u));
   width: calc(1129 * var(--u)); height: calc(653 * var(--u));
   overflow: hidden;
 }
