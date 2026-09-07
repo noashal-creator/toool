@@ -578,6 +578,24 @@ html.chag-opening .chag-intro__logo {
   width: calc(111 * var(--u)); height: calc(112 * var(--u));
 }
 
+/* THE CODE BREATHES, so it reads as something to point a phone at. The plate
+   (17,15) 127x126 and the code (25,22) 111x112 share a centre — (80.5, 78) —
+   so the same scale about each one's own centre keeps them locked together.
+   Nothing inside the code changes, so it scans at every moment of the loop. */
+@keyframes chagQrBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.055); }
+}
+.mixwin__card--chag .chagcard__qrbox,
+.mixwin__card--chag .chagcard__qr {
+  transform-origin: center;
+  animation: chagQrBreathe 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mixwin__card--chag .chagcard__qrbox,
+  .mixwin__card--chag .chagcard__qr { animation: none; }
+}
+
 /* the close control. The purple dot and its X are drawn in the vector layer;
    this is only the hit area, sitting exactly on top of them. */
 .mixwin__card--chag .chagcard__x {
