@@ -258,6 +258,15 @@
 
   let wantOpen = false;
 
+  /* ── THE RESULT LETS GO OF THE SCREEN ──────────────────────────────────
+     At a stand the card would otherwise sit there for hours. Twenty seconds
+     after it opens the window closes itself down the same path the X takes,
+     and chag-pick.js — which watches is-open — clears the picks, so the tool
+     is back at its opening state ready for the next person. */
+  const HOLD_MS = 20000;
+  let holdTimer = null;
+  const stopHold = () => { clearTimeout(holdTimer); holdTimer = null; };
+
   function reallyOpen() {
     wantOpen = false;
     win.hidden = false;
@@ -269,12 +278,15 @@
       launchFromBowl(card);
       card.focus({ preventScroll: true });
     }
+    stopHold();
+    holdTimer = setTimeout(close, HOLD_MS);
   }
   function open() {
     if (res.running && !res.done) { wantOpen = true; return; }
     reallyOpen();
   }
   function close() {
+    stopHold();
     dropCurtain();
     win.classList.remove('is-open');
     win.hidden = true;
