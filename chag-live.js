@@ -259,11 +259,11 @@
   let wantOpen = false;
 
   /* ── THE RESULT LETS GO OF THE SCREEN ──────────────────────────────────
-     At a stand the card would otherwise sit there for hours. Twenty seconds
+     At a stand the card would otherwise sit there for hours. Thirty seconds
      after it opens the window closes itself down the same path the X takes,
      and chag-pick.js — which watches is-open — clears the picks, so the tool
      is back at its opening state ready for the next person. */
-  const HOLD_MS = 20000;
+  const HOLD_MS = 30000;   /* long enough that a phone can still get the code */
   let holdTimer = null;
   const stopHold = () => { clearTimeout(holdTimer); holdTimer = null; };
 
