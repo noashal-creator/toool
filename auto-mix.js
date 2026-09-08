@@ -2,7 +2,7 @@
    auto-mix.js — the live-demo flow (?auto): click box 1, click box 2, press
    MIX. The two objects are already there — a click on a box drops the demo
    image straight in instead of opening a file picker, so there is nothing to
-   find on a laptop in front of an audience. The tool "thinks" for 7 seconds
+   find on a laptop in front of an audience. The tool "thinks" for 5 seconds
    (bowl churns), then
    the DESIGNED result window opens on its own — the troll+tooth one with
    the 01-05 spectrum strip along the bottom — looking like it generated
@@ -30,11 +30,11 @@
   const runEl = document.getElementById('run');
   if (!slotA || !slotB || !runEl) return;
 
-  /* the "thinking"/churn time per mix. 7 seconds by default; ?auto=<seconds>
+  /* the "thinking"/churn time per mix. 5 seconds by default; ?auto=<seconds>
      overrides it, so ?auto=45 is the original wait. */
   const FILL_MS = (() => {
     const sec = parseFloat(params.get('auto'));
-    return Number.isFinite(sec) && sec > 0 ? sec * 1000 : 7000;
+    return Number.isFinite(sec) && sec > 0 ? sec * 1000 : 5000;
   })();
 
   /* The two prepared spectrums (5 images each, in strip order 01→05).
