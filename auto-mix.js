@@ -1,7 +1,9 @@
 /* ─────────────────────────────────────────────────────────────────────
    auto-mix.js — the live-demo flow (?auto): upload your own 2 images and
    press MIX yourself. The tool "thinks" for 7 seconds (bowl churns), then
-   the prepared result opens on its own — looking like it generated live.
+   the DESIGNED result window opens on its own — the troll+tooth one with
+   the 01-05 spectrum strip along the bottom — looking like it generated
+   live, and ready to be clicked through on stage.
    ?auto=<seconds> sets that wait to anything else, so the original 45 is
    still one URL away: index.html?auto=45.
 
@@ -53,6 +55,12 @@
     const pieces = RESULTS[mixCount % RESULTS.length];
     mixCount++;
     if (pieces) { try { window.setMixSpectrum?.(pieces); } catch (e) {} }
+    /* the window Noa designed for this pair — hero, article, and the 01-05
+       strip you can click through from the troll to the tooth. Built before
+       the window is shown, so it opens already resting on the midpoint with
+       the pair's own words in place. Same builder the ?rec10 cut uses
+       (spectrum-window.js), so the two can never drift apart. */
+    try { window.buildSpectrumWindow?.(); } catch (e) {}
     try { window.openMixWindow?.(); } catch (e) {}
     running = false;   // ready for the next press (result 2, then 1 again…)
   }

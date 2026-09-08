@@ -52,17 +52,9 @@
   const body = document.body;
   body.classList.add('recording');
 
-  /* live.css is loaded after styles.css and rewrites the result window into the
-     LIVE variant: `.mixwin__hero { flex: 1 1 100% }` gives the hero the whole
-     card, which collapses the spectrum strip to nothing, and it repaints the
-     card white with a full-bleed photo. That is right for the real site and
-     wrong for this demo, whose whole point is the designed troll+tooth window.
-     Disabling the sheet restores styles.css's original card exactly, and costs
-     nothing else: live.css contains only .mixwin__* rules. */
-  if (TEN) {
-    document.querySelectorAll('link[rel="stylesheet"][href*="live.css"]')
-      .forEach(l => { l.disabled = true; });
-  }
+  /* live.css turns the result window into the LIVE variant, which collapses
+     the spectrum strip; spectrum-window.js disables it as part of building
+     the designed card, so the two always travel together. */
   // silence the CTA nudge (it only bobs until a mix has run) and start clean
   document.documentElement.classList.add('has-mixed');
   try { window.recResetSlots?.(); } catch (e) {}
@@ -156,31 +148,8 @@
   const OUTRO_MS = 900;
   const TAIL_MS  = TEN ? 2500 : (LIFT_MS + HOLD_MS + GIF_MS + OUTRO_MS);
 
-  /* The result card's words are baked into the markup for a different pair
-     ("Wing dryer / Insect accessory / 12 cm × 8 cm / 180 g"), and they are
-     legible on screen in the recording. Rewrite them here, in the script, so
-     the live site's own fallback text is left alone. The IMAGE already suits:
-     #mixwin-big is assets/mix/n-03.png, the troll/tooth midpoint. */
-  const CARD = {
-    title:  'Troll tooth',
-    kind:   'Dental charm',
-    desc:   'A troll tooth is a molar with a face of its own — a back tooth ' +
-            'that grew hair and an opinion. Kept for luck, mostly by people ' +
-            'who no longer have the tooth it came from.',
-    size:   '9 cm × 6 cm',
-    weight: '95 g',
-  };
-  function writeCard() {
-    const set = (sel, text) => {
-      const el = document.querySelector(sel);
-      if (el) el.textContent = text;
-    };
-    set('.mixwin__title', CARD.title);
-    set('.mixwin__kind .u', CARD.kind);
-    set('.mixwin__desc', CARD.desc);
-    set('#mixwin-size', CARD.size);
-    set('#mixwin-weight', CARD.weight);
-  }
+  /* The card's words for this pair travel with the window itself, in
+     spectrum-window.js — building it writes them. */
 
   /* ── the slow pan that plays WHILE it mixes ──────────────────────────────
      Only two stops, deliberately: the cow spectrum sweeping past, then the
@@ -241,7 +210,7 @@
     // wherever it currently sits — no forced jump.
     let designed = null;
     if (SHOW_RESULT) {
-      if (TEN) { writeCard(); designed = buildDesignedWindow(); }  // before it becomes visible
+      if (TEN) { designed = buildDesignedWindow(); }   // before it becomes visible
       try { window.openMixWindow?.(); } catch (e) {}
     }
     /* Self-report, so the 10s target is checkable at a glance instead of taken
@@ -264,74 +233,10 @@
   }
 
   /* ── the designed result window (troll + tooth) ──────────────────────────
-     index.html now ships the LIVE variant of the card: one real fal-generated
-     image, with the play button and the five-step spectrum strip deliberately
-     removed (see the comment in the markup). The window Noa designed for this
-     pair is the earlier one — hero + article + the 01–05 strip you can click
-     through — which was dropped in commit 10f0141 along with mix-modal.js.
-
-     For ?rec10 only, put that window back: build the strip and the play button
-     into the card and run the five steps like a gif. Injected here rather than
-     restored in index.html so the live site keeps the single-image variant it
-     is supposed to have. The CSS for all of it is still in styles.css
-     (.mixwin__strip / __cell / __tick / __num / __play), so it lands styled. */
-  const SPECTRUM = [1, 2, 3, 4, 5].map(n => 'assets/mix/n-0' + n + '.png');
-  const MID = 2;                       // 03 is the midpoint, and what opens first
-  const STEP_MS = 700;                 // one step of the play-through
-  SPECTRUM.forEach(u => { const im = new Image(); im.src = u; });
-
-  function buildDesignedWindow() {
-    const card = document.querySelector('.mixwin__card');
-    const big  = document.getElementById('mixwin-big');
-    if (!card || !big || document.getElementById('mixwin-strip')) return null;
-
-    // the play button sits with download / close, exactly where it used to
-    const actions = card.querySelector('.mixwin__actions');
-    if (actions && !document.getElementById('mixwin-play')) {
-      const play = document.createElement('button');
-      play.type = 'button'; play.className = 'mixwin__play';
-      play.id = 'mixwin-play'; play.setAttribute('aria-label', 'Play');
-      play.innerHTML =
-        '<svg class="i-play" viewBox="0 0 26 26" aria-hidden="true">' +
-          '<path d="M7 4 L21 13 L7 22 Z" fill="currentColor"/></svg>' +
-        '<svg class="i-pause" viewBox="0 0 26 26" aria-hidden="true">' +
-          '<rect x="6" y="4" width="5.4" height="18" fill="currentColor"/>' +
-          '<rect x="14.6" y="4" width="5.4" height="18" fill="currentColor"/></svg>';
-      actions.insertBefore(play, actions.querySelector('.mixwin__x'));
-    }
-
-    const strip = document.createElement('div');
-    strip.className = 'mixwin__strip';
-    strip.id = 'mixwin-strip';
-    strip.innerHTML = SPECTRUM.map((src, i) =>
-      '<button type="button" class="mixwin__cell' + (i === MID ? ' is-selected' : '') +
-      '" data-i="' + i + '">' +
-        '<span class="mixwin__tick" aria-hidden="true"></span>' +
-        '<span class="mixwin__num">0' + (i + 1) + '</span>' +
-        '<img src="' + src + '" alt="Spectrum step ' + (i + 1) + '">' +
-      '</button>').join('');
-
-    // after the hero block, before the status line — where it used to sit
-    const status = card.querySelector('.mixwin__status');
-    if (status) card.insertBefore(strip, status); else card.appendChild(strip);
-
-    const cells = [...strip.querySelectorAll('.mixwin__cell')];
-    const select = i => {
-      big.src = SPECTRUM[i];
-      cells.forEach((c, k) => c.classList.toggle('is-selected', k === i));
-    };
-    cells.forEach((c, i) => c.addEventListener('click', () => select(i)));
-    select(MID);
-    return { select, count: SPECTRUM.length };
-  }
-
-  /* One pass through the spectrum, 01 → 05, then back to rest on the midpoint —
-     the "ready to click through" beat from the deck, played for the camera. */
-  async function playSpectrum(win) {
-    if (!win) return;
-    for (let i = 0; i < win.count; i++) { win.select(i); await sleep(STEP_MS); }
-    win.select(MID);
-  }
+     Lives in spectrum-window.js, because ?auto wants the same window and the
+     two demos must never drift apart. Inert until one of them asks for it. */
+  const buildDesignedWindow = () => window.buildSpectrumWindow?.() || null;
+  const playSpectrum = (win) => window.playSpectrum?.(win) ?? Promise.resolve();
 
   // ── the run ──
   const OPEN_MS = TEN ? 130 : 300;    // ?rec10: shaved so the result lands on 10.0s
