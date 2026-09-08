@@ -83,33 +83,6 @@
   function unLive() {
     document.querySelectorAll('link[rel="stylesheet"][href*="live.css"]')
       .forEach(l => { l.disabled = true; });
-    pin();
-  }
-
-  /* ONE thing in live.css is not about the live variant at all: the rule that
-     the result card has a fixed size and does NOT grow with the screen —
-     "בפול סקרין יהיה פשוט יותר שטח ריק מסביב לחלון, ולא חלון גדול יותר".
-     That decision outlives the sheet it happens to sit in, so it is restated
-     here rather than lost with it: without this the card falls back to the
-     design unit and swells to fill a big screen. 0.874 pins it to 1055x852;
-     the two calc() terms can only ever SHRINK it, for a window smaller than
-     the card, and one shared factor drives both axes so 1207:975 holds.
-     --s is kept in the min, which live.css's own copy omits: without it the
-     card grows 6% inside rec10.html's 1080x670 frame and the capture cut is
-     no longer the take that was framed. */
-  function pin() {
-    if (document.getElementById('spectrum-card-size')) return;
-    const st = document.createElement('style');
-    st.id = 'spectrum-card-size';
-    st.textContent =
-      '.mixwin__card{' +
-        '--u:min(0.874px,' +
-             'var(--s),' +
-             'calc((100vw - var(--sbw) - 4vw) / 1207),' +
-             'calc((100dvh - 4vh) / 975));' +
-        'width:calc(1207 * var(--u));' +
-        'height:calc(975 * var(--u));}';
-    document.head.appendChild(st);
   }
 
   function build() {
