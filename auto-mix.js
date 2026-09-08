@@ -1,7 +1,9 @@
 /* ─────────────────────────────────────────────────────────────────────
    auto-mix.js — the live-demo flow (?auto): upload your own 2 images and
-   press MIX yourself. The tool "thinks" for ~45 seconds (bowl churns), then
+   press MIX yourself. The tool "thinks" for 7 seconds (bowl churns), then
    the prepared result opens on its own — looking like it generated live.
+   ?auto=<seconds> sets that wait to anything else, so the original 45 is
+   still one URL away: index.html?auto=45.
 
    Two prepared results, alternating: the FIRST MIX press shows result 1,
    the SECOND press shows result 2, then back to 1, and so on in a loop —
@@ -23,7 +25,12 @@
   const runEl = document.getElementById('run');
   if (!slotA || !slotB || !runEl) return;
 
-  const FILL_MS = 45000;  // the "thinking"/churn time per mix
+  /* the "thinking"/churn time per mix. 7 seconds by default; ?auto=<seconds>
+     overrides it, so ?auto=45 is the original wait. */
+  const FILL_MS = (() => {
+    const sec = parseFloat(params.get('auto'));
+    return Number.isFinite(sec) && sec > 0 ? sec * 1000 : 7000;
+  })();
 
   /* The two prepared spectrums (5 images each, in strip order 01→05).
      null = keep whatever the mix window already shows (its built-in set).
