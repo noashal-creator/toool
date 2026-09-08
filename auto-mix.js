@@ -1,6 +1,9 @@
 /* ─────────────────────────────────────────────────────────────────────
-   auto-mix.js — the live-demo flow (?auto): upload your own 2 images and
-   press MIX yourself. The tool "thinks" for 7 seconds (bowl churns), then
+   auto-mix.js — the live-demo flow (?auto): click box 1, click box 2, press
+   MIX. The two objects are already there — a click on a box drops the demo
+   image straight in instead of opening a file picker, so there is nothing to
+   find on a laptop in front of an audience. The tool "thinks" for 7 seconds
+   (bowl churns), then
    the DESIGNED result window opens on its own — the troll+tooth one with
    the 01-05 spectrum strip along the bottom — looking like it generated
    live, and ready to be clicked through on stage.
@@ -64,6 +67,26 @@
     try { window.openMixWindow?.(); } catch (e) {}
     running = false;   // ready for the next press (result 2, then 1 again…)
   }
+
+  /* ── one click per box ────────────────────────────────────────────────
+     The boxes are <button>s; app.js opens a hidden file input from them. The
+     click is caught in the CAPTURING phase on the document, so it is stopped
+     before app.js ever sees it and no file dialog opens at all. The two
+     images are the capture cut's own: the troll into box 1, the tooth into
+     box 2, in the -sm sizes, which decode in milliseconds. */
+  const DEMO = {
+    'slot-a': 'assets/rec-in-b-sm.png?v=1',   // troll → box 1
+    'slot-b': 'assets/rec-in-a-sm.png?v=1',   // tooth → box 2
+  };
+  Object.values(DEMO).forEach((u) => { const im = new Image(); im.src = u; });
+
+  document.addEventListener('click', (e) => {
+    const slot = e.target.closest?.('.slot');
+    if (!slot || !DEMO[slot.id]) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try { window.recFillSlot?.(slot.id.slice(-1), DEMO[slot.id]); } catch (err) {}
+  }, { capture: true });
 
   // A capture listener on #run itself would still fire AFTER app.js's own
   // click handler — at the target, listeners run in registration order
