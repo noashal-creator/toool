@@ -374,5 +374,40 @@
 <script src="recording.js?v=rec10k"></script>
 <script src="clip-stage.js?v=12"></script>
 <script src="auto-mix.js?v=8"></script>
+
+<!-- ══ ?card — the result window alone, on flat yellow ════════════════════
+     A view for judging the card by itself: the designed troll+tooth window
+     centred on the sidebar's own yellow, with nothing of the site behind it.
+     Inert without the flag. It reuses the exact same window the demos build
+     (spectrum-window.js), so it can never show something they don't. -->
+<script>
+(function () {
+  if (!new URLSearchParams(location.search).has('card')) return;
+  var st = document.createElement('style');
+  st.textContent =
+    'html.card-only, html.card-only body { background: #FFFF01 !important; }' +
+    /* nothing of the site shows through */
+    'html.card-only .sidebar, html.card-only .content,' +
+    'html.card-only .reel__pin, html.card-only .cta { display: none !important; }' +
+    /* the overlay is the whole viewport, centred, no sidebar offset */
+    'html.card-only .mixwin { display: flex !important; background: #FFFF01;' +
+      'padding-left: 2.5vw !important; }' +
+    /* no close X or download on a look-only view */
+    'html.card-only .mixwin__x, html.card-only .mixwin__dl,' +
+    'html.card-only #mixwin-play { display: none !important; }' +
+    /* no bowl here, so the fly-out-of-the-bowl transform has no origin and
+       would leave the card shrunk in a corner — it just sits centred */
+    'html.card-only .mixwin__card { animation: none !important; transform: none !important; }';
+  document.head.appendChild(st);
+  document.documentElement.classList.add('card-only');
+
+  function show() {
+    try { window.buildSpectrumWindow && window.buildSpectrumWindow(); } catch (e) {}
+    try { window.openMixWindow && window.openMixWindow(); } catch (e) {}
+  }
+  if (document.readyState === 'complete') show();
+  else addEventListener('load', show);
+})();
+</script>
 </body>
 </html>
