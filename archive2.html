@@ -198,6 +198,27 @@
     g.arcTo(x, y, x + w, y, r); g.closePath();
   };
 
+  /* draw a card's own inline <svg> (the DOWNLOAD word, the ✕) onto the canvas
+     at its measured rect, by rasterising that exact element — so the vector is
+     what the card shows, not a redraw. Self-contained (system font, paths). */
+  async function drawSVGel(g, svgEl, rect, color) {
+    if (!svgEl || !rect || !rect.w) return;
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', Math.round(rect.w));
+    clone.setAttribute('height', Math.round(rect.h));
+    if (color) clone.style.color = color;           // resolves fill="currentColor"
+    const str = new XMLSerializer().serializeToString(clone);
+    const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+    try {
+      const im = await new Promise((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('svg'));
+        i.src = url;
+      });
+      g.drawImage(im, rect.x, rect.y, rect.w, rect.h);
+    } catch (e) {}
+  }
+
   async function snapshot(cardEl) {
     if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
     const cr = cardEl.getBoundingClientRect();
@@ -305,24 +326,20 @@
       drawText(recipe.querySelector('.plus'));
     }
 
-    /* DOWNLOAD pill (yellow) with the word in its dashed contour */
+    /* DOWNLOAD pill (yellow) — the word is the card's OWN inline SVG, drawn as
+       an image so the dashed contour and the textLength stretch are exactly
+       what the card shows, not a re-typed approximation. */
     const dl = cardEl.querySelector('.mixwin__dl');
     if (dl) {
       const dr = R(dl), ds = getComputedStyle(dl);
       roundRect(g, dr.x, dr.y, dr.w, dr.h, parseFloat(ds.borderTopLeftRadius) * s);
       g.fillStyle = ds.backgroundColor; g.fill();
       g.lineWidth = Math.max(1, s); g.strokeStyle = '#000'; g.stroke();
-      g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.font = '700 ' + (25 * s * (cr.width / 1055)) + 'px "Helvetica Neue", Helvetica, Arial, sans-serif';
-      g.save(); g.setLineDash([2 * s, 2 * s]);
-      g.fillText('DOWNLOAD', dr.x + dr.w / 2, dr.y + dr.h / 2 + s);
-      g.lineWidth = 0.7 * s; g.strokeStyle = '#000';
-      g.strokeText('DOWNLOAD', dr.x + dr.w / 2, dr.y + dr.h / 2 + s);
-      g.restore(); g.setLineDash([]);
-      g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+      await drawSVGel(g, dl.querySelector('svg'), R(dl.querySelector('svg')));
     }
 
-    /* the X — red circle, black stroke, black cross */
+    /* the X — red circle from the button's own style, then its OWN inline ✕
+       SVG drawn as an image */
     const xb = cardEl.querySelector('.mixwin__x');
     if (xb) {
       const xr = R(xb), xs = getComputedStyle(xb);
@@ -330,10 +347,9 @@
       g.beginPath(); g.arc(cx, cy, rr2 - s / 2, 0, Math.PI * 2);
       g.fillStyle = xs.backgroundColor; g.fill();
       g.lineWidth = Math.max(1, s); g.strokeStyle = '#000'; g.stroke();
-      g.save(); g.translate(cx, cy); g.rotate(Math.PI / 4);
-      g.fillStyle = '#000'; const b = rr2 * 1.2, th = rr2 * 0.22;
-      g.fillRect(-b / 2, -th / 2, b, th); g.fillRect(-th / 2, -b / 2, th, b);
-      g.restore();
+      const xsvg = xb.querySelector('svg');
+      if (xsvg) { g.fillStyle = xs.color;   // the ✕ is currentColor (black)
+        await drawSVGel(g, xsvg, R(xsvg), xs.color); }
     }
 
     g.restore();   // release the card clip
