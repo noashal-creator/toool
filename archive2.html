@@ -77,6 +77,13 @@
     font-size: 14px;
   }
   #err { border-color: #FE0000; }
+  a.switch {
+    display: inline-flex; align-items: center; height: 25px; padding: 0 11px;
+    background: #FFFF00; border: 1px solid #000; border-radius: 12.5px;
+    color: #000; font-weight: 700; font-size: 13px; text-decoration: none;
+    text-transform: uppercase; cursor: pointer;
+  }
+  a.switch:hover { filter: brightness(1.06); }
 </style>
 </head>
 <body>
@@ -87,6 +94,7 @@
   <div class="meta">
     <span class="count" id="count">—</span>
     <span class="note">Every mix as the card it opened as — full size, with the two uploads, and a real PNG download. Newest first. Private.</span>
+    <a class="switch" id="switch">← List view</a>
   </div>
 </header>
 
@@ -108,6 +116,8 @@
     if (!r.ok) throw new Error(data.error || ('api ' + r.status));
     return data;
   };
+
+  (function(){ var a=document.getElementById('switch'); if(a) a.href='archive.html'+(K?('?k='+encodeURIComponent(K)):''); })();
 
   const stack = document.getElementById('stack');
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
