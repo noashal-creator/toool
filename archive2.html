@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOOL — Archive (cards)</title>
+<meta name="robots" content="noindex">
+<!-- The site's own stylesheets, so each archived entry is the REAL result
+     card — byte-for-byte the window that opened on the site — not a redrawn
+     spec sheet. live.css is what makes it the single-image variant. -->
+<link rel="stylesheet" href="styles.css?v=mid1">
+<link rel="stylesheet" href="live.css?v=9">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px 100px;
+    background: #1a6fff;              /* the logo banner's blue, like archive.html */
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #fff;
+  }
+  header { max-width: 1120px; margin: 0 auto 30px; }
+  h1 { margin: 0; font-size: clamp(28px,4vw,50px); font-weight: 700; text-transform: uppercase; }
+  .rule { height: 1px; background: #fff; margin: 12px 0 10px; }
+  .meta { display: flex; gap: 14px; align-items: baseline; font-size: 13px; flex-wrap: wrap; }
+  .count {
+    display: inline-flex; align-items: center; height: 25px; padding: 0 11px;
+    background: #FFFF00; border: 1px solid #000; border-radius: 12.5px;
+    color: #000; font-weight: 700; font-size: 13px;
+  }
+  .note { color: rgba(255,255,255,.9); }
+
+  /* one card per row, each at its own real size, centred */
+  .stack { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  .row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+  /* the card is authored at 1207×975 and shown at the live size (1055×852);
+     it is scaled DOWN to fit a narrow screen but never up. container-type on
+     the card means every inner cqw resolves against whatever it ends up. */
+  .cardwrap { width: 100%; display: flex; justify-content: center; }
+  .mixwin__card {
+    /* pin the real size here — the site derives it from --sbw/--s, which do
+       not exist on this standalone page */
+    width: min(1055px, 92vw) !important;
+    height: auto !important;
+    aspect-ratio: 1055 / 852;
+    margin: 0 !important;
+    position: relative;            /* the article/recipe are absolute inside it */
+    box-shadow: 0 4px 0 rgba(0,0,0,.28) !important;
+  }
+  /* the recipe: the two uploads, bottom-left of the card — the small addition
+     Noa asked for. Sits over the full-bleed image on its own white chip. */
+  .recipe {
+    position: absolute; left: 1.331cqw; bottom: 1.331cqw; z-index: 4;
+    display: flex; align-items: center; gap: 0.5cqw;
+    padding: 0.5cqw 0.66cqw;
+    background: rgba(255,255,255,.92);
+    border: 1px solid #000; border-radius: 0.66cqw;
+  }
+  .recipe img {
+    width: 3.4cqw; height: 3.4cqw; object-fit: cover;
+    border: 1px solid #000; border-radius: 0.33cqw; background: #f0f0f0; display: block;
+  }
+  .recipe .plus { font-weight: 700; font-size: 1.33cqw; color: #000; }
+
+  /* the DOWNLOAD pill is real and works here; the ✕ has nothing to close in an
+     archive, so it is hidden */
+  .mixwin__x { display: none !important; }
+  .mixwin__dl { cursor: pointer; }
+
+  .when { font-size: 12px; color: rgba(255,255,255,.85); }
+  .mix.is-loading .mixwin__card { opacity: .5; }
+
+  #empty, #err {
+    max-width: 1120px; margin: 0 auto; color: #000;
+    padding: 18px 20px; background: #fff; border: 1px dashed #000; border-radius: 11px;
+    font-size: 14px;
+  }
+  #err { border-color: #FE0000; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Archive — cards</h1>
+  <div class="rule"></div>
+  <div class="meta">
+    <span class="count" id="count">—</span>
+    <span class="note">Every mix as the card it opened as — full size, with the two uploads, and a real PNG download. Newest first. Private.</span>
+  </div>
+</header>
+
+<p id="empty" hidden>The archive is empty — no mixes have been made yet.</p>
+<p id="err" hidden></p>
+<div class="stack" id="stack"></div>
+
+<script>
+(() => {
+  const API = '/.netlify/functions/mix-api';
+  const K = new URLSearchParams(location.search).get('k') || undefined;
+
+  const api = async (payload) => {
+    const r = await fetch(API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, k: K }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || ('api ' + r.status));
+    return data;
+  };
+
+  const stack = document.getElementById('stack');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const when = (iso) => {
+    const d = new Date(iso || 0);
+    return isNaN(d) ? '' : d.toLocaleString([], { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  };
+
+  /* the real result card, class-only (no IDs — there are many on the page) */
+  function cardHTML(t) {
+    return (
+    '<div class="mixwin__card" role="figure" aria-label="Generated specimen">' +
+      '<div class="mixwin__hero">' +
+        '<img class="mixwin__big" alt="Generated specimen">' +
+        '<div class="mixwin__article">' +
+          '<h2 class="mixwin__title">' + esc(t.name || 'Untitled specimen') + '</h2>' +
+          '<div class="mixwin__body">' +
+            (t.kind ? '<p class="mixwin__kind"><span class="u">' + esc(t.kind) + '</span></p>' : '') +
+            (t.desc ? '<p class="mixwin__desc">' + esc(t.desc) + '</p>' : '') +
+          '</div>' +
+          '<div class="mixwin__spec mixwin__spec--size">' +
+            '<span class="mixwin__spec-label">Size</span>' +
+            '<span class="mixwin__spec-rule" aria-hidden="true"></span>' +
+            '<span class="mixwin__spec-value">' + esc(t.size || '—') + '</span></div>' +
+          '<div class="mixwin__spec mixwin__spec--weight">' +
+            '<span class="mixwin__spec-label">Weight</span>' +
+            '<span class="mixwin__spec-rule" aria-hidden="true"></span>' +
+            '<span class="mixwin__spec-value">' + esc(t.weight || '—') + '</span></div>' +
+        '</div>' +
+        '<div class="mixwin__actions">' +
+          '<button type="button" class="mixwin__dl" aria-label="Download">' +
+            '<svg class="mixwin__dl-word" viewBox="0 0 151 30" aria-hidden="true">' +
+              '<text x="75.5" y="24" text-anchor="middle" textLength="143" lengthAdjust="spacing" ' +
+                'font-family="\'Helvetica Neue\', Helvetica, Arial, sans-serif" font-weight="700" ' +
+                'font-size="25" fill="#000" stroke="#000" stroke-width="0.7" stroke-dasharray="2 2" ' +
+                'paint-order="stroke">DOWNLOAD</text></svg>' +
+          '</button>' +
+          '<button type="button" class="mixwin__x" aria-label="Close"></button>' +
+        '</div>' +
+        '<div class="recipe" aria-label="The two uploads">' +
+          '<img class="in-a" alt="Upload 1"><span class="plus">+</span><img class="in-b" alt="Upload 2">' +
+        '</div>' +
+      '</div>' +
+    '</div>');
+  }
+
+  function row(item, n) {
+    const el = document.createElement('div');
+    el.className = 'mix row is-loading';
+    el.innerHTML =
+      '<div class="cardwrap">' + cardHTML(item.text || {}) + '</div>' +
+      '<div class="when">' + esc(String(n).padStart(2,'0')) + ' · ' + esc(when(item.at)) + '</div>';
+    return el;
+  }
+
+  /* ── compose the card to a PNG, at 2×, from the record's own data-URL images.
+       Drawn in the card's native 1207×975 design space, so every position is
+       the Figma number the CSS is built on. Text is measured, not guessed. */
+  const SCALE = 2, DW = 1207, DH = 975;
+  const load = (src) => new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = () => rej(new Error('img'));
+    i.src = src;
+  });
+  function coverRect(iw, ih, bw, bh) {
+    const k = Math.max(bw / iw, bh / ih);
+    const w = iw * k, h = ih * k;
+    return { x: (bw - w) / 2, y: (bh - h) / 2, w, h };
+  }
+  function wrap(g, text, maxW) {
+    const words = String(text).split(/\s+/);
+    const lines = []; let line = '';
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+      else line = t;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  async function compose(rec, t) {
+    const c = document.createElement('canvas');
+    c.width = DW * SCALE; c.height = DH * SCALE;
+    const g = c.getContext('2d');
+    g.scale(SCALE, SCALE);
+    await (document.fonts && document.fonts.ready);
+
+    /* the specimen photo, full-bleed cover — the live card */
+    g.fillStyle = '#fff'; g.fillRect(0, 0, DW, DH);
+    try {
+      const im = await load(rec.result || rec.result_url);
+      const r = coverRect(im.naturalWidth, im.naturalHeight, DW, DH);
+      g.save(); g.beginPath(); g.rect(0, 0, DW, DH); g.clip();
+      g.drawImage(im, r.x, r.y, r.w, r.h); g.restore();
+    } catch (e) {}
+
+    const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+    g.fillStyle = '#000'; g.textBaseline = 'alphabetic';
+
+    /* title — Figma x=16.07, baseline of the first line ~25.59, 25/22 bold */
+    g.font = '700 25px ' + FONT;
+    let ty = 25.59;
+    for (const ln of wrap(g, t.name || 'Untitled specimen', 296)) { g.fillText(ln, 16.07, ty); ty += 22; }
+
+    /* body: kind (underlined, line 24) then desc (line 15), from y≈52, x=16.07, w≈270 */
+    let by = 52 + 13;                       // first baseline ≈ top + cap
+    if (t.kind) {
+      g.font = '400 16px ' + FONT;
+      const w = g.measureText(t.kind).width;
+      g.fillText(t.kind, 16.07, by);
+      g.fillRect(16.07, by + 3, w, 1);      // the underline
+      by += 24;
+    }
+    if (t.desc) {
+      g.font = '400 16px ' + FONT;
+      for (const ln of wrap(g, t.desc, 270)) { g.fillText(ln, 16.07, by); by += 15; }
+    }
+
+    /* Size / Weight — label, rule at x=16 (w78), value 25 below; ink y=197 / 262 */
+    const spec = (label, value, inkY) => {
+      g.font = '500 16px ' + FONT;
+      g.fillText(label, 45, inkY);
+      g.fillRect(16, inkY + 16, 78, 1);
+      g.fillText(value || '—', 45, inkY + 25 + 16);
+    };
+    spec('Size',   t.size,   197);
+    spec('Weight', t.weight, 262);
+
+    /* the recipe chip, bottom-left — two uploads + plus, matching .recipe */
+    try {
+      const pad = 8, thumb = 41, gap = 6, r = 8;
+      const bw = pad * 2 + thumb * 2 + gap + 18;
+      const bh = pad * 2 + thumb;
+      const bx = 16, byy = DH - 16 - bh;
+      g.fillStyle = 'rgba(255,255,255,.92)';
+      g.strokeStyle = '#000'; g.lineWidth = 1;
+      const rr = (x, y, w, h, rad) => { g.beginPath();
+        g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
+        g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath(); };
+      rr(bx, byy, bw, bh, r); g.fill(); g.stroke();
+      const drawThumb = async (src, x) => {
+        g.fillStyle = '#f0f0f0'; rr(x, byy + pad, thumb, thumb, 4); g.fill();
+        if (src) { try { const im = await load(src);
+          const cr = coverRect(im.naturalWidth, im.naturalHeight, thumb, thumb);
+          g.save(); rr(x, byy+pad, thumb, thumb, 4); g.clip();
+          g.drawImage(im, x + cr.x, byy + pad + cr.y, cr.w, cr.h); g.restore(); } catch(e){} }
+        g.strokeStyle = '#000'; rr(x, byy + pad, thumb, thumb, 4); g.stroke();
+      };
+      await drawThumb(rec.a, bx + pad);
+      await drawThumb(rec.b, bx + pad + thumb + gap + 18);
+      g.fillStyle = '#000'; g.font = '700 16px ' + FONT; g.textAlign = 'center';
+      g.fillText('+', bx + pad + thumb + gap + 9, byy + pad + thumb / 2 + 6);
+      g.textAlign = 'left';
+    } catch (e) {}
+
+    return await new Promise((res) => c.toBlob(res, 'image/png'));
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      const el = e.target;
+      api({ action: 'archive-get', id: el.dataset.id }).then((rec) => {
+        const t = rec.text || {};
+        const res = rec.result || rec.result_url;
+        el.querySelector('.mixwin__big').src = res;
+        el.querySelector('.in-a').src = rec.a || '';
+        el.querySelector('.in-b').src = rec.b || '';
+        el.classList.remove('is-loading');
+        const dl = el.querySelector('.mixwin__dl');
+        dl.addEventListener('click', async () => {
+          const prev = dl.style.opacity; dl.style.opacity = '.5';
+          try {
+            const blob = await compose(rec, t);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'toool-' + el.dataset.id + '.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+          } catch (err) { console.error(err); }
+          dl.style.opacity = prev;
+        });
+      }).catch(() => el.classList.remove('is-loading'));
+    }
+  }, { rootMargin: '700px' });
+
+  api({ action: 'archive-list' }).then(({ items }) => {
+    document.getElementById('count').textContent =
+      items.length + (items.length === 1 ? ' specimen' : ' specimens');
+    if (!items.length) { document.getElementById('empty').hidden = false; return; }
+    items.forEach((item, i) => {
+      const el = row(item, items.length - i);
+      el.dataset.id = item.id;
+      stack.appendChild(el);
+      io.observe(el);
+    });
+  }).catch((e) => {
+    const err = document.getElementById('err');
+    err.textContent = /key/i.test(e.message)
+      ? 'This archive is private — open it with your key link (archive2.html?k=…).'
+      : 'Could not load the archive: ' + e.message;
+    err.hidden = false;
+    document.getElementById('count').textContent = '—';
+  });
+})();
+</script>
+</body>
+</html>
