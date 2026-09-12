@@ -385,24 +385,65 @@
   if (!new URLSearchParams(location.search).has('card')) return;
   var st = document.createElement('style');
   st.textContent =
-    'html.card-only, html.card-only body { background: #FFFF01 !important; }' +
+    'html.card-only, html.card-only body { background: var(--card-bg, #FFFF01) !important; }' +
     /* nothing of the site shows through */
     'html.card-only .sidebar, html.card-only .content,' +
     'html.card-only .reel__pin, html.card-only .cta { display: none !important; }' +
     /* the overlay is the whole viewport, centred, no sidebar offset */
-    'html.card-only .mixwin { display: flex !important; background: #FFFF01;' +
+    'html.card-only .mixwin { display: flex !important; background: var(--card-bg, #FFFF01);' +
       'padding-left: 2.5vw !important; }' +
     /* the top-right controls (DOWNLOAD · play · ✕) stay — this is the card
        exactly as it opens on the site */
     /* no bowl here, so the fly-out-of-the-bowl transform has no origin and
        would leave the card shrunk in a corner — it just sits centred */
-    'html.card-only .mixwin__card { animation: none !important; transform: none !important; }';
+    'html.card-only .mixwin__card { animation: none !important; transform: none !important; box-shadow: none !important; }';
   document.head.appendChild(st);
   document.documentElement.classList.add('card-only');
+
+  /* every colour that actually appears in the site's CSS, curated (near-
+     duplicate greys dropped), so the background can be tried against any of
+     them. ?card=RRGGBB opens straight on one — shareable in the link. */
+  var SWATCHES = [
+    ['#FFFF01', 'sidebar yellow'], ['#FFFF00', 'type yellow'], ['#FFEA00', 'amber'],
+    ['#FE0000', 'red'], ['#E60000', 'chag red'], ['#CC0000', 'deep red'], ['#E4002B', 'crimson'],
+    ['#FF00DD', 'pink'], ['#B700FF', 'purple'], ['#560476', 'deep purple'],
+    ['#0048FF', 'chag blue'], ['#1A6FFF', 'banner blue'],
+    ['#11B32E', 'green'], ['#00961C', 'deep green'],
+    ['#06052E', 'navy'], ['#000000', 'black'],
+    ['#F0F0F0', 'card grey'], ['#FFFFFF', 'white']
+  ];
+
+  function paint(hex) {
+    document.documentElement.style.setProperty('--card-bg', hex);
+  }
+
+  function palette() {
+    var bar = document.createElement('div');
+    bar.id = 'card-palette';
+    bar.style.cssText =
+      'position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;' +
+      'flex-wrap:wrap;gap:6px;justify-content:center;padding:10px 12px;' +
+      'background:rgba(255,255,255,.9);border-top:1px solid #000';
+    SWATCHES.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.title = c[1] + '  ' + c[0];
+      b.style.cssText =
+        'width:30px;height:30px;border:1px solid #000;border-radius:0;' +
+        'cursor:pointer;padding:0;background:' + c[0];
+      b.addEventListener('click', function () { paint(c[0]); });
+      bar.appendChild(b);
+    });
+    document.body.appendChild(bar);
+  }
 
   function show() {
     try { window.buildSpectrumWindow && window.buildSpectrumWindow(); } catch (e) {}
     try { window.openMixWindow && window.openMixWindow(); } catch (e) {}
+    /* ?card=RRGGBB (or a named #hex) picks the opening background */
+    var q = new URLSearchParams(location.search).get('card') || '';
+    var m = q.match(/^#?([0-9a-fA-F]{6})$/);
+    if (m) paint('#' + m[1]);
+    palette();
   }
   if (document.readyState === 'complete') show();
   else addEventListener('load', show);
