@@ -10,7 +10,7 @@
      card — byte-for-byte the window that opened on the site — not a redrawn
      spec sheet. live.css is what makes it the single-image variant. -->
 <link rel="stylesheet" href="styles.css?v=mid1">
-<link rel="stylesheet" href="live.css?v=9">
+<link rel="stylesheet" href="live.css?v=10">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -277,12 +277,21 @@
     g.clip();
     g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
 
-    /* the specimen photo — object-fit cover over the whole card, as live.css */
+    /* the specimen photo — read the image element's OWN box and object-fit
+       straight off the DOM, so the download follows whatever live.css does
+       (now: contain, inset a little). Nothing hard-coded, so it can't drift. */
     const big = cardEl.querySelector('.mixwin__big');
     if (big && big.complete && big.naturalWidth) {
-      const k = Math.max(c.width / big.naturalWidth, c.height / big.naturalHeight);
+      const ir = R(big);
+      const fit = getComputedStyle(big).objectFit;
+      const k = fit === 'cover'
+        ? Math.max(ir.w / big.naturalWidth, ir.h / big.naturalHeight)
+        : Math.min(ir.w / big.naturalWidth, ir.h / big.naturalHeight);
       const w = big.naturalWidth * k, h = big.naturalHeight * k;
-      g.drawImage(big, (c.width - w) / 2, (c.height - h) / 2, w, h);
+      g.save();
+      g.beginPath(); g.rect(ir.x, ir.y, ir.w, ir.h); g.clip();   // cover may overflow its box
+      g.drawImage(big, ir.x + (ir.w - w) / 2, ir.y + (ir.h - h) / 2, w, h);
+      g.restore();
     }
 
     /* the article text, each block at its measured place */

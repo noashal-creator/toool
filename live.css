@@ -27,11 +27,16 @@
    empty backdrop: the prompt keeps the specimen centred inside the middle
    ~60% of the frame, so it stays whole. */
 .mixwin__big {
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  /* CONTAIN, not cover: a cover crop lopped the ends off a wide specimen (the
+     salami horn) so it read as choked. contain shows the whole object, centred,
+     and the air it leaves is white — the same white as the card — so no border
+     is ever visible. A small inset gives the object a little room on every side
+     rather than kissing the edges. */
+  left: 4%;
+  top: 4%;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
   object-position: center;
 }
 
