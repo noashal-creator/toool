@@ -374,48 +374,5 @@
 <script src="recording.js?v=rec10k"></script>
 <script src="clip-stage.js?v=12"></script>
 <script src="auto-mix.js?v=8"></script>
-
-<!-- ══ THE VERTICAL RULES LAND ON THE DEVICE-PIXEL GRID ═══════════════════
-     --sbw is 293.328px at 1440x900 — a fraction — so every box that begins at
-     the sidebar's edge begins between two device pixels. The 1.5px rule drawn
-     there runs 586.656 to 589.656 and paints across FOUR device pixels, the
-     two end ones only partly covered, while the horizontal rules between the
-     sections happen to start on a whole pixel and paint exactly THREE. Same
-     declared width, a third more ink: that is the vertical line reading
-     heavier than the horizontal ones.
-
-     Rounding --sbw to the nearest device pixel puts the boundary — and every
-     rule drawn at it — back on the grid. No width anywhere changes; the
-     boundary itself moves by at most half a device pixel.
-
-     --sbw has to be MEASURED, not read: its computed value is the token
-     stream `calc(var(--sidebar) * var(--s))`, and parsing that gives NaN. So
-     a hidden probe carries the very same expression and is measured instead.
-     The probe, not the sidebar: the sidebar's width IS --sbw, so once this
-     overrides it the sidebar only ever reports back the snapped number and
-     the true one is gone. The probe never depends on --sbw, so it keeps
-     tracking the screen and a ResizeObserver on it cannot feed back into
-     itself. ═══════════════════════════════════════════════════════════ -->
-<script>
-(function () {
-  var root = document.documentElement;
-  var probe = document.createElement('div');
-  probe.setAttribute('aria-hidden', 'true');
-  probe.style.cssText = 'position:fixed;left:-9999px;top:0;height:1px;' +
-                        'pointer-events:none;visibility:hidden;' +
-                        'width:calc(var(--sidebar) * var(--s))';
-  document.body.appendChild(probe);
-
-  function snap() {
-    var raw = probe.getBoundingClientRect().width;
-    if (!raw) return;
-    var dpr = window.devicePixelRatio || 1;
-    root.style.setProperty('--sbw', (Math.round(raw * dpr) / dpr) + 'px');
-  }
-  snap();
-  if (window.ResizeObserver) new ResizeObserver(snap).observe(probe);
-  addEventListener('resize', snap);
-})();
-</script>
 </body>
 </html>
