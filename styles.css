@@ -31,21 +31,6 @@
   /* sidebar width in px, and the content column's own width-based unit */
   --sbw: calc(var(--sidebar) * var(--s));
   --sc: calc((100vw - var(--sbw)) / var(--content-w));
-
-  /* EVERY BLACK RULE ON THE PAGE, one number: the line beside the sidebar,
-     the lines between the sections, the separators between the slides and the
-     logo banner's edges. They were `calc(2 * var(--s))`, and --s is
-     100dvh/1080 — measured off the WINDOW's height. So going full screen,
-     which hands back the height the browser chrome was using, grew every rule
-     with it: at 1440x900 the declaration came to 1.667 and Chrome drew 1.5px,
-     at 1440x1080 it came to 2 and Chrome drew 2px. A third heavier for
-     nothing the eye asked for, on the same monitor.
-
-     Noa's call: fixed at 1.5px, which is what a normal window already shows,
-     so nothing moves in a window and full screen simply stops thickening.
-     Kept as ONE variable because these lines only work while they all match
-     each other. */
-  --rule: 1.5px;
 }
 
 /* the logo typeface (@font-face lives in assets/fonts/spikes-font.css,
@@ -1068,7 +1053,7 @@ img { display: block; }
      to a whole device pixel, so the vertical rule came out nearly twice the
      weight of the horizontal ones. Same declaration, same rounding, same line. */
   width: 0;
-  border-right: var(--rule) solid var(--black);
+  border-right: calc(2 * var(--s)) solid var(--black);
   z-index: 30;
   pointer-events: none;
 }
@@ -1078,7 +1063,7 @@ img { display: block; }
    grandchildren under the reel wrappers, so match them there too (render-
    identical in normal mode, where the wrappers are display:contents). */
 .content > *, .content .reel__vstage > *, .content .reel__row > * {
-  border-bottom: var(--rule) solid var(--black);   /* same weight as the vertical sidebar rule and the bowl's outline */
+  border-bottom: calc(2 * var(--s)) solid var(--black);   /* same weight as the vertical sidebar rule and the bowl's outline */
 }
 
 /* logo banner — the Figma header lockup (frame 2769:2): dark-purple #560476
@@ -2004,7 +1989,7 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
      Dropping border-left is right; leaving nothing in its place was the bug —
      the horizontal separators between sections stayed, so the panel was the one
      boundary on the page with no line at all. Same weight as those. */
-  .content { margin-left: 0; border-left: 0; border-top: var(--rule) solid var(--black); }
+  .content { margin-left: 0; border-left: 0; border-top: calc(2 * var(--s)) solid var(--black); }
   .sidebar::after { display: none; }   /* stacked: the rule is .content's top edge */
   .logo-banner { height: calc(396 * var(--sc)); }
 
@@ -2468,7 +2453,7 @@ body.sideways .reel__pin::before {
   /* border, not a filled box — same device-pixel snapping as .sidebar::after
      and the horizontal section rules, so all the lines keep the same weight */
   width: 0;
-  border-left: var(--rule) solid var(--black);
+  border-left: calc(2 * var(--s)) solid var(--black);
   z-index: 60;
   pointer-events: none;
 }
@@ -2497,7 +2482,7 @@ body.sideways.logo-long .logo-banner { height: 85dvh; }
    separator is drawn inside the slide's own width, the blue band ran half a
    pixel further right than everything below it. Same border here, so the right
    edge of the banner and the right edge of every slide are the same line. */
-body.sideways .logo-banner { border-right: var(--rule) solid var(--black); }   /* must match the slide separator below */
+body.sideways .logo-banner { border-right: calc(2 * var(--s)) solid var(--black); }   /* must match the slide separator below */
 
 /* the horizontal strip of slides, translateX'd by sideways.js. align-items:
    center centres each slide so a section taller than the screen crops
@@ -2519,7 +2504,7 @@ body.sideways .reel__row > * {
   flex: 0 0 calc(100vw - var(--sbw));
   min-width: 0;
   border-bottom: 0;
-  border-right: var(--rule) solid var(--black);   /* same weight as the other section rules */
+  border-right: calc(2 * var(--s)) solid var(--black);   /* same weight as the other section rules */
 }
 
 /* the intro video FILLS its slide edge-to-edge (cover, cropping the edges a
