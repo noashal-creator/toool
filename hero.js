@@ -104,7 +104,13 @@
       /* No idle drift here any more. It kept the band panning on its own between
          gestures, which meant the strip was almost always moving by itself — so
          scrolling never read as the thing driving it, and the band felt random.
-         In sideways mode the sweep is now exactly what the scroll says it is. */
+         In sideways mode the sweep is now exactly what the scroll says it is.
+
+         THE ONE EXCEPTION is cow-only mode (sideways.js COW_ONLY): the cow is
+         the whole reel, there is nothing to scroll on to, so it goes back to
+         drifting on its own — a continuous, seamless loop, exactly the idle
+         behaviour, added on top of (a still-zero) scroll term. */
+      if (window.reelMode.cowOnly) swDrift += idleSpeed * dt;
       const off = (((p * travel + swDrift) % stripW) + stripW) % stripW;
       track.style.transform = 'translate3d(' + (-off) + 'px,0,0)';
       swRaf = requestAnimationFrame(swTick);
@@ -121,6 +127,12 @@
       cancelAnimationFrame(swRaf);
       swRaf = 0;
     }
+
+    /* cow-only mode: sideways.js forwards the wheel here so the cow can be
+       scrolled along by hand on the very same offset it drifts on. Both feed
+       swDrift, which swTick wraps seamlessly — so a nudge just adds to the
+       auto-loop instead of fighting it. */
+    window.cowNudge = (px) => { swDrift += px; };
 
     /* clear everything → static band (mobile / reduced-motion) */
     function reset() {

@@ -77,9 +77,16 @@
   // segs: ordered {start,end,txFrom,txTo} in pos-px — flat during the logo step
   // and dwells, ramped during transitions. snaps: centred rest points (each
   // slide, plus both dwell endpoints). dwell: id → {start,len} for progress().
+  /* COW ONLY — the reel stops after the first slide (the cow→tomato band): you
+     scroll the logo away, arrive at the cow, and it loops there on its own
+     (hero.js's idle auto-scroll). The other slides — intro video, the lollipop
+     pop, the fish, the chase — stay in the DOM, untouched, simply never reached;
+     flip this to false to bring the full reel back. */
+  const COW_ONLY = true;
+
   let N = 0, slideW = 0, VH = 0, logoH = 0, maxPos = 0, snaps = [0], segs = [], dwell = {}, sceneSnap = [], sceneEntranceSnap = [];
   function measure() {
-    N = reelRow.children.length;
+    N = COW_ONLY ? Math.min(1, reelRow.children.length) : reelRow.children.length;
     slideW = reelPin.clientWidth || (window.innerWidth - sidebar.getBoundingClientRect().width);
     VH = window.innerHeight;
     // the logo step is the banner's OWN (short) height — like normal scroll —
@@ -96,7 +103,7 @@
       const tx = -i * slideW;
       snaps.push(p);                                      // slide i centred (dwell start if animated)
       sceneEntranceSnap[i] = snaps.length - 1;             // the just-arrived, not-yet-scrubbed snap
-      const dv = DWELL_VH[kids[i].id];
+      const dv = COW_ONLY ? 0 : DWELL_VH[kids[i].id];
       if (dv) {
         const len = dv * VH;
         dwell[kids[i].id] = { start: p, len: len };
@@ -226,6 +233,15 @@
     if (e.deltaMode === 1) d *= 16;                               // lines → px
     else if (e.deltaMode === 2) d *= VH;                          // pages → px
 
+    /* COW-ONLY: once you are on the cow (the last stop), the strip has no dwell
+       and nothing to step to — so scrolling FORWARD scrubs the cow along its
+       own drift offset (hero.js cowNudge), and only a backward flick steps
+       back up to the logo. So it both moves on its own and answers the wheel. */
+    if (COW_ONLY && target >= maxPos - 1) {
+      if (d > 0) { window.cowNudge && window.cowNudge(d * DWELL_GEAR); return; }
+      /* d <= 0 falls through to the normal step, which walks back to the logo */
+    }
+
     const dw = dwellAt(target);
     if (dw) {
       /* The lock is checked BEFORE scrubbing, not cleared by it: a gesture that
@@ -342,6 +358,7 @@
 
   window.reelMode = {
     active, progress,
+    cowOnly: COW_ONLY,   /* hero.js reads this: in cow-only mode the cow drifts on its own */
     enable() { wantsOn = true; apply(); },
     disable() { wantsOn = false; apply(); },
     count() { return snaps.length; },
