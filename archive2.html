@@ -178,149 +178,171 @@
     return el;
   }
 
-  /* ── compose the card to a PNG, at 2×, from the record's own data-URL images.
-       Drawn in the card's native 1207×975 design space, so every position is
-       the Figma number the CSS is built on. Text is measured, not guessed. */
-  const SCALE = 2, DW = 1207, DH = 975;
-  const load = (src) => new Promise((res, rej) => {
-    const i = new Image();
-    i.onload = () => res(i); i.onerror = () => rej(new Error('img'));
-    i.src = src;
-  });
-  function coverRect(iw, ih, bw, bh) {
-    const k = Math.max(bw / iw, bh / ih);
-    const w = iw * k, h = ih * k;
-    return { x: (bw - w) / 2, y: (bh - h) / 2, w, h };
-  }
-  function wrap(g, text, maxW) {
-    const words = String(text).split(/\s+/);
-    const lines = []; let line = '';
-    for (const w of words) {
-      const t = line ? line + ' ' + w : w;
-      if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; }
-      else line = t;
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
+  /* ── PNG = a snapshot of the REAL rendered card ─────────────────────────
+     Everything is read back off the card as it actually sits on screen — the
+     card's own box, each text line's measured position and wrap, the rules,
+     the uploads chip, the DOWNLOAD pill and the X — and drawn onto the canvas
+     at those exact coordinates. Nothing is re-derived from Figma numbers, so
+     the download cannot drift from the display: it IS the display, at 2×.
+     (An SVG/foreignObject snapshot was the obvious route, but the card is
+     built entirely on container-query units, which do not resolve when an SVG
+     is rasterised as an image — the text vanishes. Measuring the live DOM
+     sidesteps that completely.) */
+  const OUT_W = 2110;                    // 1055 × 2
 
-  async function compose(rec, t) {
+  const roundRect = (g, x, y, w, h, r) => {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    g.beginPath();
+    g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r); g.closePath();
+  };
+
+  async function snapshot(cardEl) {
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+    const cr = cardEl.getBoundingClientRect();
+    const s = OUT_W / cr.width;                       // rendered px → canvas px
     const c = document.createElement('canvas');
-    c.width = DW * SCALE; c.height = DH * SCALE;
+    c.width = Math.round(cr.width * s); c.height = Math.round(cr.height * s);
     const g = c.getContext('2d');
-    g.scale(SCALE, SCALE);
-    await (document.fonts && document.fonts.ready);
 
-    /* the specimen photo, full-bleed cover — the live card */
-    g.fillStyle = '#fff'; g.fillRect(0, 0, DW, DH);
-    try {
-      const im = await load(rec.result || rec.result_url);
-      const r = coverRect(im.naturalWidth, im.naturalHeight, DW, DH);
-      g.save(); g.beginPath(); g.rect(0, 0, DW, DH); g.clip();
-      g.drawImage(im, r.x, r.y, r.w, r.h); g.restore();
-    } catch (e) {}
+    /* rect of any descendant, in canvas coordinates */
+    const R = (el) => { const r = el.getBoundingClientRect();
+      return { x: (r.left - cr.left) * s, y: (r.top - cr.top) * s, w: r.width * s, h: r.height * s }; };
 
-    const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-    g.fillStyle = '#000'; g.textBaseline = 'alphabetic';
-
-    /* title — Figma x=16.07, baseline of the first line ~25.59, 25/22 bold */
-    g.font = '700 25px ' + FONT;
-    let ty = 25.59;
-    for (const ln of wrap(g, t.name || 'Untitled specimen', 296)) { g.fillText(ln, 16.07, ty); ty += 22; }
-
-    /* body: kind (underlined, line 24) then desc (line 15), from y≈52, x=16.07, w≈270 */
-    let by = 52 + 13;                       // first baseline ≈ top + cap
-    if (t.kind) {
-      g.font = '400 16px ' + FONT;
-      const w = g.measureText(t.kind).width;
-      g.fillText(t.kind, 16.07, by);
-      g.fillRect(16.07, by + 3, w, 1);      // the underline
-      by += 24;
-    }
-    if (t.desc) {
-      g.font = '400 16px ' + FONT;
-      for (const ln of wrap(g, t.desc, 270)) { g.fillText(ln, 16.07, by); by += 15; }
-    }
-
-    /* Size / Weight — label, rule at x=16 (w78), value 25 below; ink y=197 / 262 */
-    const spec = (label, value, inkY) => {
-      g.font = '500 16px ' + FONT;
-      g.fillText(label, 45, inkY);
-      g.fillRect(16, inkY + 16, 78, 1);
-      g.fillText(value || '—', 45, inkY + 25 + 16);
+    /* the lines of a text element, exactly as it wrapped on screen: group its
+       words by the top of each word's own client rect */
+    const linesOf = (el) => {
+      const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim())
+                 || el.firstChild;
+      if (!node || node.nodeType !== 3) {
+        const t = el.textContent.trim();
+        if (!t) return [];
+        const r = R(el); return [{ text: t, x: r.x, y: r.y }];
+      }
+      const txt = node.textContent;
+      const rng = document.createRange();
+      const out = []; let i = 0;
+      while (i < txt.length) {
+        while (i < txt.length && txt[i] === ' ') i++;
+        let j = i; while (j < txt.length && txt[j] !== ' ') j++;
+        if (j <= i) break;
+        rng.setStart(node, i); rng.setEnd(node, j);
+        const rc = rng.getBoundingClientRect();
+        const word = txt.slice(i, j);
+        const top = Math.round(rc.top - cr.top);
+        const last = out[out.length - 1];
+        if (last && Math.abs(last.top - top) < 2) { last.text += ' ' + word; }
+        else { out.push({ text: word, top: top, x: (rc.left - cr.left) * s, y: (rc.top - cr.top) * s }); }
+        i = j;
+      }
+      return out;
     };
-    spec('Size',   t.size,   197);
-    spec('Weight', t.weight, 262);
 
-    /* the recipe chip, bottom-left — two uploads + plus, matching .recipe */
-    try {
-      const pad = 8, thumb = 41, gap = 6, r = 8;
-      const bw = pad * 2 + thumb * 2 + gap + 18;
-      const bh = pad * 2 + thumb;
-      const bx = 16, byy = DH - 16 - bh;
-      g.fillStyle = 'rgba(255,255,255,.92)';
-      g.strokeStyle = '#000'; g.lineWidth = 1;
-      const rr = (x, y, w, h, rad) => { g.beginPath();
-        g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
-        g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath(); };
-      rr(bx, byy, bw, bh, r); g.fill(); g.stroke();
-      const drawThumb = async (src, x) => {
-        g.fillStyle = '#f0f0f0'; rr(x, byy + pad, thumb, thumb, 4); g.fill();
-        if (src) { try { const im = await load(src);
-          const cr = coverRect(im.naturalWidth, im.naturalHeight, thumb, thumb);
-          g.save(); rr(x, byy+pad, thumb, thumb, 4); g.clip();
-          g.drawImage(im, x + cr.x, byy + pad + cr.y, cr.w, cr.h); g.restore(); } catch(e){} }
-        g.strokeStyle = '#000'; rr(x, byy + pad, thumb, thumb, 4); g.stroke();
-      };
-      await drawThumb(rec.a, bx + pad);
-      await drawThumb(rec.b, bx + pad + thumb + gap + 18);
-      g.fillStyle = '#000'; g.font = '700 16px ' + FONT; g.textAlign = 'center';
-      g.fillText('+', bx + pad + thumb + gap + 9, byy + pad + thumb / 2 + 6);
-      g.textAlign = 'left';
-    } catch (e) {}
+    const drawText = (el) => {
+      if (!el) return;
+      const st = getComputedStyle(el);
+      g.fillStyle = st.color;
+      g.font = st.fontStyle + ' ' + st.fontWeight + ' ' +
+               (parseFloat(st.fontSize) * s) + 'px ' + st.fontFamily;
+      g.textBaseline = 'top';
+      for (const ln of linesOf(el)) g.fillText(ln.text, ln.x, ln.y);
+    };
 
-    /* the top-right controls, so the PNG carries the card's full face:
-       DOWNLOAD (yellow pill, the word in a dashed contour) and the red X
-       circle. cqw here is 12.07 design-px (1207/100). */
-    try {
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      const H = 29, top = 11, xRight = 1207 - 13;
-      // X — red circle, black stroke, black ✕
-      const xr = H / 2, xcx = xRight - xr, xcy = top + xr;
-      g.beginPath(); g.arc(xcx, xcy, xr, 0, Math.PI * 2);
-      g.fillStyle = '#FE0000'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#000'; g.stroke();
-      g.save(); g.translate(xcx, xcy); g.rotate(Math.PI / 4);
-      g.fillStyle = '#000'; const b = 17.4, thick = 3.2;
-      g.fillRect(-b/2, -thick/2, b, thick); g.fillRect(-thick/2, -b/2, thick, b);
-      g.restore();
-      // DOWNLOAD — yellow pill to the left of the X
-      const pillW = 167, pillH = H, pillR = 11.5;
-      const pillX = (xcx - xr) - 6 - pillW, pillY = top;
-      const rr = (x, y, w, h, rad) => { g.beginPath();
-        g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
-        g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath(); };
-      rr(pillX, pillY, pillW, pillH, pillR);
-      g.fillStyle = '#FFFF00'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#000'; g.stroke();
-      g.font = '700 25px ' + FONT;
-      const cx = pillX + pillW / 2, cy = pillY + pillH / 2 + 1;
-      g.save(); g.setLineDash([2, 2]);
-      g.fillStyle = '#000'; g.fillText('DOWNLOAD', cx, cy);
-      g.lineWidth = 0.7; g.strokeStyle = '#000'; g.strokeText('DOWNLOAD', cx, cy);
-      g.restore();
+    /* white ground, clipped to the card's rounded rect */
+    const radius = 0.009 * cr.width * s;               // border-radius 0.9cqw
+    g.save();
+    roundRect(g, 0.5 * s, 0.5 * s, c.width - s, c.height - s, radius);
+    g.clip();
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+
+    /* the specimen photo — object-fit cover over the whole card, as live.css */
+    const big = cardEl.querySelector('.mixwin__big');
+    if (big && big.complete && big.naturalWidth) {
+      const k = Math.max(c.width / big.naturalWidth, c.height / big.naturalHeight);
+      const w = big.naturalWidth * k, h = big.naturalHeight * k;
+      g.drawImage(big, (c.width - w) / 2, (c.height - h) / 2, w, h);
+    }
+
+    /* the article text, each block at its measured place */
+    drawText(cardEl.querySelector('.mixwin__title'));
+    const kind = cardEl.querySelector('.mixwin__kind');
+    if (kind) {
+      drawText(kind);
+      const u = kind.querySelector('.u') || kind;      // its underline
+      const ur = R(u), fs = parseFloat(getComputedStyle(kind).fontSize) * s;
+      g.fillStyle = getComputedStyle(kind).color;
+      g.fillRect(ur.x, ur.y + fs * 1.02, ur.w, Math.max(1, s));
+    }
+    drawText(cardEl.querySelector('.mixwin__desc'));
+    for (const spec of cardEl.querySelectorAll('.mixwin__spec')) {
+      drawText(spec.querySelector('.mixwin__spec-label'));
+      drawText(spec.querySelector('.mixwin__spec-value'));
+      const rl = spec.querySelector('.mixwin__spec-rule');
+      if (rl) { const r = R(rl); g.fillStyle = '#000'; g.fillRect(r.x, r.y, r.w, Math.max(1, s)); }
+    }
+
+    /* the uploads chip — its own box, the two thumbs (cover), the plus */
+    const recipe = cardEl.querySelector('.recipe');
+    if (recipe) {
+      const rr = R(recipe), rs = getComputedStyle(recipe);
+      roundRect(g, rr.x, rr.y, rr.w, rr.h, parseFloat(rs.borderTopLeftRadius) * s);
+      g.fillStyle = rs.backgroundColor; g.fill();
+      g.lineWidth = Math.max(1, s); g.strokeStyle = '#000'; g.stroke();
+      for (const im of recipe.querySelectorAll('img')) {
+        const ir = R(im), irad = parseFloat(getComputedStyle(im).borderTopLeftRadius) * s;
+        g.save(); roundRect(g, ir.x, ir.y, ir.w, ir.h, irad); g.clip();
+        g.fillStyle = '#f0f0f0'; g.fillRect(ir.x, ir.y, ir.w, ir.h);
+        if (im.complete && im.naturalWidth) {
+          const k = Math.max(ir.w / im.naturalWidth, ir.h / im.naturalHeight);
+          const w = im.naturalWidth * k, h = im.naturalHeight * k;
+          g.drawImage(im, ir.x + (ir.w - w) / 2, ir.y + (ir.h - h) / 2, w, h);
+        }
+        g.restore();
+        g.save(); roundRect(g, ir.x, ir.y, ir.w, ir.h, irad); g.lineWidth = Math.max(1, s);
+        g.strokeStyle = '#000'; g.stroke(); g.restore();
+      }
+      drawText(recipe.querySelector('.plus'));
+    }
+
+    /* DOWNLOAD pill (yellow) with the word in its dashed contour */
+    const dl = cardEl.querySelector('.mixwin__dl');
+    if (dl) {
+      const dr = R(dl), ds = getComputedStyle(dl);
+      roundRect(g, dr.x, dr.y, dr.w, dr.h, parseFloat(ds.borderTopLeftRadius) * s);
+      g.fillStyle = ds.backgroundColor; g.fill();
+      g.lineWidth = Math.max(1, s); g.strokeStyle = '#000'; g.stroke();
+      g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '700 ' + (25 * s * (cr.width / 1055)) + 'px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      g.save(); g.setLineDash([2 * s, 2 * s]);
+      g.fillText('DOWNLOAD', dr.x + dr.w / 2, dr.y + dr.h / 2 + s);
+      g.lineWidth = 0.7 * s; g.strokeStyle = '#000';
+      g.strokeText('DOWNLOAD', dr.x + dr.w / 2, dr.y + dr.h / 2 + s);
+      g.restore(); g.setLineDash([]);
       g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-    } catch (e) {}
+    }
 
-    /* the card's own dashed edge, 1px, radius 0.9cqw — drawn last so it sits
-       crisp on top of the full-bleed image, exactly as on the card */
-    try {
-      const rad = 10.86;
-      g.setLineDash([2, 2]); g.lineWidth = 1; g.strokeStyle = '#000';
-      const x = 0.5, y = 0.5, w = DW - 1, h = DH - 1;
-      g.beginPath();
-      g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
-      g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath();
-      g.stroke(); g.setLineDash([]);
-    } catch (e) {}
+    /* the X — red circle, black stroke, black cross */
+    const xb = cardEl.querySelector('.mixwin__x');
+    if (xb) {
+      const xr = R(xb), xs = getComputedStyle(xb);
+      const cx = xr.x + xr.w / 2, cy = xr.y + xr.h / 2, rr2 = Math.min(xr.w, xr.h) / 2;
+      g.beginPath(); g.arc(cx, cy, rr2 - s / 2, 0, Math.PI * 2);
+      g.fillStyle = xs.backgroundColor; g.fill();
+      g.lineWidth = Math.max(1, s); g.strokeStyle = '#000'; g.stroke();
+      g.save(); g.translate(cx, cy); g.rotate(Math.PI / 4);
+      g.fillStyle = '#000'; const b = rr2 * 1.2, th = rr2 * 0.22;
+      g.fillRect(-b / 2, -th / 2, b, th); g.fillRect(-th / 2, -b / 2, th, b);
+      g.restore();
+    }
+
+    g.restore();   // release the card clip
+
+    /* the card's own dashed edge, on top */
+    const bs = getComputedStyle(cardEl);
+    g.setLineDash([2 * s, 2 * s]); g.lineWidth = Math.max(1, s); g.strokeStyle = '#000';
+    roundRect(g, 0.5 * s, 0.5 * s, c.width - s, c.height - s, radius);
+    g.stroke(); g.setLineDash([]);
 
     return await new Promise((res) => c.toBlob(res, 'image/png'));
   }
@@ -338,10 +360,11 @@
         el.querySelector('.in-b').src = rec.b || '';
         el.classList.remove('is-loading');
         const dl = el.querySelector('.mixwin__dl');
+        const cardEl = el.querySelector('.mixwin__card');
         dl.addEventListener('click', async () => {
           const prev = dl.style.opacity; dl.style.opacity = '.5';
           try {
-            const blob = await compose(rec, t);
+            const blob = await snapshot(cardEl);
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; a.download = 'toool-' + el.dataset.id + '.png';
