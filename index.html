@@ -407,7 +407,7 @@
       'padding: 2.5% !important; z-index: 10 !important; }' +
     /* the card, scaled by the slider (the bowl-flight transform has no origin
        here so it is replaced) */
-    'html.card-only .mixwin__card { animation: none !important;' +
+    'html.card-only .mixwin__card { animation: none !important; flex: none !important;' +
       'transform: scale(var(--card-scale, 1)) !important; transform-origin: center center;' +
       'box-shadow: none !important; }' +
     /* the control bar slides away on click, back on a touch at the bottom */
@@ -450,11 +450,30 @@
                mediaEl.playsInline = true; mediaEl.setAttribute('playsinline', ''); }
     (frame || document.body).insertBefore(mediaEl, (frame || document.body).firstChild);
   }
+  var rng = null;                     // the size slider (assigned in palette)
   function setScale(v) {
     document.documentElement.style.setProperty('--card-scale', v);
+    if (rng) rng.value = v;
   }
   function setAR(ar) {
     document.documentElement.style.setProperty('--ar', ar);
+  }
+  /* fit the WHOLE card inside the frame at its own aspect — same proportions,
+     just scaled down to fit, never clipped. The slider starts from this. */
+  var manualScale = false;
+  function fitCard() {
+    if (manualScale) return;
+    var card = document.querySelector('.mixwin__card');
+    if (!frame || !card) return;
+    var fr = frame.getBoundingClientRect();
+    /* the card's own unscaled size — divide out whatever scale is on it now */
+    var cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-scale')) || 1;
+    var cw = card.getBoundingClientRect().width / cur;
+    var ch = card.getBoundingClientRect().height / cur;
+    if (!cw || !ch) return;
+    var fit = Math.min((fr.width * 0.92) / cw, (fr.height * 0.92) / ch);
+    document.documentElement.style.setProperty('--card-scale', fit);
+    if (rng) rng.value = fit;
   }
 
   function palette() {
@@ -496,10 +515,10 @@
     var wrap = document.createElement('label');
     wrap.style.cssText = 'display:flex;align-items:center;gap:7px;';
     wrap.appendChild(document.createTextNode('Size'));
-    var rng = document.createElement('input');
-    rng.type = 'range'; rng.min = '0.4'; rng.max = '1.6'; rng.step = '0.02'; rng.value = '1';
+    rng = document.createElement('input');
+    rng.type = 'range'; rng.min = '0.2'; rng.max = '1.6'; rng.step = '0.01'; rng.value = '1';
     rng.style.cssText = 'width:150px;cursor:pointer;';
-    rng.addEventListener('input', function () { setScale(rng.value); });
+    rng.addEventListener('input', function () { manualScale = true; setScale(rng.value); });
     wrap.appendChild(rng);
     bar.appendChild(wrap);
 
@@ -520,6 +539,7 @@
         setAR(a[1]);
         arBtns.forEach(function (x) { x.style.background = '#fff'; });
         b.style.background = '#FFFF00';
+        requestAnimationFrame(fitCard);   // re-fit the card to the new frame
       });
       arBtns.push(b); bar.appendChild(b);
       if (a[1] === 0.8) b.style.background = '#FFFF00';   // default 4:5
@@ -555,6 +575,8 @@
     var m = q.match(/^#?([0-9a-fA-F]{6})$/);
     if (m) paint('#' + m[1]);
     palette();
+    requestAnimationFrame(fitCard);        // the card fits the frame, uncropped
+    addEventListener('resize', function () { requestAnimationFrame(fitCard); });
   }
   if (document.readyState === 'complete') show();
   else addEventListener('load', show);
