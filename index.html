@@ -392,9 +392,8 @@
     /* the overlay is the whole viewport, centred, no sidebar offset */
     'html.card-only .mixwin { display: flex !important; background: #FFFF01;' +
       'padding-left: 2.5vw !important; }' +
-    /* no close X or download on a look-only view */
-    'html.card-only .mixwin__x, html.card-only .mixwin__dl,' +
-    'html.card-only #mixwin-play { display: none !important; }' +
+    /* the top-right controls (DOWNLOAD · play · ✕) stay — this is the card
+       exactly as it opens on the site */
     /* no bowl here, so the fly-out-of-the-bowl transform has no origin and
        would leave the card shrunk in a corner — it just sits centred */
     'html.card-only .mixwin__card { animation: none !important; transform: none !important; }';
