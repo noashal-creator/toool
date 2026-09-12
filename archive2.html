@@ -63,10 +63,10 @@
   }
   .recipe .plus { font-weight: 700; font-size: 1.33cqw; color: #000; }
 
-  /* the DOWNLOAD pill is real and works here; the ✕ has nothing to close in an
-     archive, so it is hidden */
-  .mixwin__x { display: none !important; }
+  /* the DOWNLOAD pill is real and works here; the ✕ is kept for the card's
+     look (it does nothing in the archive) */
   .mixwin__dl { cursor: pointer; }
+  .mixwin__x { cursor: default; }
 
   .when { font-size: 12px; color: rgba(255,255,255,.85); }
   .mix.is-loading .mixwin__card { opacity: .5; }
@@ -156,7 +156,11 @@
                 'font-size="25" fill="#000" stroke="#000" stroke-width="0.7" stroke-dasharray="2 2" ' +
                 'paint-order="stroke">DOWNLOAD</text></svg>' +
           '</button>' +
-          '<button type="button" class="mixwin__x" aria-label="Close"></button>' +
+          '<button type="button" class="mixwin__x" aria-label="Close" tabindex="-1">' +
+            '<svg viewBox="0 0 26 26" aria-hidden="true">' +
+              '<path d="M22.5601 6.01379L19.9862 3.43992L3.43992 19.9862L6.01378 22.5601L22.5601 6.01379Z" fill="currentColor"/>' +
+              '<path d="M6.01379 3.43992L3.43992 6.01378L19.9862 22.5601L22.5601 19.9862L6.01379 3.43992Z" fill="currentColor"/>' +
+            '</svg></button>' +
         '</div>' +
         '<div class="recipe" aria-label="The two uploads">' +
           '<img class="in-a" alt="Upload 1"><span class="plus">+</span><img class="in-b" alt="Upload 2">' +
@@ -273,6 +277,49 @@
       g.fillStyle = '#000'; g.font = '700 16px ' + FONT; g.textAlign = 'center';
       g.fillText('+', bx + pad + thumb + gap + 9, byy + pad + thumb / 2 + 6);
       g.textAlign = 'left';
+    } catch (e) {}
+
+    /* the top-right controls, so the PNG carries the card's full face:
+       DOWNLOAD (yellow pill, the word in a dashed contour) and the red X
+       circle. cqw here is 12.07 design-px (1207/100). */
+    try {
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      const H = 29, top = 11, xRight = 1207 - 13;
+      // X — red circle, black stroke, black ✕
+      const xr = H / 2, xcx = xRight - xr, xcy = top + xr;
+      g.beginPath(); g.arc(xcx, xcy, xr, 0, Math.PI * 2);
+      g.fillStyle = '#FE0000'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#000'; g.stroke();
+      g.save(); g.translate(xcx, xcy); g.rotate(Math.PI / 4);
+      g.fillStyle = '#000'; const b = 17.4, thick = 3.2;
+      g.fillRect(-b/2, -thick/2, b, thick); g.fillRect(-thick/2, -b/2, thick, b);
+      g.restore();
+      // DOWNLOAD — yellow pill to the left of the X
+      const pillW = 167, pillH = H, pillR = 11.5;
+      const pillX = (xcx - xr) - 6 - pillW, pillY = top;
+      const rr = (x, y, w, h, rad) => { g.beginPath();
+        g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
+        g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath(); };
+      rr(pillX, pillY, pillW, pillH, pillR);
+      g.fillStyle = '#FFFF00'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#000'; g.stroke();
+      g.font = '700 25px ' + FONT;
+      const cx = pillX + pillW / 2, cy = pillY + pillH / 2 + 1;
+      g.save(); g.setLineDash([2, 2]);
+      g.fillStyle = '#000'; g.fillText('DOWNLOAD', cx, cy);
+      g.lineWidth = 0.7; g.strokeStyle = '#000'; g.strokeText('DOWNLOAD', cx, cy);
+      g.restore();
+      g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    } catch (e) {}
+
+    /* the card's own dashed edge, 1px, radius 0.9cqw — drawn last so it sits
+       crisp on top of the full-bleed image, exactly as on the card */
+    try {
+      const rad = 10.86;
+      g.setLineDash([2, 2]); g.lineWidth = 1; g.strokeStyle = '#000';
+      const x = 0.5, y = 0.5, w = DW - 1, h = DH - 1;
+      g.beginPath();
+      g.moveTo(x+rad,y); g.arcTo(x+w,y,x+w,y+h,rad); g.arcTo(x+w,y+h,x,y+h,rad);
+      g.arcTo(x,y+h,x,y,rad); g.arcTo(x,y,x+w,y,rad); g.closePath();
+      g.stroke(); g.setLineDash([]);
     } catch (e) {}
 
     return await new Promise((res) => c.toBlob(res, 'image/png'));
