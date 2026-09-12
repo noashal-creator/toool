@@ -389,14 +389,21 @@
     /* nothing of the site shows through */
     'html.card-only .sidebar, html.card-only .content,' +
     'html.card-only .reel__pin, html.card-only .cta { display: none !important; }' +
-    /* the overlay is the whole viewport, centred, no sidebar offset */
-    'html.card-only .mixwin { display: flex !important; background: var(--card-bg, #FFFF01);' +
-      'padding-left: 2.5vw !important; }' +
+    /* a background layer for an uploaded image/video — behind the card, over
+       the colour */
+    'html.card-only #card-bg-media { position: fixed; inset: 0; z-index: 1;' +
+      'width: 100%; height: 100%; object-fit: cover; display: none; }' +
+    'html.card-only #card-bg-media.on { display: block; }' +
+    /* the overlay is the whole viewport, centred; transparent so the colour or
+       the media behind it shows */
+    'html.card-only .mixwin { display: flex !important; background: transparent !important;' +
+      'padding-left: 2.5vw !important; z-index: 10 !important; }' +
     /* the top-right controls (DOWNLOAD · play · ✕) stay — this is the card
-       exactly as it opens on the site */
-    /* no bowl here, so the fly-out-of-the-bowl transform has no origin and
-       would leave the card shrunk in a corner — it just sits centred */
-    'html.card-only .mixwin__card { animation: none !important; transform: none !important; box-shadow: none !important; }';
+       exactly as it opens on the site. The bowl-flight transform has no origin
+       here, so it is replaced by a plain scale the slider drives. */
+    'html.card-only .mixwin__card { animation: none !important;' +
+      'transform: scale(var(--card-scale, 1)) !important; transform-origin: center center;' +
+      'box-shadow: none !important; }';
   document.head.appendChild(st);
   document.documentElement.classList.add('card-only');
 
@@ -413,8 +420,28 @@
     ['#F0F0F0', 'card grey'], ['#FFFFFF', 'white']
   ];
 
+  var mediaEl = null;                 // the uploaded image/video layer
   function paint(hex) {
     document.documentElement.style.setProperty('--card-bg', hex);
+    clearMedia();                     // a solid colour replaces any uploaded bg
+  }
+  function clearMedia() {
+    if (mediaEl) { try { URL.revokeObjectURL(mediaEl.src); } catch (e) {} mediaEl.remove(); mediaEl = null; }
+  }
+  function setMedia(file) {
+    clearMedia();
+    var url = URL.createObjectURL(file);
+    var vid = /^video\//.test(file.type);
+    mediaEl = document.createElement(vid ? 'video' : 'img');
+    mediaEl.id = 'card-bg-media';
+    mediaEl.className = 'on';
+    mediaEl.src = url;
+    if (vid) { mediaEl.autoplay = true; mediaEl.loop = true; mediaEl.muted = true;
+               mediaEl.playsInline = true; mediaEl.setAttribute('playsinline', ''); }
+    document.body.appendChild(mediaEl);
+  }
+  function setScale(v) {
+    document.documentElement.style.setProperty('--card-scale', v);
   }
 
   function palette() {
@@ -422,8 +449,9 @@
     bar.id = 'card-palette';
     bar.style.cssText =
       'position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;' +
-      'flex-wrap:wrap;gap:6px;justify-content:center;padding:10px 12px;' +
-      'background:rgba(255,255,255,.9);border-top:1px solid #000';
+      'flex-wrap:wrap;gap:8px 6px;align-items:center;justify-content:center;padding:10px 12px;' +
+      'background:rgba(255,255,255,.92);border-top:1px solid #000;' +
+      'font:700 12px/1 "Helvetica Neue",Helvetica,Arial,sans-serif';
     SWATCHES.forEach(function (c) {
       var b = document.createElement('button');
       b.type = 'button'; b.title = c[1] + '  ' + c[0];
@@ -433,6 +461,35 @@
       b.addEventListener('click', function () { paint(c[0]); });
       bar.appendChild(b);
     });
+
+    /* a thin divider, then the extra controls */
+    var sep = document.createElement('span');
+    sep.style.cssText = 'width:1px;height:26px;background:#000;margin:0 4px;';
+    bar.appendChild(sep);
+
+    /* upload an image or video as the background */
+    var file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*,video/*'; file.style.display = 'none';
+    file.addEventListener('change', function () { if (file.files && file.files[0]) setMedia(file.files[0]); });
+    var up = document.createElement('button');
+    up.type = 'button'; up.textContent = 'Upload background';
+    up.style.cssText =
+      'height:30px;padding:0 12px;border:1px solid #000;background:#FFFF00;' +
+      'border-radius:15px;cursor:pointer;font:inherit;text-transform:uppercase;';
+    up.addEventListener('click', function () { file.click(); });
+    bar.appendChild(up); bar.appendChild(file);
+
+    /* size — scale the result window up and down */
+    var wrap = document.createElement('label');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:7px;';
+    wrap.appendChild(document.createTextNode('Size'));
+    var rng = document.createElement('input');
+    rng.type = 'range'; rng.min = '0.4'; rng.max = '1.6'; rng.step = '0.02'; rng.value = '1';
+    rng.style.cssText = 'width:150px;cursor:pointer;';
+    rng.addEventListener('input', function () { setScale(rng.value); });
+    wrap.appendChild(rng);
+    bar.appendChild(wrap);
+
     document.body.appendChild(bar);
   }
 
