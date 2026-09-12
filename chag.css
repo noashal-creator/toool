@@ -15,6 +15,12 @@
 
 /* ── palette (the frame's own fills) ── */
 :root {
+  /* styles.css now pins its black rules to a fixed 1.5px, so that going full
+     screen stops thickening them. The holiday page is NOT part of that
+     change: every line here was measured and signed off against the frame at
+     its own weight, so it keeps the expression it was tuned with. */
+  --rule: calc(2 * var(--s));
+
   --panel: #FFFF01;          /* sidebar yellow  (Rectangle 152) */
   --chag-red:    #E60000;    /* picked cell + logo red          */
   --chag-blue:   #0048FF;    /* logo band      (Rectangle 81)   */
