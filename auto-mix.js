@@ -80,13 +80,32 @@
   };
   Object.values(DEMO).forEach((u) => { const im = new Image(); im.src = u; });
 
+  const armed = {};                       // a box the demo has filled at least once
+  const fill = (id) => { try { window.recFillSlot?.(id.slice(-1), DEMO[id]); armed[id] = true; } catch (err) {} };
+
   document.addEventListener('click', (e) => {
     const slot = e.target.closest?.('.slot');
     if (!slot || !DEMO[slot.id]) return;
     e.preventDefault();
     e.stopPropagation();
-    try { window.recFillSlot?.(slot.id.slice(-1), DEMO[slot.id]); } catch (err) {}
+    fill(slot.id);
   }, { capture: true });
+
+  /* KEEP THE UPLOADS AFTER THE BOWL EMPTIES. app.js resetSlots() clears both
+     boxes once the result window closes and the bowl drains — right for the
+     real tool, but in the demo it means clicking the two boxes again every
+     time. So whenever a box the demo had filled loses its filled state, put
+     the same image straight back. app.js owns the reset; this just re-fills
+     behind it, only under ?auto, and only for boxes the demo itself set. */
+  for (const id of Object.keys(DEMO)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    new MutationObserver(() => {
+      if (armed[id] && !el.classList.contains('is-filled')) {
+        requestAnimationFrame(() => { if (!el.classList.contains('is-filled')) fill(id); });
+      }
+    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+  }
 
   // A capture listener on #run itself would still fire AFTER app.js's own
   // click handler — at the target, listeners run in registration order
