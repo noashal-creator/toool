@@ -81,8 +81,13 @@
      scroll the logo away, arrive at the cow, and it loops there on its own
      (hero.js's idle auto-scroll). The other slides — intro video, the lollipop
      pop, the fish, the chase — stay in the DOM, untouched, simply never reached;
-     flip this to false to bring the full reel back. */
-  const COW_ONLY = true;
+     flip this to false to bring the full reel back.
+
+     The demo and the recording cuts want the WHOLE reel, though — ?auto shows
+     the full experience, and ?rec / ?rec10 / ?clip tour every section — so
+     cow-only is off whenever one of those flags is on. The plain site stays
+     cow-only. */
+  const COW_ONLY = !/[?&](auto|rec|rec10|clip)(=|&|$)/.test(location.search);
 
   let N = 0, slideW = 0, VH = 0, logoH = 0, maxPos = 0, snaps = [0], segs = [], dwell = {}, sceneSnap = [], sceneEntranceSnap = [];
   function measure() {
