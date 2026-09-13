@@ -2060,7 +2060,7 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   --u: min(0.874px, var(--fit));
   width: calc(1207 * var(--u));
   height: calc(975 * var(--u));
-  background: #f0f0f0;          /* Figma 3229:174 now covers the whole card */
+  background: #fff;             /* white card, like the sidebar — not grey (her call 13.9) */
   border: 1px dashed #000;
   border-radius: 0.9cqw;
   box-shadow: 0 1.6cqw 5cqw rgba(0, 0, 0, .28);
@@ -2085,7 +2085,7 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
 .mixwin__hero {
   position: relative;
   flex: 0 0 71.18%;
-  background: #f0f0f0;          /* Figma 3229:174 — the grey behind the object */
+  background: #fff;             /* white behind the object, like the card — not grey (her call 13.9) */
   overflow: hidden;
 }
 .mixwin__big {
@@ -2261,7 +2261,7 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
   padding: 1.15cqw 6% .9cqw;    /* room for the badge that straddles the top line */
   border: 0;
   border-right: 1px solid #0a0000;
-  background: #f0f0f0;          /* the same grey as the card; only the selected
+  background: #fff;             /* the same white as the card; only the selected
                                    step breaks out of it, in red */
   font: inherit;
   cursor: pointer;
