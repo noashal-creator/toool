@@ -32,10 +32,12 @@
      and the air it leaves is white — the same white as the card — so no border
      is ever visible. A small inset gives the object a little room on every side
      rather than kissing the edges. */
-  left: 4%;
-  top: 4%;
-  width: 92%;
-  height: 92%;
+  /* a generous inset so the specimen breathes inside the card instead of
+     pressing on its edges — same layout, the image just isn't choked. */
+  left: 10%;
+  top: 10%;
+  width: 80%;
+  height: 80%;
   object-fit: contain;
   object-position: center;
 }
