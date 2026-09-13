@@ -2784,3 +2784,30 @@ body.recording .roll-controls { display: none !important; }
 
 /* the caption sits over the water */
 .toy--fish .toy__label { z-index: 2; }
+
+/* ══ desktop-only gate (phones) ══════════════════════════════════════════
+   The reel / mix experience is built for a wide screen. On phones we don't
+   open it at all — a full-screen yellow card with a short English note covers
+   everything instead. Hidden by default; shown only below the desktop cutoff. */
+.deskonly { display: none; }
+@media (max-width: 860px) {
+  .deskonly {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8vw;
+    background: #FFEA00;               /* the site's upload-square yellow */
+  }
+  .deskonly__msg {
+    margin: 0;
+    color: #000;
+    font: 700 6vw/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  /* only the gated page freezes — chag.html / archive load styles.css too and
+     are meant to scroll on phones, so this must NOT hit them. */
+  body:has(.deskonly) { overflow: hidden; }
+}
