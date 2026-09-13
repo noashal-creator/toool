@@ -30,7 +30,7 @@
    ───────────────────────────────────────────────────────────────────── */
 
 (() => {
-  const SPECTRUM = [1, 2, 3, 4, 5].map(n => 'assets/mix/n-0' + n + '.png');
+  const SPECTRUM = [1, 2, 3, 4, 5].map(n => 'assets/mix/n-0' + n + '.png?v=raw1');
   const MID = 2;                       // 03 is the midpoint, and what opens first
   const STEP_MS = 700;                 // one step of the play-through
   const sleep = ms => new Promise(r => setTimeout(r, ms));
