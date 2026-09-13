@@ -91,20 +91,42 @@
     fill(slot.id);
   }, { capture: true });
 
-  /* KEEP THE UPLOADS AFTER THE BOWL EMPTIES. app.js resetSlots() clears both
-     boxes once the result window closes and the bowl drains — right for the
-     real tool, but in the demo it means clicking the two boxes again every
-     time. So whenever a box the demo had filled loses its filled state, put
-     the same image straight back. app.js owns the reset; this just re-fills
-     behind it, only under ?auto, and only for boxes the demo itself set. */
+  /* KEEP THE UPLOADS AFTER THE BOWL EMPTIES — WITHOUT A FLICKER.
+     app.js resetSlots() clears both boxes ~1.4s after the result opens: it
+     drops is-filled (the preview fades) and then, 420ms later, removes the
+     preview src. That fade-out-and-pop-back is the jump Noa sees.
+
+     A MutationObserver callback runs at microtask time — BEFORE the browser
+     paints the mutation. So the instant app.js removes is-filled or blanks the
+     src, we put them straight back in the SAME task: the cleared state is
+     never painted, so there is no visible change at all. The image shown is
+     the stable demo asset (an ordinary cached URL, never a revocable blob), so
+     app.js revoking its own blob can't break it. In the background we also let
+     recFillSlot restore the slot's real state so the NEXT mix still has its
+     images. Only under ?auto, only for boxes the demo filled; a page refresh
+     starts clean because nothing has been filled yet. */
+  const hasSrc = (el) => { const p = el.querySelector('.slot__preview'); const s = p && p.getAttribute('src'); return !!(s && s.trim()); };
+  const pin = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!el.classList.contains('is-filled')) el.classList.add('is-filled');
+    el.classList.remove('is-missing');
+    /* only supply an image if the box has NONE — never fight recFillSlot's own
+       blob, which would flip src back and forth */
+    if (!hasSrc(el)) { const p = el.querySelector('.slot__preview'); if (p) p.setAttribute('src', DEMO[id]); }
+  };
+  const restoreT = {};
   for (const id of Object.keys(DEMO)) {
     const el = document.getElementById(id);
     if (!el) continue;
     new MutationObserver(() => {
-      if (armed[id] && !el.classList.contains('is-filled')) {
-        requestAnimationFrame(() => { if (!el.classList.contains('is-filled')) fill(id); });
-      }
-    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+      if (!armed[id]) return;
+      const cleared = !el.classList.contains('is-filled') || !hasSrc(el);
+      if (!cleared) return;
+      pin(id);                                   // synchronous, pre-paint — no jump
+      clearTimeout(restoreT[id]);                // then quietly restore real state for the next mix
+      restoreT[id] = setTimeout(() => fill(id), 80);
+    }).observe(el, { attributes: true, subtree: true, attributeFilter: ['class', 'src'] });
   }
 
   // A capture listener on #run itself would still fire AFTER app.js's own
