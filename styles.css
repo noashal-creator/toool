@@ -2050,7 +2050,14 @@ body:has(.mixwin.is-open) .to-top { opacity: 0; pointer-events: none; }
      and both stay DEFINITE lengths (.mixwin__hero is 71.18% OF THIS HEIGHT, so
      an `auto` height would be circular and collapse the card). */
   --fit: min(calc((100vw - var(--sbw) - 4vw) / 1207), calc((100dvh - 4vh) / 975));
-  --u: min(var(--s), var(--fit));
+  /* The card is a FIXED size — 1055x852 (0.874px per design unit), the size
+     Noa approved — and does NOT grow with the screen. live.css sets the same
+     pin for the live site; keeping it in the base means the ?auto / ?rec10
+     demos (which disable live.css) also stay fixed instead of scaling with
+     --s. --fit stays as an overflow guard: it can only ever SHRINK the card
+     for windows physically smaller than it, never grow it, and one shared
+     factor drives both axes so 1207:975 cannot distort. */
+  --u: min(0.874px, var(--fit));
   width: calc(1207 * var(--u));
   height: calc(975 * var(--u));
   background: #f0f0f0;          /* Figma 3229:174 now covers the whole card */
